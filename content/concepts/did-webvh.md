@@ -62,7 +62,7 @@ When a user sets up [[openvtc-cli|OpenVTC]]:
 
 1. The [[verifiable-trust-agent|VTA]] generates keys from the user's BIP-32 seed
 2. A did:webvh is created with the initial DID document and history log
-3. The `did.jsonl` file is hosted on the domain of the user's choice (their own, or via a provider like the [[affinidi-webvh-service]])
+3. The `did.jsonl` file is hosted on the domain of the user's choice (their own, or via a provider using something like the [[affinidi-webvh-service]])
 4. Key rotations, service endpoint changes, and other updates are appended as new log entries
 5. Optional witnesses attest to the integrity of updates
 

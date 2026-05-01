@@ -2,7 +2,7 @@
 title: "Source: openvtc"
 type: source-summary
 tags: [source, primary, openvtc]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 repo: https://github.com/OpenVTC/openvtc
 ---
 
@@ -11,7 +11,7 @@ repo: https://github.com/OpenVTC/openvtc
 **Repo**: [OpenVTC/openvtc](https://github.com/OpenVTC/openvtc)
 **Type**: Primary
 **Language**: Rust
-**Latest version**: v0.1.3
+**Latest version**: v0.1.5
 
 ## Summary
 
@@ -25,7 +25,8 @@ Rust CLI and TUI for participating in Verifiable Trust Communities. Implements t
 
 ## Recent Activity (Last Month)
 
-- v0.1.3: Fixed deterministic encryption vulnerability (HKDF-SHA256 + random nonce)
-- v0.1.2: Service CLI `--config` flag, operator docs
-- v0.1.1: Documentation alignment
-- CODEOWNERS governance
+- **v0.1.5** (Apr 13): release rollup
+- **Security hardening** (Apr 15): BIP32 seed and imported key material now stored in `SecretString` instead of plain `String`, reducing accidental disclosure via logs/dumps
+- **Windows support** (Apr 15): PowerShell examples and documented Windows secure-storage behavior
+- **CLI fixes**: `valid-until` prompt handling for VRC issuance corrected; spelling fixes in CLI messages, logs, and relationships code
+- Documentation: contributor notes consolidated in README

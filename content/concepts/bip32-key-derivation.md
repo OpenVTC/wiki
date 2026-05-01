@@ -10,7 +10,7 @@ sources: [verifiable-trust-infrastructure, openvtc]
 
 ## What It Is
 
-BIP-32 (Bitcoin Improvement Proposal 32) defines a method for deriving a tree of cryptographic keys from a single seed. Combined with BIP-39 (which generates that seed from a mnemonic phrase — 12 or 24 words), it means **one backup phrase protects your entire identity**.
+BIP-32 (Bitcoin Improvement Proposal 32) defines a method for deriving a tree of cryptographic keys from a single seed. Combined with BIP-39 (which generates that seed from a 24 word mnemonic phrase), it means **one backup phrase protects your entire identity**.
 
 This is the key management strategy used throughout the OpenVTC ecosystem. Instead of managing separate keys for your persona, your DID updates, each relationship, and each application — all of these derive deterministically from one master seed.
 
@@ -19,14 +19,14 @@ This is the key management strategy used throughout the OpenVTC ecosystem. Inste
 Starting from a mnemonic phrase:
 
 ```
-abandon abandon abandon ... (12-24 words)
+horse staple battery ... (24 words)
      ↓ BIP-39
   Master Seed (512 bits)
      ↓ BIP-32
   Key Tree
 ```
 
-The key tree uses **derivation paths** — hierarchical addresses that identify each key's purpose. The OpenVTC ecosystem reserves the `m/26'` path (registered for First Person Network):
+The key tree uses **derivation paths** — hierarchical addresses that identify each key's purpose. The OpenVTC ecosystem uses the `m/26'` path (registered for First Person Network):
 
 ```
 m/26'                          ← Root for First Person Network

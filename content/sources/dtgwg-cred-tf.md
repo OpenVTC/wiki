@@ -2,7 +2,7 @@
 title: "Source: dtgwg-cred-tf"
 type: source-summary
 tags: [source, primary, dtg, spec, trust-over-ip]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 repo: https://github.com/trustoverip/dtgwg-cred-tf
 ---
 
@@ -38,4 +38,11 @@ This is the definitive source for DTG credential semantics, overriding implement
 
 ## Recent Activity
 
-Most recent commits: January 14, 2026 (v0.3 alignment with new VTC glossary and bootstrapping document). No commits since. The spec remains an "early draft" at v0.3.
+Most main-branch commits land January–March 2026 (v0.3 alignment with new VTC glossary and bootstrapping document).
+
+A pending PR on the **`bidirectional`** branch ("Clarify bi-directionality of Edge Credentials", commit `1b7eac5`, April 30, 2026) reframes both Edge Credentials as bidirectional. Previously the spec described VMCs as creating *nodes* and VRCs as creating *directed edges*. The updated language treats both as edges between existing entities (nodes), each requiring a bi-directional pair to constitute a complete edge in the graph:
+
+- **VMC** — "attests to the membership of an entity in a community; membership is verified through a bi-directional pair of VMCs"
+- **VRC** — "attests to a relationship between two entities; the relationship is verified through a bi-directional pair of VRCs"
+
+This change has been propagated through the wiki in anticipation of merge.

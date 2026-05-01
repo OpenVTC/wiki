@@ -2,7 +2,7 @@
 title: "DTG Credential Categories"
 type: concept
 tags: [credentials, dtg, taxonomy, categories]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 sources: [dtgwg-cred-tf]
 ---
 
@@ -13,35 +13,31 @@ The DTG specification organizes its credential types into four **descriptive** (
 ## The Four Categories
 
 ### Edge Credentials
-Create structure in the trust graph — new nodes and relationships.
 
-| Credential | What it creates |
-|-----------|----------------|
-| [[membership-credential\|VMC (Membership)]] | A node — proves membership (and personhood) in a community |
-| [[relationship-credential\|VRC (Relationship)]] | A directed edge — one half of a trust relationship between two members |
+Establish relationships between existing entities (nodes) in the graph. Both edge credential types are **bidirectional** — a complete edge requires a pair, one from each side.
+
+- **[[membership-credential|VMC (Membership)]]** — a membership edge between an entity and a community, verified through a bi-directional pair of VMCs
+- **[[relationship-credential|VRC (Relationship)]]** — a peer-to-peer relationship edge between two entities, verified through a bi-directional pair of VRCs
 
 ### Invitation Credentials
+
 Bootstrap new participants into communities.
 
-| Credential | What it does |
-|-----------|-------------|
-| [[invitation-credential\|VIC (Invitation)]] | Authorizes onboarding of a new member into a VTC or VTN |
+- **[[invitation-credential|VIC (Invitation)]]** — authorizes onboarding of a new member into a VTC or VTN
 
 ### Annotation Credentials
-Attach additional data to existing graph structure without creating new nodes or edges.
 
-| Credential | What it annotates |
-|-----------|------------------|
-| [[persona-credential\|VPC (Persona)]] | Links a persona identity to an existing relationship |
-| [[endorsement-credential\|VEC (Endorsement)]] | Endorses skills or reputation of an existing member |
-| [[witness-credential\|VWC (Witness)]] | Third-party attestation that an edge (VRC exchange) actually occurred |
+Attach additional data to existing graph structure without creating new edges.
+
+- **[[persona-credential|VPC (Persona)]]** — links a persona identity to an existing relationship
+- **[[endorsement-credential|VEC (Endorsement)]]** — endorses skills or reputation of an existing member
+- **[[witness-credential|VWC (Witness)]]** — third-party attestation that an edge (VRC exchange) actually occurred
 
 ### Verifiable Data Structures (VDS)
+
 Structured data exchange — not technically DTG credentials.
 
-| Structure | What it carries |
-|----------|----------------|
-| RCard (Relationship Card) | Human-readable contact information (vCard/jCard per RFC 7095) |
+- **RCard (Relationship Card)** — human-readable contact information (vCard/jCard per RFC 7095)
 
 Note: RCard does **not** include `DTGCredential` in its W3C type array — its type is `["VerifiableCredential", "RelationshipCard"]`. It is a Verifiable Data Structure, not a credential in the DTG sense.
 

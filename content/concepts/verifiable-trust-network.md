@@ -2,7 +2,7 @@
 title: "Verifiable Trust Networks (VTNs)"
 type: concept
 tags: [vtn, network, community, hierarchy, trust]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 sources: [dtgwg-cred-tf]
 ---
 
@@ -28,7 +28,7 @@ VTN (Verifiable Trust Network)
 
 ## How Membership Works
 
-VTNs issue [[membership-credential|Membership Credentials (VMCs)]] to VTCs — proving that a community is a recognized member of the network. This is the same credential type used for individual membership in a VTC, but the subject is a C-DID (the community's DID) rather than an M-DID (a person's DID).
+A VTN's relationship with each member VTC is expressed as a bi-directional pair of [[membership-credential|Membership Credentials (VMCs)]] — one issued by the VTN to the VTC, one issued by the VTC back to the VTN. This is the same credential type used for individual membership in a VTC, but the subject is a C-DID (the community's DID) rather than an M-DID (a person's DID).
 
 This means the [[decentralized-trust-graph|Decentralized Trust Graph]] supports hierarchical community structures: a VTN contains VTCs, and VTCs contain individual members.
 

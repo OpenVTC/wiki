@@ -2,7 +2,7 @@
 title: "Verifiable Trust Infrastructure (VTI)"
 type: entity
 tags: [vti, infrastructure, workspace]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 sources: [verifiable-trust-infrastructure]
 ---
 
@@ -67,6 +67,9 @@ Key external dependencies:
 
 - **v0.2.0** — Nitro Enclave support, signing oracle, backup/restore
 - **v0.3.0** — SDK integration module, imported secrets, lightweight DIDComm auth
-- **Current** — crates.io publishability, CI pipeline
+- **v0.3.x** — client DID documents, capabilities discovery, user-specified keys
+- **v0.4.0** — DIDComm service v0.2 with production lifecycle management (message expiry, problem-report logging, mediator connection unification)
+- **v0.4.1** — TEE deployment hardening, documentation rationalization, Dockerfile cleanup
+- Implementation continues to evolve quickly; details may shift from one release to the next
 
 See also: [[verifiable-trust-agent]], [[verifiable-trust-community]], [[openvtc-cli]]

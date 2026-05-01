@@ -2,7 +2,7 @@
 title: "OpenVTC — The Trust Community CLI"
 type: entity
 tags: [openvtc, cli, tui, user-experience]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 sources: [openvtc]
 ---
 
@@ -81,9 +81,8 @@ Multiple profiles are supported via the `OPENVTC_CONFIG_PROFILE` environment var
 OpenVTC is at v0.1.x with active early development:
 
 - **v0.1.3** — Fixed a deterministic encryption vulnerability in unlock code encryption (replaced seeded PRNG with HKDF-SHA256 + random nonce, with transparent legacy migration)
-- **v0.1.2** — Added `--config` flag and operator documentation for the service
-- **v0.1.1** — Documentation alignment and badge fixes
-- **Current** — UI improvements, governance (CODEOWNERS), preparing for broader adoption
+- **v0.1.4** — VRC `valid-until` prompt handling fix
+- **v0.1.5** — BIP32 seed and imported key material moved from plain `String` to `SecretString`; Windows PowerShell examples and Windows secure-storage documentation; spelling fixes throughout the CLI
 
 The focus is on security correctness and developer experience as the tool matures toward production use.
 

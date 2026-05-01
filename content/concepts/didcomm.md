@@ -39,7 +39,7 @@ The [[openvtc-cli|OpenVTC service]] runs a background daemon that polls a mediat
 
 ## Mediators
 
-A mediator is a relay service that holds encrypted messages for recipients who aren't always online. The Linux Foundation operates a public mediator at `fpp.storm.ws` for the First Person Network. The [[affinidi-tdk|Affinidi TDK]] provides a mediator implementation with production features like circuit breakers, rate limiting, and graceful shutdown.
+A mediator is a relay service that holds encrypted messages for recipients who aren't always online. The [[affinidi-tdk|Affinidi TDK]] provides a mediator implementation with production features like circuit breakers, rate limiting, and graceful shutdown.
 
 Mediators see message metadata (who is sending to whom, when, message size) but cannot read message content. For stronger privacy, future versions may support onion routing or mix networks.
 
@@ -56,6 +56,6 @@ This provides strong, decentralized authentication without passwords, API keys, 
 
 ## Trust Spanning Protocol (TSP)
 
-The [[affinidi-tdk|Affinidi TDK]] also implements the **Trust Spanning Protocol (TSP)** — a newer, leaner alternative to DIDComm for certain use cases. TSP uses HPKE-Auth encryption and CESR binary encoding, offering a simpler protocol with strong security guarantees. It's specified by the Trust over IP Foundation and may complement or partially replace DIDComm in future iterations of the ecosystem.
+The [[affinidi-tdk|Affinidi TDK]] also implements the **Trust Spanning Protocol (TSP)** — a newer, leaner alternative to DIDComm for certain use cases. TSP uses HPKE-Auth encryption and CESR binary encoding, offering a simpler protocol with strong security guarantees. It's specified by the Trust Over IP Foundation and may complement or partially replace DIDComm in future iterations of the ecosystem.
 
 See also: [[verifiable-trust-agent]], [[affinidi-tdk]], [[trust-spanning-protocol]]

@@ -2,7 +2,7 @@
 title: "Personhood Credential (PHC)"
 type: concept
 tags: [credentials, dtg, personhood, sybil, governance]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 sources: [dtgwg-cred-tf, dtg-credentials, openvtc]
 ---
 
@@ -31,7 +31,12 @@ In the [[dtg-credentials-repo|dtg-credentials]] Rust library, the optional type 
 
 ## Why It Exists
 
-Without personhood enforcement, the [[decentralized-trust-graph|trust graph]] is vulnerable to **Sybil attacks** — one person creating many fake identities to inflate their apparent trustworthiness. PHCs are the defense at the community level: the community's governance ensures each real person gets exactly one membership.
+Without personhood enforcement, the [[decentralized-trust-graph|trust graph]] is vulnerable to two related threats:
+
+- **Sybil attacks** — one person creating many fake identities to inflate their apparent trustworthiness
+- **AI agent impersonation** — an AI system participating as if it were a real person, accumulating credentials and relationships that carry a false implication of human judgment behind them
+
+PHCs are the defense at the community level: the community's governance ensures each membership belongs to a verified, unique human.
 
 ## How Personhood Is Verified
 
@@ -42,13 +47,14 @@ The exact mechanism is a policy question for each community. Options include:
 - Existing identity document verification via an Identity Verification Provider (IDVP)
 - Web of trust thresholds (e.g., N existing members vouch for you)
 
-## ZKP Requirements
+## Lending Personhood to Relationship Proofs
 
-When proving a trust relationship, the holder must prove:
-1. Possession of the VRC (the relationship)
-2. Possession of the underlying VMC (proving community membership)
-3. That the VRC counterparty also holds a VMC from the same community
+A PHC's value extends beyond the membership edge itself: it can be carried forward into ZKP proofs of [[relationship-credential|VRCs]]. When two members of a PHC-issuing community have a VRC between them, the holder can construct a community-anchored ZKP showing:
 
-This anchors all relationships within a community context and ensures both parties have verified personhood.
+1. Possession of the VRC
+2. Possession of a VMC from the community
+3. That the VRC counterparty also holds a VMC from the *same* community
+
+Because that community's VMCs are PHCs, the resulting proof carries personhood assurance for both parties without revealing their underlying DIDs. This is one proof construction available to relationships inside a shared PHC-issuing community — not a universal requirement for VRCs, which can also exist directly between individuals outside any community context.
 
 See also: [[membership-credential]], [[trust-registries]], [[decentralized-trust-graph]], [[dtg-credentials-overview]]

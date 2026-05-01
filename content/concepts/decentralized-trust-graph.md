@@ -2,7 +2,7 @@
 title: "The Decentralized Trust Graph (DTG)"
 type: concept
 tags: [trust-graph, dtg, trust-over-ip, credentials]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 sources: [dtgwg-cred-tf, dtg-credentials, openvtc, verifiable-trust-infrastructure]
 ---
 
@@ -15,44 +15,51 @@ The Decentralized Trust Graph is the conceptual model at the heart of the OpenVT
 In the physical world, you rely on chains of trust. You trust your friend. Your friend trusts their colleague. If your friend vouches for their colleague, you have a reason — not a guarantee, but a reason — to extend some trust. The DTG makes this kind of reasoning cryptographically verifiable in the digital world.
 
 The graph is built from two primitives:
-- **Nodes** — created by [[membership-credential|Membership Credentials (VMCs)]], representing verified members of communities
-- **Directed edges** — created by [[relationship-credential|Relationship Credentials (VRCs)]], representing trust attestations between members. Two VRCs (one each direction) form a complete bilateral edge.
+- **Nodes** — entities in the world: people, devices, agents, and communities. Each is identified by a [[decentralized-identifiers|Decentralized Identifier (DID)]].
+- **Edges** — created by [[credential-categories|Edge Credentials]]: [[membership-credential|Membership Credentials (VMCs)]] connect entities to communities, and [[relationship-credential|Relationship Credentials (VRCs)]] connect entities to other entities. **Both edge types are bidirectional**: a complete edge requires a pair of credentials, one issued from each side.
 
-Additional [[credential-categories|Annotation Credentials]] ([[endorsement-credential|endorsements]], [[witness-credential|witnesses]], [[persona-credential|personas]]) attach data to existing nodes and edges without creating new graph structure.
+Additional [[credential-categories|Annotation Credentials]] ([[endorsement-credential|endorsements]], [[witness-credential|witnesses]], [[persona-credential|personas]]) attach data to existing edges without creating new graph structure.
 
 Anyone can traverse the graph to discover trust paths between two entities. The credentials are cryptographically signed, so every edge is verifiable. The graph is decentralized — no single authority controls it, and no single point of failure can break it.
 
 ## How Trust Is Built
 
-Trust in the DTG is built incrementally, from the ground up:
+Trust in the DTG is built incrementally, from the ground up. The graph supports two complementary patterns: peer-to-peer relationships between individuals, and community-anchored relationships that gain extra proof guarantees from a shared VTC.
 
-### Step 1: Join a Community
+### Form Relationships Directly
 
-Before you can participate meaningfully, you need a [[membership-credential|Membership Credential (VMC)]] from a [[verifiable-trust-community|Verifiable Trust Community]] — proof that you're a real, unique person within that community. When the community's governance enforces personhood guarantees, this VMC qualifies as a [[personhood-credential|Personhood Credential (PHC)]] — determined by the community's [[trust-registries|trust registry]].
+The base case is two people who know and trust each other exchanging [[relationship-credential|Relationship Credentials (VRCs)]]. Each party issues one VRC to the other; together the two VRCs form a complete edge in the graph. Neither party needs to be a member of any community for this to be meaningful — the relationship stands on the cryptographic attestations themselves and on whatever real-world context the parties bring to it.
 
-Communities themselves can belong to [[verifiable-trust-network|Verifiable Trust Networks (VTNs)]], creating a hierarchy: VTN → VTC → member.
-
-### Step 2: Form Relationships
-
-When two community members establish a genuine trust relationship, they exchange [[relationship-credential|Relationship Credentials (VRCs)]]. Each party issues one VRC — a directed trust assertion — and together the two VRCs form a complete edge. The protocol:
+The protocol:
 
 1. One person sends a relationship request via [[didcomm|DIDComm]]
 2. The other accepts
 3. Both finalize the relationship, creating a private channel with a unique [[did-types|R-DID]]
 4. Each party issues a VRC to the other
 
-The spec requires each entity to generate a **new, unique R-DID for every relationship**, even within the same community, ensuring privacy.
+The spec requires each entity to generate a **new, unique R-DID for every relationship**, ensuring privacy.
 
-### Step 3: Annotate with Endorsements and Witnesses
+### Join a Community for Anchored Proofs and Personhood
 
-Trust relationships can be strengthened through [[credential-categories|Annotation Credentials]]:
+Membership in a [[verifiable-trust-community|Verifiable Trust Community]] is optional but powerful. A [[membership-credential|Membership Credential (VMC)]] connects a participant to a community whose governance defines who counts as a member, and a bidirectional pair of VMCs (one from the community to the member, one back) forms a complete membership edge. Communities can themselves be members of [[verifiable-trust-network|Verifiable Trust Networks (VTNs)]] via the same bidirectional pattern, creating a VTN → VTC → member hierarchy.
+
+Joining a VTC unlocks two things that pure peer-to-peer VRCs cannot provide on their own:
+
+- **Personhood attestation.** When the community's governance enforces real human personhood and one-membership-per-person rules, the VMC qualifies as a [[personhood-credential|Personhood Credential (PHC)]] — determined by the community's [[trust-registries|trust registry]].
+- **Community-anchored relationship proofs.** A holder can construct a ZKP showing that both parties to a VRC hold VMCs from the same community, lending the relationship the community's governance assurances without exposing identifying details. See [[relationship-credential]].
+
+VRCs between people who *don't* share a community are still valid trust attestations; they just can't be proven through community-anchored ZKPs.
+
+### Annotate with Endorsements and Witnesses
+
+Trust relationships — whether peer-to-peer or community-anchored — can be strengthened through [[credential-categories|Annotation Credentials]]:
 - **[[endorsement-credential|Endorsements (VEC)]]** — "I endorse this person's skills in X"
 - **[[witness-credential|Witnesses (VWC)]]** — "I witnessed that this relationship is genuine" (especially powerful via the [[witnessed-vrc-exchange|Witnessed VRC Exchange Protocol]])
 - **[[persona-credential|Personas (VPC)]]** — selectively linking a persona identity to a relationship
 
-### Step 4: Scale Through Networks
+### Scale Through Networks
 
-Communities can federate into [[verifiable-trust-network|Verifiable Trust Networks (VTNs)]], enabling trust paths to traverse community boundaries. VTNs issue VMCs to their member VTCs, creating a shared trust anchor across independent communities.
+Communities can federate into [[verifiable-trust-network|Verifiable Trust Networks (VTNs)]], enabling community-anchored trust paths to traverse community boundaries. VTNs and their member VTCs exchange bidirectional VMC pairs, creating a shared trust anchor across independent communities.
 
 ## Traversing the Graph
 
@@ -66,11 +73,11 @@ The power of the DTG is in traversal. Imagine you're evaluating a contributor to
 
 You've now established a multi-path, multi-evidence trust assessment — all without a central authority, all cryptographically verifiable.
 
-To formally prove a relationship, the holder must demonstrate via ZKP: (1) possession of the VRC, (2) possession of the underlying VMC (community membership), and (3) that the counterparty also holds a VMC from the same community. This anchors all relationships within a community context.
+When the parties share a community, the holder can additionally construct a community-anchored ZKP: a proof that they hold the VRC, that they hold a VMC from a community, and that the counterparty holds a VMC from the *same* community — without revealing the underlying DIDs. This anchors that proof within the community's governance context. It's one proof construction, not the only way a VRC can be presented or verified.
 
 ## The DTG Specification
 
-The credential types that populate the DTG are defined by the **Trust over IP Foundation's DTG Working Group Credential Task Force** (v0.3). The [[dtg-credentials-repo|dtg-credentials]] library provides the Rust implementation. See [[dtg-credentials-overview]] for the complete taxonomy and [[credential-categories]] for the functional classification.
+The credential types that populate the DTG are defined by the **Trust Over IP Foundation's DTG Working Group Credential Task Force Specification** (v0.3). The [[dtg-credentials-repo|dtg-credentials]] library provides the Rust implementation. See [[dtg-credentials-overview]] for the complete taxonomy and [[credential-categories]] for the functional classification.
 
 ## Why Decentralized?
 

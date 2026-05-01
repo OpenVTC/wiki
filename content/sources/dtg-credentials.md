@@ -2,7 +2,7 @@
 title: "Source: dtg-credentials"
 type: source-summary
 tags: [source, primary, dtg, credentials]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 repo: https://github.com/OpenVTC/dtg-credentials
 ---
 
@@ -11,6 +11,7 @@ repo: https://github.com/OpenVTC/dtg-credentials
 **Repo**: [OpenVTC/dtg-credentials](https://github.com/OpenVTC/dtg-credentials)
 **Type**: Primary
 **Language**: Rust
+**Latest version**: v0.1.2
 
 ## Summary
 
@@ -24,7 +25,6 @@ Rust library implementing DTG credential types (spec v0.3) from the Trust over I
 
 ## Recent Activity (Last Month)
 
-- Migrated from LF-Decentralized-Trust-labs to OpenVTC organization
-- Dependency updates (affinidi-data-integrity, affinidi-tdk)
-- Async sign() alignment
+- **v0.1.2** (Apr 30): bump to affinidi-data-integrity 0.6 and migrate to its new API
+- Migrated from LF-Decentralized-Trust-labs to OpenVTC organization (earlier)
 - Preparing for crates.io publication

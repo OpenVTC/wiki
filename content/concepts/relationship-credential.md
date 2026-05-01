@@ -2,17 +2,17 @@
 title: "Relationship Credential (VRC)"
 type: concept
 tags: [credentials, dtg, relationships, trust, edge]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 sources: [dtgwg-cred-tf, dtg-credentials, openvtc]
 ---
 
 # Relationship Credential (VRC)
 
-A Verifiable Relationship Credential is a **directed** trust assertion from one person to another. It's the primary building block of the [[decentralized-trust-graph|Decentralized Trust Graph]] and an [[credential-categories|Edge Credential]] — it creates graph structure.
+A Verifiable Relationship Credential attests to a trust relationship between two entities, from the perspective of the issuer. It's a primary building block of the [[decentralized-trust-graph|Decentralized Trust Graph]] and an [[credential-categories|Edge Credential]] — it forms graph structure between existing entities.
 
-## Directionality: Two VRCs = One Edge
+## Bidirectionality: Two VRCs = One Edge
 
-The spec is explicit: **"Two VRCs (one each direction) form a complete DTG edge."** When Alice and Bob establish a trust relationship, each issues one VRC to the other. Alice's VRC says "I trust Bob"; Bob's VRC says "I trust Alice." Together, these two directed credentials form a complete, bilateral trust edge in the graph.
+The spec is explicit: **"Two VRCs (one each direction) form a complete DTG edge."** A relationship is verified through a bi-directional pair of VRCs. When Alice and Bob establish a trust relationship, each issues one VRC to the other. Alice's VRC says "I trust Bob"; Bob's VRC says "I trust Alice." Together, these two credentials form a complete, bilateral trust edge in the graph — the relationship doesn't exist in the DTG until both halves are issued.
 
 ## The Relationship Protocol
 
@@ -36,14 +36,17 @@ For witnessed exchanges, see the [[witnessed-vrc-exchange|Witnessed VRC Exchange
 - **Validity period** — when the attestation is valid
 - **Proof** — EdDSA JCS 2022 Data Integrity signature
 
-## ZKP Proof Requirements
+## Community-Anchored ZKP Proofs
 
-To prove a relationship to a verifier, the holder must demonstrate:
+VRCs can stand alone — two individuals can issue VRCs to each other without either being a member of any [[verifiable-trust-community|VTC]], and the resulting edge is a valid trust attestation. The cryptographic signatures speak for themselves; the meaning of the attestation is whatever real-world context the parties bring to it.
+
+When both parties *are* members of the same community, the holder can additionally construct a **community-anchored ZKP** of the relationship. The spec describes one such proof in §5.2:
+
 1. Possession of the VRC
-2. Possession of the underlying [[membership-credential|VMC]] (proving community membership)
-3. That the VRC issuer also possesses a VMC from the same [[did-types|C-DID]]
+2. Possession of an underlying [[membership-credential|VMC]] from a community
+3. That the VRC issuer also holds a VMC from the *same* [[did-types|C-DID]]
 
-This ensures all relationships are anchored within a community context — you can't have a VRC without both parties being verified community members.
+This proof anchors the relationship within a community's governance context (e.g., a community whose VMCs are also [[personhood-credential|PHCs]] lends personhood assurance to every relationship proven through it) without revealing the underlying DIDs. It is **one proof construction available to relationships within a shared community**, not a universal precondition for issuing or holding a VRC.
 
 ## Trust Graph Significance
 

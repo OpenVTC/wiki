@@ -2,7 +2,7 @@
 title: "dtg-credentials — Trust Graph Credential Library"
 type: entity
 tags: [dtg, credentials, library, trust-over-ip]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 sources: [dtg-credentials]
 ---
 
@@ -48,8 +48,9 @@ Originally developed under `LF-Decentralized-Trust-labs`, recently migrated to t
 
 ## Recent Development
 
+- **v0.1.2** (Apr 30) — bumped to `affinidi-data-integrity` 0.6 and migrated to its new API
 - CODEOWNERS for `@OpenVTC/openvtc-maintainers`
-- Dependency updates (affinidi-data-integrity 0.4→0.5, affinidi-tdk 0.5→0.6)
+- Earlier dependency updates (affinidi-data-integrity 0.4→0.5, affinidi-tdk 0.5→0.6)
 - `sign()` made async to align with upstream changes
 - Repository URL migration from LF-Decentralized-Trust-labs to OpenVTC
 - Crate publishing enablement

@@ -1,7 +1,7 @@
 ---
 title: "Wiki Index"
 type: index
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 ---
 
 # Wiki Index
@@ -19,15 +19,15 @@ date-updated: 2026-04-09
 - [[bip32-key-derivation]] — How all keys derive from one seed phrase via BIP-32/BIP-39
 
 ### Trust & Credentials
-- [[decentralized-trust-graph]] — The DTG model: nodes (VMCs), directed edges (VRCs), trust traversal
+- [[decentralized-trust-graph]] — The DTG model: entities as nodes, bidirectional VMC/VRC pairs as edges, trust traversal
 - [[verifiable-credentials]] — W3C VCs: what they are, signing, verification, selective disclosure
 - [[dtg-credentials-overview]] — The family of DTG credential types and how they fit together
 - [[credential-categories]] — The four functional categories: Edge, Invitation, Annotation, VDS
 
 ### Individual Credential Types
-- [[membership-credential]] — Community membership and personhood attestation (VMC)
+- [[membership-credential]] — Community membership and personhood attestation (VMC); two VMCs = one complete edge
 - [[personhood-credential]] — PHC: a governance-layer property of VMCs, not a structural subtype
-- [[relationship-credential]] — Directed trust attestation (VRC); two VRCs = one complete edge
+- [[relationship-credential]] — Peer-to-peer trust attestation (VRC); two VRCs = one complete edge
 - [[invitation-credential]] — Bootstrap new participants into communities (VIC)
 - [[persona-credential]] — Selective persona disclosure and the "Banksy Maneuver" (VPC)
 - [[endorsement-credential]] — Skill and competency endorsements (VEC)
@@ -59,7 +59,7 @@ date-updated: 2026-04-09
 
 ## Source Summaries
 
-- [[sources/verifiable-trust-infrastructure]] — VTI repo summary and recent activity
+- [[sources/verifiable-trust-infrastructure-source]] — VTI repo summary and recent activity
 - [[sources/openvtc]] — OpenVTC repo summary and recent activity
 - [[sources/dtg-credentials]] — DTG credentials repo summary and recent activity
 - [[sources/dtgwg-cred-tf]] — DTG spec: authoritative credential specification (v0.3)

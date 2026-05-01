@@ -2,15 +2,21 @@
 title: "Membership Credential (VMC)"
 type: concept
 tags: [credentials, dtg, membership, community, personhood, edge]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 sources: [dtgwg-cred-tf, dtg-credentials]
 ---
 
 # Membership Credential (VMC)
 
-A Verifiable Membership Credential establishes a **node** in the [[decentralized-trust-graph|Decentralized Trust Graph]]. It proves that an entity belongs to a [[verifiable-trust-community|VTC]] or [[verifiable-trust-network|VTN]].
+A Verifiable Membership Credential attests to the **membership of an entity in a community**. It connects a person, device, or agent to a [[verifiable-trust-community|VTC]] — or one community to a [[verifiable-trust-network|VTN]].
 
-VMCs are [[credential-categories|Edge Credentials]] — they create graph structure. The issuer is a [[did-types|C-DID]] (the community's DID); the subject is an [[did-types|M-DID]] (a member's DID) or another C-DID (when a VTN grants membership to a VTC).
+VMCs are [[credential-categories|Edge Credentials]]. The issuer is a [[did-types|C-DID]] (the community's DID); the subject is an [[did-types|M-DID]] (a member's DID) or another C-DID (when a VTN grants membership to a VTC).
+
+## Bidirectionality: Two VMCs = One Membership Edge
+
+Membership in the DTG is symmetric: it isn't enough for a community to claim a member, or for a member to claim a community. **Membership is verified through a bi-directional pair of VMCs** — one issued by the community to the member, and one issued by the member back to the community. Together the pair forms a complete membership edge between two entities (nodes) in the trust graph.
+
+This mirrors the bidirectional model used for [[relationship-credential|Relationship Credentials (VRCs)]]: in the DTG, edges are always two-sided, attested by both ends.
 
 ## Dual Purpose
 
@@ -23,6 +29,6 @@ Whether a VMC is a PHC is determined by the community's [[trust-registries|trust
 
 ## VTN Membership
 
-VMCs also express the relationship between [[verifiable-trust-network|VTNs]] and VTCs. A VTN issues a VMC to a VTC's C-DID, proving the community is a recognized member of the network. This enables hierarchical trust structures.
+VMCs also express the relationship between [[verifiable-trust-network|VTNs]] and VTCs. A VTN issues a VMC to a VTC's C-DID, and the VTC issues a VMC back, proving the community is a recognized member of the network. This enables hierarchical trust structures.
 
 See also: [[personhood-credential]], [[trust-registries]], [[verifiable-trust-community]], [[verifiable-trust-network]], [[credential-categories]]

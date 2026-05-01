@@ -2,7 +2,7 @@
 title: "Verifiable Trust Communities (VTCs)"
 type: concept
 tags: [vtc, community, trust, membership]
-date-updated: 2026-04-09
+date-updated: 2026-04-13
 sources: [verifiable-trust-infrastructure, openvtc]
 ---
 
@@ -31,15 +31,13 @@ The lifecycle looks like:
 
 ## The Know Your Developer Use Case
 
-The driving use case for OpenVTC is **Know Your Developer** — verifying that contributors to open-source projects are real people with genuine reputations. In this context:
+The driving use case for OpenVTC is **Know Your Developer** — verifying that contributors to open-source projects are real people with genuine reputations. This matters increasingly because AI agents can now convincingly imitate human contributors: committing, reviewing, and communicating in ways indistinguishable from a person. In this context:
 
 - A VTC might be a Linux Foundation project, a GitHub organization, or a professional developer community
-- Membership proves you're a verified participant
+- Membership proves you're a verified human participant — not just an account or an agent
 - [[relationship-credential|Relationship Credentials]] between members prove genuine connections
 - [[endorsement-credential|Endorsement Credentials]] attest to technical competence
 - [[witness-credential|Witness Credentials]] from conferences and meetups strengthen the graph
-
-The First Person Network itself operates as a meta-community, with the Linux Foundation running infrastructure (the DIDComm mediator at `fpp.storm.ws`) and a community DID.
 
 ## VTC Infrastructure
 

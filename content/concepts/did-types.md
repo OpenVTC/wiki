@@ -16,7 +16,7 @@ The [[decentralized-trust-graph|Decentralized Trust Graph]] uses a taxonomy of [
 |----------|-----------|----------------------|-------------------|
 | **C-DID** | Community DID | A [[verifiable-trust-community\|VTC]] or [[verifiable-trust-network\|VTN]] | [[did-webvh\|did:webvh]] |
 | **M-DID** | Member DID | An individual member within a community | [[did-webvh\|did:webvh]] |
-| **R-DID** | Relationship DID | A specific relationship between two members | did:peer |
+| **R-DID** | Relationship DID | A specific relationship between two individuals | did:peer |
 | **P-DID** | Persona DID | A persona identity linked to a relationship | [[did-webvh\|did:webvh]] |
 | **W-DID** | Witness DID | A witness attesting to a relationship | [[did-webvh\|did:webvh]] |
 
@@ -26,7 +26,7 @@ The separation of DID types is a deliberate privacy design. The spec requires th
 
 - Your M-DID identifies you within a community but isn't exposed in individual relationships
 - Each R-DID is unique to one relationship, so counterparties can't correlate your connections
-- P-DIDs let you selectively reveal persona information to specific relationships
+- P-DIDs let you selectively reveal personal information to specific relationships
 - W-DIDs keep witness identity separate from their other roles
 
 ## How They Map to Credentials

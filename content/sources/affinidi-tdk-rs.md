@@ -2,7 +2,7 @@
 title: "Source: affinidi-tdk-rs"
 type: source-summary
 tags: [source, secondary, affinidi, tdk]
-date-updated: 2026-04-09
+date-updated: 2026-04-30
 repo: https://github.com/affinidi/affinidi-tdk-rs
 ---
 
@@ -21,4 +21,10 @@ Comprehensive Rust toolkit providing identity, messaging, and credential primiti
 
 ## Recent Activity
 
-~32 commits last month: workspace restructuring, TSP implementation, mediator hardening, security fixes, abstract Signer trait, WebSocket support.
+- **Post-quantum cryptography + data-integrity API refactor** (v0.5.4, Apr 18): major workspace-wide bump; new affinidi-did-web crate; MSRV bumped to 1.94
+- **VTA integration for centralized key management** (DIDComm 0.13.0, Apr 9): the mediator/DIDComm service can now delegate signing to the VTA
+- **DIDComm service usability + outbound messaging** (0.1.5 / 0.2.0, Apr 13): improved API ergonomics, new outbound-messaging path
+- **didwebvh-rs bump to 0.5** (Apr 18) + bumps to clear crates.io collisions
+- **affinidi-crypto v0.1.5** (Apr 20): did:key raw-bytes helpers
+- Misc: WebSocket reconnect-loop fix, dropped yanked transitive deps, CI publish-pipeline rework
+- Implementation evolving quickly; treat low-level APIs as in flux

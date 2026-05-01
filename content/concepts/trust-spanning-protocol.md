@@ -8,7 +8,7 @@ sources: [affinidi-tdk-rs]
 
 # Trust Spanning Protocol (TSP)
 
-The Trust Spanning Protocol is a messaging protocol specified by the Trust over IP Foundation, implemented in the [[affinidi-tdk|Affinidi TDK]]. It's a leaner alternative to [[didcomm|DIDComm]] for certain use cases.
+The Trust Spanning Protocol is a messaging protocol specified by the Trust Over IP Foundation, implemented in the [[affinidi-tdk|Affinidi TDK]]. It's a leaner alternative to [[didcomm|DIDComm]] for certain use cases.
 
 ## Key Characteristics
 
