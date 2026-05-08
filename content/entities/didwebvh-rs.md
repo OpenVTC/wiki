@@ -2,13 +2,13 @@
 title: "didwebvh-rs — did:webvh Rust Implementation"
 type: entity
 tags: [didwebvh, did, library, dif, secondary]
-date-updated: 2026-04-09
-sources: [didwebvh-rs]
+date-updated: 2026-05-08
+repo: https://github.com/decentralized-identity/didwebvh-rs
 ---
 
 # didwebvh-rs
 
-A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version 0.4.1.
+A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version 0.5.2.
 
 ## What It Provides
 
@@ -36,14 +36,30 @@ This is a foundational building block. The [[affinidi-tdk|Affinidi TDK]] uses it
 
 ## Recent Development
 
-Recent work (last month) has focused on production readiness:
+The repository has been quiet since v0.5.2; tracks the DIF didwebvh 1.0 spec closely.
+
+### v0.5.2 — 2026-04-29
+
+- Implicit service ID spec compliance fix
+- PQC example improvements
+
+### v0.5.1 — 2026-04-29
+
+- didwebvh 1.0 spec-compliance patch
+
+### v0.5.0 — 2026-04-18 — major release rollup
+
 - Embeddable interactive CLI flows for third-party apps
 - In-memory log verification (`resolve_log()`)
 - HTTP response size limits for resolution safety
 - `Signer` trait replacing direct `Secret` usage
 - Convenience APIs (`update_document()`, `rotate_keys()`, `deactivate()`)
-- Cache serialization (`save_state`/`load_state`)
+- Cache serialization (`save_state` / `load_state`)
 - Wiremock-based tests replacing live network tests
 - Criterion benchmarks
+
+### v0.4.2 — 2026-04-14
+
+- Removed yanked core2/multihash transitive dependency
 
 See also: [[did-webvh]], [[affinidi-webvh-service]], [[affinidi-tdk]]

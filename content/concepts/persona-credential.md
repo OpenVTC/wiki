@@ -1,9 +1,9 @@
 ---
 title: "Persona Credential (VPC)"
 type: concept
-tags: [credentials, dtg, persona, privacy]
-date-updated: 2026-04-09
-sources: [dtgwg-cred-tf, dtg-credentials]
+tags: [credentials, dtg, persona, privacy, zkp]
+date-updated: 2026-05-08
+sources: [dtg-credential-spec, dtg-credentials]
 ---
 
 # Persona Credential (VPC)
@@ -22,4 +22,8 @@ The spec highlights a use case called the "Banksy Maneuver" — proving that you
 
 This is enabled by the DID separation in the [[did-types|DID taxonomy]]: your P-DID is distinct from your M-DID and R-DIDs, so linking them is a deliberate, selective act.
 
-See also: [[did-types]], [[credential-categories]], [[dtg-credentials-overview]]
+## Relationship to Pairwise ZKPs
+
+The Banksy Maneuver is one application of the broader **pairwise ZKP** construction the DTG spec defines on the [[relationship-credential|VRC]] (§5.1). That construction lets a VRC holder selectively disclose chosen attributes — most usefully, the parties' P-DIDs — while hiding the underlying R-DIDs that constitute the private pairwise channel. The VPC is what makes the disclosed P-DID *meaningful* to a counterparty as a persona link, layered on top of the cryptographic primitive provided by the pairwise ZKP. See [[zero-knowledge-proofs]] for the broader framing.
+
+See also: [[zero-knowledge-proofs]], [[did-types]], [[credential-categories]], [[dtg-credentials-overview]]

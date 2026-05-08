@@ -48,4 +48,4 @@ This challenge has intensified with the rise of AI agents. An AI can now convinc
 
 The First Person Network answers this by letting developers build verifiable trust graphs through their real professional relationships. Instead of trusting a GitHub account, you can verify a chain of peer attestations, endorsements, and witness proofs — all anchored in communities that have verified their members' personhood.
 
-See also: [[decentralized-trust-graph]], [[verifiable-trust-community]], [[openvtc-cli]]
+See also: [[decentralized-trust-graph]], [[verifiable-trust-community]], [[openvtc]]

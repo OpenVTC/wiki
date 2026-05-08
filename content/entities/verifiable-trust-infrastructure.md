@@ -1,9 +1,9 @@
 ---
 title: "Verifiable Trust Infrastructure (VTI)"
 type: entity
-tags: [vti, infrastructure, workspace]
-date-updated: 2026-04-30
-sources: [verifiable-trust-infrastructure]
+tags: [vti, infrastructure, workspace, primary]
+date-updated: 2026-05-08
+repo: https://github.com/OpenVTC/verifiable-trust-infrastructure
 ---
 
 # Verifiable Trust Infrastructure (VTI)
@@ -42,7 +42,7 @@ VTI sits in the middle of the ecosystem stack:
 └─────────────────────────────┘
 ```
 
-Applications at the top (like [[openvtc-cli|OpenVTC]]) use VTI to manage keys and sign things. VTI in turn uses the [[affinidi-tdk|Affinidi TDK]] for DID resolution and messaging, and the [[affinidi-webvh-service]] for DID hosting.
+Applications at the top (like [[openvtc|OpenVTC]]) use VTI to manage keys and sign things. VTI in turn uses the [[affinidi-tdk|Affinidi TDK]] for DID resolution and messaging, and the [[affinidi-webvh-service]] for DID hosting.
 
 ## Dependencies
 
@@ -65,11 +65,69 @@ Key external dependencies:
 
 ## Recent Development
 
-- **v0.2.0** — Nitro Enclave support, signing oracle, backup/restore
-- **v0.3.0** — SDK integration module, imported secrets, lightweight DIDComm auth
-- **v0.3.x** — client DID documents, capabilities discovery, user-specified keys
-- **v0.4.0** — DIDComm service v0.2 with production lifecycle management (message expiry, problem-report logging, mediator connection unification)
-- **v0.4.1** — TEE deployment hardening, documentation rationalization, Dockerfile cleanup
-- Implementation continues to evolve quickly; details may shift from one release to the next
+This page is the canonical activity log for the VTI workspace. The [[verifiable-trust-agent|VTA entity]] keeps a focused, VTA-relevant subset. Implementation continues to evolve quickly; treat low-level details as in flux.
 
-See also: [[verifiable-trust-agent]], [[verifiable-trust-community]], [[openvtc-cli]]
+### v0.6.0 (in flight, P0–P5 merged 2026-05-05 to 2026-05-06) — runtime service management
+
+Multi-PR feature campaign adding a unified `pnm services …` CLI surface for managing runtime services on a live VTA, plus extensions to the webvh and DIDComm provisioning surfaces. P0–P5 merged on `main`; P6 (e2e matrix), webvh `register-did-with-server` / `edit-did`, DIDComm `--create-context`, and the 0.6.0 workspace bump are on a feature branch.
+
+- Unified `pnm services …` CLI: enable, disable, list, list_drain, rollback (REST + DIDComm)
+- Snapshot-store / fail-forward semantics (per-kind snapshot store; brick-prevention helpers)
+- Operator-as-relayer over DIDComm (provision-integration)
+- DIDComm-is-holder-driven clarification + Forbidden mapping fix
+- TEE deployment hardening continues
+
+### v0.5.1 (vta-service) — 2026-05-05 — provision-integration hotfix
+
+- `vta bootstrap provision-integration` now produces an actionable error when the target context is missing and `--create-context` wasn't passed (CLI-only behavior change)
+
+### v0.5.0 — 2026-05-04 — `sealed-bootstrap` major release
+
+Every secret-bearing transfer between VTA, integrations, and CLIs now moves as an HPKE-sealed bundle; DID minting is template-driven; the DIDComm protocol surface is mutable on a running VTA without rebuilding it.
+
+- HPKE-sealed bundles for every secret-bearing transfer between VTA, integrations, and CLIs
+- Template-driven DID minting
+- DIDComm protocol surface can be enabled, disabled, or migrated on a running VTA without rebuilding it
+- Six new operator commands: `pnm services {enable,disable} didcomm`; `pnm mediator {migrate, rollback, drain cancel, report}`. All five admin operations available over both REST and DIDComm transport
+- Mediator changes go through a drain set (persisted to fjall, restart-resilient, 30-day TTL cap) so in-flight messages from senders with stale DID-doc caches keep landing while the new mediator picks up traffic
+- WebVH built-in templates renamed by deployment role: `webvh-hosting-server` → `webvh-daemon` (hosting only), `webvh-service` → `webvh-server` (DIDComm only), new `webvh-control` (hosting + DIDComm)
+- Multi-agent publish-readiness review folded in: `VtaError` tightened (lossy auto-conversions removed); `verify_vta_authorization_credential` returns a typestate (forgetting `parse_claim` is a compile error); refresh tokens rotate on every `/auth/refresh` (RFC 6749 §10.4, single-use); `server_internal_super_admin` replaced with a sealed `InternalAuthority` marker
+- CVE-2026-42327 mitigated via enclave-proxy openssl 0.10.78 → 0.10.79
+
+### v0.4.1 — 2026-04-15
+
+- TEE deployment hardening
+- Documentation rationalization
+- Dockerfile cleanup
+
+### v0.4.0 — 2026-04-13 — DIDComm service v0.2
+
+- Production lifecycle management for the DIDComm service
+- Message expiry
+- Problem-report logging
+- Mediator connection unification
+
+### v0.3.x — April 2026
+
+- Client DID documents
+- Capabilities discovery
+- User-specified keys
+
+### v0.3.0 — March/April 2026
+
+- SDK integration module
+- Imported secrets
+- Lightweight DIDComm auth
+- Reader role
+- Automatic token refresh
+
+### v0.2.0 — March 2026
+
+- TEE / Nitro Enclave support
+- Signing oracle
+- DIDComm migration
+- Backup / restore
+- P-256 keys
+- Prometheus metrics
+
+See also: [[verifiable-trust-agent]], [[verifiable-trust-community]], [[openvtc]]

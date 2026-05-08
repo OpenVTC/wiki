@@ -3,7 +3,7 @@ title: "The Decentralized Trust Graph (DTG)"
 type: concept
 tags: [trust-graph, dtg, trust-over-ip, credentials]
 date-updated: 2026-04-30
-sources: [dtgwg-cred-tf, dtg-credentials, openvtc, verifiable-trust-infrastructure]
+sources: [dtg-credential-spec, dtg-credentials, openvtc, verifiable-trust-infrastructure]
 ---
 
 # The Decentralized Trust Graph (DTG)
@@ -77,7 +77,7 @@ When the parties share a community, the holder can additionally construct a comm
 
 ## The DTG Specification
 
-The credential types that populate the DTG are defined by the **Trust Over IP Foundation's DTG Working Group Credential Task Force Specification** (v0.3). The [[dtg-credentials-repo|dtg-credentials]] library provides the Rust implementation. See [[dtg-credentials-overview]] for the complete taxonomy and [[credential-categories]] for the functional classification.
+The credential types that populate the DTG are defined by the **Trust Over IP Foundation's DTG Working Group Credential Task Force Specification** (v0.3). The [[dtg-credentials|dtg-credentials]] library provides the Rust implementation. See [[dtg-credentials-overview]] for the complete taxonomy and [[credential-categories]] for the functional classification.
 
 ## Why Decentralized?
 

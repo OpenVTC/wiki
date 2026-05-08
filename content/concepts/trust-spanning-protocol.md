@@ -3,7 +3,7 @@ title: "Trust Spanning Protocol (TSP)"
 type: concept
 tags: [tsp, messaging, trust-over-ip, encryption]
 date-updated: 2026-04-09
-sources: [affinidi-tdk-rs]
+sources: [affinidi-tdk]
 ---
 
 # Trust Spanning Protocol (TSP)

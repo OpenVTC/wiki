@@ -2,17 +2,19 @@
 title: "DTG Credential Types"
 type: concept
 tags: [credentials, dtg, trust-graph, trust-over-ip]
-date-updated: 2026-04-30
-sources: [dtgwg-cred-tf, dtg-credentials]
+date-updated: 2026-05-08
+sources: [dtg-credential-spec, dtg-credentials]
 ---
 
 # DTG Credential Types
 
-The Decentralized Trust Graph (DTG) is populated by a family of [[verifiable-credentials|Verifiable Credential]] types, each representing a different kind of trust relationship. These are defined by the Trust Over IP Foundation's DTG Working Group Credential Task Force (spec v0.3) and implemented in the [[dtg-credentials-repo|dtg-credentials]] library.
+The Decentralized Trust Graph (DTG) is populated by a family of [[verifiable-credentials|Verifiable Credential]] types, each representing a different kind of trust relationship. These are defined by the Trust Over IP Foundation's DTG Working Group Credential Task Force (spec v0.3) and implemented in the [[dtg-credentials|dtg-credentials]] library.
 
 All DTG credentials share a common W3C VC format with JSON-LD contexts, signed using EdDSA JCS 2022 Data Integrity Proofs. They use the `https://firstperson.network/credentials/dtg/v1` JSON-LD context. Both W3C VC v2.0 (primary) and v1.1 (legacy) are supported.
 
 The spec organizes credentials into four [[credential-categories|descriptive functional categories]]: Edge, Invitation, Annotation, and Verifiable Data Structures. These categories are for conceptual understanding only — they don't appear in credential schemas.
+
+DTG credentials MAY be presented using standard W3C VC presentation methods, but they SHOULD be presented as [[zero-knowledge-proofs|zero-knowledge proofs]] whenever privacy preservation is desired — and implementations SHOULD make ZKP presentation the default. The spec defines two ZKP constructions for Edge Credentials: a **pairwise** construction anchored to the VRC, and a **community-anchored** construction anchored to the VMC. See [[zero-knowledge-proofs]].
 
 ## The Credential Types
 
@@ -63,4 +65,4 @@ In practice, a participant's trust profile might look like:
 
 Anyone evaluating this participant can traverse these credentials to build a trust assessment — following multiple independent paths, checking witness attestations, and verifying every signature along the way.
 
-See also: [[credential-categories]], [[decentralized-trust-graph]], [[verifiable-credentials]], [[dtg-credentials-repo]]
+See also: [[credential-categories]], [[decentralized-trust-graph]], [[verifiable-credentials]], [[dtg-credentials]]

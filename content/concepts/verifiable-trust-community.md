@@ -41,7 +41,7 @@ The driving use case for OpenVTC is **Know Your Developer** — verifying that c
 
 ## VTC Infrastructure
 
-The [[verifiable-trust-infrastructure|VTI]] workspace includes a **VTC Service** (`vtc-service`) that handles community-level coordination. The [[openvtc-cli|OpenVTC]] tools include:
+The [[verifiable-trust-infrastructure|VTI]] workspace includes a **VTC Service** (`vtc-service`) that handles community-level coordination. The [[openvtc|OpenVTC]] tools include:
 
 - **CNM CLI** (Community Network Manager) — for managing multiple communities
 - **PNM CLI** (Personal Network Manager) — for individual participation in communities

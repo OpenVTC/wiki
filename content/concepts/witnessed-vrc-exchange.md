@@ -3,7 +3,7 @@ title: "Witnessed VRC Exchange Protocol"
 type: concept
 tags: [protocol, witness, vrc, flow, didcomm]
 date-updated: 2026-04-09
-sources: [dtgwg-cred-tf]
+sources: [dtg-credential-spec]
 ---
 
 # Witnessed VRC Exchange Protocol

@@ -1,9 +1,8 @@
 ---
 title: "Verifiable Trust Agent (VTA)"
 type: entity
-tags: [vta, vti, key-management, signing-oracle, infrastructure]
-date-updated: 2026-04-09
-sources: [verifiable-trust-infrastructure]
+tags: [vta, vti, key-management, signing-oracle, infrastructure, primary]
+date-updated: 2026-05-08
 ---
 
 # Verifiable Trust Agent (VTA)
@@ -79,12 +78,45 @@ The SDK handles authentication, token refresh, secret caching, and offline fallb
 
 ## Recent Development
 
-The VTA has seen rapid development in early 2026:
+Per-release detail lives on the workspace entity — see [[verifiable-trust-infrastructure#Recent Development]] for the full activity log. VTA-relevant highlights, reverse chronological:
 
-- **v0.2.0 (Mar 2026)** — TEE/Nitro Enclave support, signing oracle, DIDComm migration, backup/restore, P-256 keys, Prometheus metrics
-- **v0.3.0 (Mar-Apr 2026)** — Imported secrets, lightweight DIDComm auth, SDK integration module, Reader role, automatic token refresh, security hardening
-- **Current** — Preparing for public release on crates.io
+### v0.6.0 (in flight) — runtime service management
 
-The direction is toward making the VTA easily consumable by third-party services and hardened for production TEE deployments.
+- Unified `pnm services …` CLI for enable / disable / list / rollback on a live VTA
+- Snapshot-store / fail-forward semantics
+- P0–P5 merged on `main`; P6 (e2e matrix) in PR
 
-See also: [[verifiable-trust-infrastructure]], [[bip32-key-derivation]], [[openvtc-cli]]
+### v0.5.0 — 2026-05-04 — `sealed-bootstrap`
+
+- Every secret-bearing transfer to/from the VTA moves as an HPKE-sealed bundle
+- Template-driven DID minting
+- DIDComm protocol surface can be enabled, disabled, or migrated on a running VTA without rebuilding it
+- Refresh tokens single-use (RFC 6749 §10.4)
+- `verify_vta_authorization_credential` returns a typestate
+- `server_internal_super_admin` replaced with a sealed `InternalAuthority` marker
+
+### v0.4.x — April 2026
+
+- Production-grade DIDComm service v0.2 (lifecycle management, message expiry, problem-report logging)
+- TEE deployment hardening
+- Client DID documents and capabilities discovery
+
+### v0.3.x — March/April 2026
+
+- SDK integration module
+- Imported secrets
+- Lightweight DIDComm auth
+- Reader role
+- Automatic token refresh
+
+### v0.2.0 — March 2026
+
+- TEE / Nitro Enclave support
+- Signing oracle
+- Backup / restore
+- P-256 keys
+- Prometheus metrics
+
+The direction has decisively shifted from "make the VTA usable" to "make the VTA's runtime surface mutable in production without downtime or rebuilds."
+
+See also: [[verifiable-trust-infrastructure]], [[bip32-key-derivation]], [[openvtc]]

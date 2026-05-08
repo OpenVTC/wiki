@@ -44,7 +44,7 @@ The ecosystem derives three types of keys from this tree:
 
 ## How OpenVTC Uses Derivation Paths
 
-The [[openvtc-cli|OpenVTC CLI]] defines specific paths:
+The [[openvtc|OpenVTC CLI]] defines specific paths:
 
 | Path | Purpose |
 |------|---------|

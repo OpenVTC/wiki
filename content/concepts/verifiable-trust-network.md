@@ -3,7 +3,7 @@ title: "Verifiable Trust Networks (VTNs)"
 type: concept
 tags: [vtn, network, community, hierarchy, trust]
 date-updated: 2026-04-30
-sources: [dtgwg-cred-tf]
+sources: [dtg-credential-spec]
 ---
 
 # Verifiable Trust Networks (VTNs)

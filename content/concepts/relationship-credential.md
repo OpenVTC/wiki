@@ -1,9 +1,9 @@
 ---
 title: "Relationship Credential (VRC)"
 type: concept
-tags: [credentials, dtg, relationships, trust, edge]
-date-updated: 2026-04-30
-sources: [dtgwg-cred-tf, dtg-credentials, openvtc]
+tags: [credentials, dtg, relationships, trust, edge, zkp]
+date-updated: 2026-05-08
+sources: [dtg-credential-spec, dtg-credentials, openvtc]
 ---
 
 # Relationship Credential (VRC)
@@ -36,17 +36,27 @@ For witnessed exchanges, see the [[witnessed-vrc-exchange|Witnessed VRC Exchange
 - **Validity period** — when the attestation is valid
 - **Proof** — EdDSA JCS 2022 Data Integrity signature
 
-## Community-Anchored ZKP Proofs
+## ZKP Presentation
 
 VRCs can stand alone — two individuals can issue VRCs to each other without either being a member of any [[verifiable-trust-community|VTC]], and the resulting edge is a valid trust attestation. The cryptographic signatures speak for themselves; the meaning of the attestation is whatever real-world context the parties bring to it.
 
-When both parties *are* members of the same community, the holder can additionally construct a **community-anchored ZKP** of the relationship. The spec describes one such proof in §5.2:
+The spec defines two ZKP constructions for VRCs and recommends ZKP presentation by default whenever privacy matters. See [[zero-knowledge-proofs]] for the full discussion.
+
+### Pairwise ZKP (per VRC, no shared community required)
+
+The holder of a VRC MAY construct a zero-knowledge proof that demonstrates possession of a valid VRC and selectively discloses chosen attributes, subject DIDs, or predicates over them. The canonical application is to disclose the parties' [[did-types|P-DIDs]] while hiding the underlying [[did-types|R-DIDs]] — a public, verifiable claim that two known personas have a relationship, without exposing the private pairwise channel between them or enabling correlation across the holder's other presentations.
+
+This construction is available to **any two parties who hold a VRC between them**, regardless of shared community membership. It does not by itself confer community-level assurance like personhood; whatever assurance it carries derives from out-of-band context, the public reputation of any disclosed persona DIDs, and the cryptographic integrity of the VRC.
+
+### Community-Anchored ZKP (when both parties hold VMCs from the same community)
+
+When both parties to a VRC hold [[membership-credential|VMCs]] from the same community, the holder MAY additionally construct a **community-anchored ZKP** of the relationship — anchored under VMC §5.2. The proof demonstrates:
 
 1. Possession of the VRC
-2. Possession of an underlying [[membership-credential|VMC]] from a community
-3. That the VRC issuer also holds a VMC from the *same* [[did-types|C-DID]]
+2. Possession of the underlying [[membership-credential|VMC]] (proving membership)
+3. The VRC issuer holds a VMC from the *same* [[did-types|C-DID]]
 
-This proof anchors the relationship within a community's governance context (e.g., a community whose VMCs are also [[personhood-credential|PHCs]] lends personhood assurance to every relationship proven through it) without revealing the underlying DIDs. It is **one proof construction available to relationships within a shared community**, not a universal precondition for issuing or holding a VRC.
+This proof anchors the relationship within a community's governance context — when the community's VMCs are also [[personhood-credential|PHCs]], that personhood assurance carries forward — without revealing the underlying DIDs. It is **one proof construction available to relationships within a shared community**, not a universal precondition for issuing or holding a VRC.
 
 ## Trust Graph Significance
 
@@ -54,4 +64,4 @@ VRCs are the edges that make the trust graph traversable. When evaluating trust 
 
 VRCs can be strengthened by [[witness-credential|Witness Credentials]] and complemented by [[endorsement-credential|Endorsement Credentials]], [[persona-credential|Persona Credentials]], and other [[credential-categories|Annotation Credentials]].
 
-See also: [[dtg-credentials-overview]], [[credential-categories]], [[witnessed-vrc-exchange]], [[did-types]]
+See also: [[zero-knowledge-proofs]], [[dtg-credentials-overview]], [[credential-categories]], [[witnessed-vrc-exchange]], [[did-types]]

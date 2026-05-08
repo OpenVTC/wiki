@@ -3,7 +3,7 @@ title: "Trust Registries"
 type: concept
 tags: [trust-registry, governance, roles, policy]
 date-updated: 2026-04-09
-sources: [dtgwg-cred-tf]
+sources: [dtg-credential-spec]
 ---
 
 # Trust Registries

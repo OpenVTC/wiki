@@ -3,7 +3,7 @@ title: "DID Types in the DTG"
 type: concept
 tags: [did, taxonomy, identity, dtg]
 date-updated: 2026-04-09
-sources: [dtgwg-cred-tf, openvtc]
+sources: [dtg-credential-spec, openvtc]
 ---
 
 # DID Types in the DTG
@@ -42,7 +42,7 @@ The separation of DID types is a deliberate privacy design. The spec requires th
 
 ## BIP-32 Derivation
 
-In the [[openvtc-cli|OpenVTC]] implementation, all these DIDs derive from a single seed via [[bip32-key-derivation|BIP-32 derivation]]:
+In the [[openvtc|OpenVTC]] implementation, all these DIDs derive from a single seed via [[bip32-key-derivation|BIP-32 derivation]]:
 
 | Path | DID Type |
 |------|----------|

@@ -2,8 +2,8 @@
 title: "Affinidi WebVH Service"
 type: entity
 tags: [affinidi, webvh, did-hosting, service, secondary]
-date-updated: 2026-04-09
-sources: [affinidi-webvh-service]
+date-updated: 2026-05-08
+repo: https://github.com/affinidi/affinidi-webvh-service
 ---
 
 # Affinidi WebVH Service
@@ -12,7 +12,7 @@ The Affinidi WebVH Service is production infrastructure for hosting, resolving, 
 
 ## Components
 
-The service is a Rust workspace with six crates, each running as a separate service:
+The service is a Rust workspace. As of v0.6.0, six service crates plus a UI crate and a shared library:
 
 | Service | Port | Role |
 |---------|------|------|
@@ -21,6 +21,7 @@ The service is a Rust workspace with six crates, each running as a separate serv
 | **webvh-control** | 8532 | Management UI, service registry, reverse proxy, passkey auth, ACL |
 | **webvh-watcher** | 8533 | Read-only DID mirror for redundancy (receives pushed updates) |
 | **webvh-daemon** | 8534 | All-in-one binary (server + witness + watcher + control) for simple deployments |
+| **webvh-ui** | — | Web UI assets (added in v0.6.0) |
 | **webvh-common** | — | Shared library: clients, DID operations, auth, storage, config |
 
 ## How It Works
@@ -43,11 +44,41 @@ The cold-start bootstrap flow (`import-secrets` CLI) can bring up an entire envi
 
 ## Recent Development
 
-- **v0.1.0 (Mar 30, 2026)** — First production release with DIDComm auth migration, security audit fixes, passkey enrollment, root DID bootstrap, setup wizards
-- **Stats overhaul (Mar 31)** — Unified stats collector, time-series tracking, per-DID resolve counts
-- **VTA integration (Apr 1)** — Unified startup with local session caching
-- **Cold-start bootstrap (Apr 9)** — `import-secrets` CLI for self-contained environment bootstrap
+The focus has shifted from "make deployment self-contained" (v0.1.x – v0.5.0) to "make every cross-service trust path explicit and tamper-resistant" (v0.6.0).
 
-The focus is on making deployment and bootstrap fully self-contained and well-documented.
+### Post-v0.6.0 (in flight) — DID ownership management
+
+- DID ownership management (REST + DIDComm + UI) on a feature branch
+
+### v0.6.0 — 2026-05-05 — web-based ACL invites, VTA template, offline bootstrap
+
+- New `webvh-ui` crate joins the workspace
+- All three refresh handlers (control, server, witness) require a JWS-signed DIDComm envelope and bind the signer to the session DID
+- Offline-bootstrap latent bug fixed: previously `BTreeMap::iter().next()` picked the wrong `DidKeyMaterial` entry by alphabetical iteration; now matches by `did_document.id`
+- Refresh-token rotation TOCTOU closed end-to-end via a new `KeyspaceOps::take_raw_atomic` primitive (Redis `GETDEL` / DynamoDB `DeleteItem ALL_OLD` / fjall mutex / per-keyspace mutex on Firestore + Cosmos DB)
+- Registry / proxy trust chain hardened in `webvh-control`: `RegistryConfig` gains an optional `url_allowlist`; reqwest `Policy::none()` blocks third-party redirects; the proxy strips RFC 7230 §6.1 hop-by-hop headers and `Set-Cookie` from upstream responses
+- Watcher `/api/sync/did` body limited to 4 MiB; `validate_did_jsonl` requires `state.id` to start with `did:webvh:`
+- DIDComm authentication closes an auth-bypass on every REST `/api/auth/` endpoint (`unpack_signed` rejects envelopes whose `from` field disagrees with the JWS-verified signer)
+- Witness `sign_proof` is now Admin-only with audit-log emission on every signed proof
+
+### v0.5.0 — 2026-04-13 — DIDComm control-plane integration
+
+- DIDComm control-plane integration
+- Daemon parity with the split deployment
+- Architecture simplified to consume the published `vta-sdk` crate
+
+### Cold-start bootstrap, stats overhaul, VTA integration — 2026-03-31 to 2026-04-09
+
+- Stats overhaul (unified collector, time-series tracking, per-DID resolve counts)
+- VTA integration with unified startup and local session caching
+- `import-secrets` CLI for self-contained environment bootstrap
+
+### v0.1.0 — 2026-03-30 — first production release
+
+- DIDComm auth migration
+- Security audit fixes
+- Passkey enrollment
+- Root DID bootstrap
+- Setup wizards
 
 See also: [[did-webvh]], [[didwebvh-rs]], [[verifiable-trust-agent]]

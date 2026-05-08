@@ -3,7 +3,7 @@ title: "Invitation Credential (VIC)"
 type: concept
 tags: [credentials, dtg, invitation, onboarding]
 date-updated: 2026-04-09
-sources: [dtgwg-cred-tf]
+sources: [dtg-credential-spec]
 ---
 
 # Invitation Credential (VIC)

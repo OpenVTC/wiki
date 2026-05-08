@@ -58,7 +58,7 @@ Because of the SCID, you can move your DID to a new domain while maintaining ide
 
 ## How It Works in Practice
 
-When a user sets up [[openvtc-cli|OpenVTC]]:
+When a user sets up [[openvtc|OpenVTC]]:
 
 1. The [[verifiable-trust-agent|VTA]] generates keys from the user's BIP-32 seed
 2. A did:webvh is created with the initial DID document and history log

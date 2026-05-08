@@ -3,7 +3,7 @@ title: "DIDComm — DID-based Secure Messaging"
 type: concept
 tags: [didcomm, messaging, encryption, communication]
 date-updated: 2026-04-09
-sources: [affinidi-tdk-rs, verifiable-trust-infrastructure, openvtc]
+sources: [affinidi-tdk, verifiable-trust-infrastructure, openvtc]
 ---
 
 # DIDComm — DID-based Secure Messaging
@@ -35,7 +35,7 @@ When two OpenVTC users interact:
 4. The mediator holds the message until the recipient polls for it
 5. The recipient decrypts the message using their private key
 
-The [[openvtc-cli|OpenVTC service]] runs a background daemon that polls a mediator for incoming messages, processing protocol requests like relationship proposals and VRC exchanges.
+The [[openvtc|OpenVTC service]] runs a background daemon that polls a mediator for incoming messages, processing protocol requests like relationship proposals and VRC exchanges.
 
 ## Mediators
 

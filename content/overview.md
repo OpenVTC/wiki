@@ -2,8 +2,8 @@
 title: "OpenVTC Ecosystem Overview"
 type: overview
 tags: [openvtc, vti, trust-graph, decentralized-identity, first-person-network]
-date-updated: 2026-04-30
-sources: [verifiable-trust-infrastructure, openvtc, dtg-credentials, dtgwg-cred-tf, affinidi-tdk-rs, affinidi-webvh-service, didwebvh-rs]
+date-updated: 2026-05-08
+sources: [verifiable-trust-infrastructure, openvtc, dtg-credentials, dtg-credential-spec, affinidi-tdk, affinidi-webvh-service, didwebvh-rs]
 ---
 
 # OpenVTC Ecosystem Overview
@@ -20,7 +20,7 @@ The OpenVTC ecosystem takes a different approach: **first-person identity**. Ins
 
 ## The Big Picture
 
-The ecosystem is a stack of open-source projects that together enable **Verifiable Trust Communities (VTCs)** — groups of people and organizations who establish, verify, and audit trust relationships without relying on a central authority. The system is built on W3C open standards for [[decentralized-identifiers|Decentralized Identifiers (DIDs)]] and [[verifiable-credentials|Verifiable Credentials (VCs)]]. Zero-knowledge proofs let participants verify claims — like humanness, age, or membership — without exposing the underlying data.
+The ecosystem is a stack of open-source projects that together enable **Verifiable Trust Communities (VTCs)** — groups of people and organizations who establish, verify, and audit trust relationships without relying on a central authority. The system is built on W3C open standards for [[decentralized-identifiers|Decentralized Identifiers (DIDs)]] and [[verifiable-credentials|Verifiable Credentials (VCs)]]. [[zero-knowledge-proofs|Zero-knowledge proofs]] let participants verify claims — like humanness, age, or membership — without exposing the underlying data, and the spec recommends ZKP presentation by default.
 
 Here's how the pieces fit together, from bottom to top:
 
@@ -52,7 +52,7 @@ These credentials form the [[decentralized-trust-graph|Decentralized Trust Graph
 
 ### Layer 5: The User Experience
 
-[[openvtc-cli|OpenVTC]] is the command-line tool (and TUI) that ties it all together for end users. It walks you through creating your identity, establishing trust relationships with others, and participating in trust communities. Behind the scenes, it orchestrates the VTA, DIDComm messaging, and credential issuance — but from the user's perspective, it's as simple as: set up your identity, connect with people you know, and build your trust network.
+[[openvtc|OpenVTC]] is the command-line tool (and TUI) that ties it all together for end users. It walks you through creating your identity, establishing trust relationships with others, and participating in trust communities. Behind the scenes, it orchestrates the VTA, DIDComm messaging, and credential issuance — but from the user's perspective, it's as simple as: set up your identity, connect with people you know, and build your trust network.
 
 ## The First Person Network
 
@@ -62,17 +62,19 @@ The name "first person" is deliberate — this is identity asserted by *you*, no
 
 ## Where Things Are Heading
 
-As of April 2026, the ecosystem is in active early development with clear momentum toward production readiness:
+As of May 2026, the ecosystem is in active early development with clear momentum toward production readiness:
 
-- The **VTI/VTA** is at v0.4.1 with a production-grade DIDComm service (lifecycle management, message expiry, problem-report logging), TEE deployment hardening, and client DID document / capabilities discovery
-- The **WebVH service** shipped v0.5.0 with DIDComm control-plane integration and full daemon parity; the architecture has been simplified to use the published `vta-sdk` crate
-- **OpenVTC** is at v0.1.5, with security hardening (BIP32 seed material moved to `SecretString`), Windows secure-storage support, and CLI usability fixes
-- **DTG Credentials** is at v0.1.2, migrated to the affinidi-data-integrity 0.6 API
-- The **TDK** added post-quantum cryptography support and refactored its data-integrity APIs (v0.5.4); the DIDComm service now supports outbound messaging and centralized key management via the VTA
-- **didwebvh-rs** reached v0.5.x with full didwebvh 1.0 spec compliance and PQC examples
-- The **DTG specification** has a pending bidirectional clarification: both VMCs and VRCs are now framed as edge credentials requiring bidirectional pairs, with nodes representing entities (not credentials) — see [[decentralized-trust-graph]]
+- The **VTI/VTA** released **v0.5.0 — `sealed-bootstrap`** in May: every secret-bearing transfer between VTA, integrations, and CLIs is now an HPKE-sealed bundle; DID minting is template-driven; and **the DIDComm protocol surface can be enabled, disabled, or migrated on a running VTA without rebuilding it**, with mediator changes going through a drain set so in-flight messages keep landing while the new mediator picks up traffic. A unified `pnm services …` CLI for live runtime service management (enable/disable/list/rollback) followed in P0–P5 PRs, with the 0.6.0 workspace bump in flight on a feature branch.
+- **OpenVTC** released **v0.2.0** in May — workspace consolidation (`openvtc-cli2` → `openvtc`, the legacy `openvtc-cli` deleted), full TUI main menu (eight panels, real-time inbox), DIDComm service integration replacing manual messaging, R-DID generation across both BIP32 and VTA backends. A substantial security pass folded into the same release: per-entry random Argon2 salt, did-git-sign parent-process gating + audit log, DIDComm replay window, tagged-variant downgrade defence on `SecuredConfigFormat`, real W3C DID Core 1.0 syntax parser.
+- The **WebVH service** released **v0.6.0** in May — web-based ACL invites, VTA template, offline bootstrap, plus a substantial security pass on cross-service refresh handlers (JWS-signed envelopes binding signer to session DID), refresh-token rotation TOCTOU closed end-to-end via a new atomic `take_raw_atomic` primitive, registry/proxy trust chain hardening in `webvh-control`, and stricter watcher sync validation.
+- **DTG Credentials** is still at v0.1.2; the recent spec changes (bidirectional Edge Credentials, ZKP construction split) have not yet been picked up in the implementation.
+- The **TDK** shipped **`affinidi-tdk-common` v0.6.0** and a **mediator 0.14.0** release with pluggable storage, unified secret backend, and a new dedicated **`mediator-setup`** wizard package; **`affinidi-messaging-test-mediator`** was published as a standalone crate, immediately consumed by the OpenVTC test harness.
+- **didwebvh-rs** has been quiet at v0.5.2; tracking the DIF didwebvh 1.0 spec.
+- The **DTG specification** had two notable PRs land in late April / early May:
+    - **PR #31 (merged 2026-04-30)** — Bidirectional Edge Credentials. Both VMCs and VRCs are framed as edges between *existing* entities, each requiring a bi-directional pair to constitute a complete edge in the graph. Nodes are entities, not credentials. See [[decentralized-trust-graph]].
+    - **PR #33 (merged 2026-05-08)** — ZKP construction split. The old "Zero-Knowledge Proof Requirements" subsection under VRC is replaced by two distinct constructions: a **pairwise ZKP** (anchored to VRC; available regardless of shared community) and a **community-anchored ZKP** (anchored to VMC; the three-part proof requiring same C-DID). The Overview now states that DTG credentials SHOULD use ZKP presentation when privacy is desired, and that implementations SHOULD make ZKP presentation the default. See [[zero-knowledge-proofs]].
 
-The direction of travel is toward a fully self-contained, publicly deployable trust infrastructure that any community can adopt.
+The direction of travel is toward a fully self-contained, publicly deployable trust infrastructure that any community can adopt — with mutable runtime surfaces, hardened cross-service trust paths, and ZKP-by-default privacy.
 
 ## Reading This Wiki
 
@@ -80,7 +82,6 @@ This wiki is organized into:
 
 - **[[index|Index]]** — catalog of all pages
 - **Concepts** — explanations of key ideas ([[decentralized-identifiers]], [[verifiable-credentials]], [[decentralized-trust-graph]], etc.)
-- **Entities** — the projects and components ([[verifiable-trust-agent]], [[openvtc-cli]], [[affinidi-webvh-service]], etc.)
-- **Sources** — summaries of each source repository
+- **Entities** — the projects, components, and specifications ([[verifiable-trust-agent]], [[openvtc]], [[affinidi-webvh-service]], [[dtg-credential-spec]], etc.). Each entity page carries both conceptual structure and a Recent Development log.
 
 Start with the concepts if you want to understand the "why." Start with the entities if you want to understand the "what." The pages are heavily cross-linked — follow the threads that interest you.

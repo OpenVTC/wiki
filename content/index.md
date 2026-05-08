@@ -1,7 +1,7 @@
 ---
 title: "Wiki Index"
 type: index
-date-updated: 2026-04-30
+date-updated: 2026-05-08
 ---
 
 # Wiki Index
@@ -23,6 +23,7 @@ date-updated: 2026-04-30
 - [[verifiable-credentials]] — W3C VCs: what they are, signing, verification, selective disclosure
 - [[dtg-credentials-overview]] — The family of DTG credential types and how they fit together
 - [[credential-categories]] — The four functional categories: Edge, Invitation, Annotation, VDS
+- [[zero-knowledge-proofs]] — Why DTG defaults to ZKP presentation; pairwise vs community-anchored constructions
 
 ### Individual Credential Types
 - [[membership-credential]] — Community membership and personhood attestation (VMC); two VMCs = one complete edge
@@ -44,25 +45,20 @@ date-updated: 2026-04-30
 - [[verifiable-trust-network]] — VTNs: federations of VTCs under shared governance
 - [[first-person-network]] — The First Person vision: self-asserted identity, peer trust
 
-## Entities (Projects)
+## Entities
+
+Each entity page covers both the project's structure (components, role, dependencies) and its recent development activity.
 
 ### Primary
 - [[verifiable-trust-infrastructure]] — VTI workspace: 9 crates, the infrastructure stack
 - [[verifiable-trust-agent]] — VTA: key management, signing oracle, TEE support
-- [[openvtc-cli]] — OpenVTC CLI/TUI: user-facing trust community tool
-- [[dtg-credentials-repo]] — dtg-credentials library: DTG credential implementation
+- [[openvtc]] — OpenVTC CLI/TUI: user-facing trust community tool
+- [[dtg-credentials]] — dtg-credentials library: DTG credential implementation
+
+### Specifications
+- [[dtg-credential-spec]] — ToIP DTG Working Group authoritative credential specification (v0.3)
 
 ### Secondary (Building Blocks)
 - [[affinidi-tdk]] — Affinidi TDK: DID resolution, messaging, crypto primitives
 - [[affinidi-webvh-service]] — WebVH Service: did:webvh hosting infrastructure
 - [[didwebvh-rs]] — didwebvh-rs: reference did:webvh Rust implementation
-
-## Source Summaries
-
-- [[sources/verifiable-trust-infrastructure-source]] — VTI repo summary and recent activity
-- [[sources/openvtc]] — OpenVTC repo summary and recent activity
-- [[sources/dtg-credentials]] — DTG credentials repo summary and recent activity
-- [[sources/dtgwg-cred-tf]] — DTG spec: authoritative credential specification (v0.3)
-- [[sources/affinidi-tdk-rs]] — Affinidi TDK repo summary and recent activity
-- [[sources/affinidi-webvh-service]] — WebVH service repo summary and recent activity
-- [[sources/didwebvh-rs]] — didwebvh-rs repo summary and recent activity

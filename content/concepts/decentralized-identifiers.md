@@ -3,7 +3,7 @@ title: "Decentralized Identifiers (DIDs)"
 type: concept
 tags: [did, identity, w3c, standards]
 date-updated: 2026-04-09
-sources: [verifiable-trust-infrastructure, openvtc, didwebvh-rs, affinidi-tdk-rs]
+sources: [verifiable-trust-infrastructure, openvtc, didwebvh-rs, affinidi-tdk]
 ---
 
 # Decentralized Identifiers (DIDs)

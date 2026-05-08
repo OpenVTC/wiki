@@ -2,8 +2,8 @@
 title: "DTG Credential Categories"
 type: concept
 tags: [credentials, dtg, taxonomy, categories]
-date-updated: 2026-04-30
-sources: [dtgwg-cred-tf]
+date-updated: 2026-05-08
+sources: [dtg-credential-spec]
 ---
 
 # DTG Credential Categories
@@ -61,4 +61,13 @@ VerifiableCredential
 
 The only abstract parent in the formal hierarchy is `DTGCredential`. The four descriptive categories above are for human understanding only.
 
-See also: [[dtg-credentials-overview]], [[decentralized-trust-graph]]
+## ZKP Anchor Points
+
+Both Edge Credentials are anchors for [[zero-knowledge-proofs|ZKP constructions]] defined in the spec:
+
+- The **VRC** anchors a **pairwise ZKP** — available between any two VRC holders, no shared community required, useful for selectively disclosing P-DIDs while hiding R-DIDs.
+- The **VMC** anchors a **community-anchored ZKP** — requires both parties to hold VMCs from the same community, carries that community's governance assurance (including personhood when applicable) into the proof.
+
+The spec recommends ZKP presentation by default for all DTG credentials.
+
+See also: [[zero-knowledge-proofs]], [[dtg-credentials-overview]], [[decentralized-trust-graph]]

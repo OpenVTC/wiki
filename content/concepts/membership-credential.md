@@ -1,9 +1,9 @@
 ---
 title: "Membership Credential (VMC)"
 type: concept
-tags: [credentials, dtg, membership, community, personhood, edge]
-date-updated: 2026-04-30
-sources: [dtgwg-cred-tf, dtg-credentials]
+tags: [credentials, dtg, membership, community, personhood, edge, zkp]
+date-updated: 2026-05-08
+sources: [dtg-credential-spec, dtg-credentials]
 ---
 
 # Membership Credential (VMC)
@@ -31,4 +31,10 @@ Whether a VMC is a PHC is determined by the community's [[trust-registries|trust
 
 VMCs also express the relationship between [[verifiable-trust-network|VTNs]] and VTCs. A VTN issues a VMC to a VTC's C-DID, and the VTC issues a VMC back, proving the community is a recognized member of the network. This enables hierarchical trust structures.
 
-See also: [[personhood-credential]], [[trust-registries]], [[verifiable-trust-community]], [[verifiable-trust-network]], [[credential-categories]]
+## Community-Anchored ZKP
+
+The VMC is the anchor for the **community-anchored ZKP** construction defined in spec §5.2. When both parties to a [[relationship-credential|VRC]] hold VMCs from the same community, the holder can prove the existence of a relationship *within the community's governance context* — without revealing the specific DIDs or other credential details. When the community's VMCs qualify as [[personhood-credential|PHCs]], that personhood assurance carries forward into every relationship proven through this construction.
+
+This is one of the two ZKP constructions defined for [[credential-categories|Edge Credentials]]; the other is the pairwise construction anchored to the VRC. See [[zero-knowledge-proofs]] for the full picture, including how to choose between them.
+
+See also: [[zero-knowledge-proofs]], [[personhood-credential]], [[trust-registries]], [[verifiable-trust-community]], [[verifiable-trust-network]], [[credential-categories]]

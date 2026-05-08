@@ -3,7 +3,7 @@ title: "Personhood Credential (PHC)"
 type: concept
 tags: [credentials, dtg, personhood, sybil, governance]
 date-updated: 2026-04-30
-sources: [dtgwg-cred-tf, dtg-credentials, openvtc]
+sources: [dtg-credential-spec, dtg-credentials, openvtc]
 ---
 
 # Personhood Credential (PHC)
@@ -21,7 +21,7 @@ The DTG specification (v0.3) is emphatic about this: PHC status is "determined b
 
 This means the same credential format works across communities with very different personhood verification standards. One community might require in-person verification; another might accept video calls; a third might use web-of-trust thresholds. The credential structure is the same — the governance differs.
 
-In the [[dtg-credentials-repo|dtg-credentials]] Rust library, the optional type hint looks like:
+In the [[dtg-credentials|dtg-credentials]] Rust library, the optional type hint looks like:
 
 ```json
 {
