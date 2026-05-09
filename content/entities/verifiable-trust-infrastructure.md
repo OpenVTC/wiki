@@ -8,6 +8,8 @@ repo: https://github.com/OpenVTC/verifiable-trust-infrastructure
 
 # Verifiable Trust Infrastructure (VTI)
 
+*Repo: [github.com/OpenVTC/verifiable-trust-infrastructure](https://github.com/OpenVTC/verifiable-trust-infrastructure)*
+
 The Verifiable Trust Infrastructure is a Rust workspace containing the core services that power [[verifiable-trust-community|Verifiable Trust Communities]]. It's the infrastructure layer of the OpenVTC ecosystem — the plumbing that makes decentralized trust work.
 
 ## Components
