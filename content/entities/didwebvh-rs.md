@@ -8,6 +8,8 @@ repo: https://github.com/decentralized-identity/didwebvh-rs
 
 # didwebvh-rs
 
+*Repo: [github.com/decentralized-identity/didwebvh-rs](https://github.com/decentralized-identity/didwebvh-rs)*
+
 A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version 0.5.2.
 
 ## What It Provides

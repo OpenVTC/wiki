@@ -8,6 +8,8 @@ repo: https://github.com/affinidi/affinidi-tdk-rs
 
 # Affinidi Trust Development Kit (TDK)
 
+*Repo: [github.com/affinidi/affinidi-tdk-rs](https://github.com/affinidi/affinidi-tdk-rs)*
+
 The Affinidi TDK is a comprehensive Rust toolkit providing identity, messaging, and credential primitives for the OpenVTC ecosystem. It's the foundational library that higher-level projects depend on for DID resolution, secure communication, and cryptographic operations.
 
 ## Key Components

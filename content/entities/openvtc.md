@@ -8,6 +8,8 @@ repo: https://github.com/OpenVTC/openvtc
 
 # OpenVTC — The Trust Community CLI
 
+*Repo: [github.com/OpenVTC/openvtc](https://github.com/OpenVTC/openvtc)*
+
 OpenVTC is the user-facing tool for participating in [[verifiable-trust-community|Verifiable Trust Communities]]. It's a Rust CLI and TUI (terminal user interface) that orchestrates identity creation, relationship building, and credential exchange — making the complex machinery of decentralized trust accessible to end users.
 
 ## What It Does

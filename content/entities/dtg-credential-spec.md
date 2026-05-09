@@ -8,6 +8,8 @@ repo: https://github.com/trustoverip/dtgwg-cred-tf
 
 # DTG Credential Specification (ToIP DTGWG)
 
+*Repo: [github.com/trustoverip/dtgwg-cred-tf](https://github.com/trustoverip/dtgwg-cred-tf)*
+
 The authoritative specification for the [[decentralized-trust-graph|Decentralized Trust Graph]] credential family, maintained by the **Trust over IP Foundation's DTG Working Group Credential Task Force**. This is the definitive source for DTG credential semantics — what each credential type means, how it's constructed, what proofs it supports, and how the wider trust graph composes from them. Implementations track this spec; where the wiki and the spec disagree, the spec wins.
 
 The repo contains prose specifications in Markdown — no code. The wiki entity for the implementation that tracks this spec is [[dtg-credentials]]; for the conceptual taxonomy it defines, see [[dtg-credentials-overview]].

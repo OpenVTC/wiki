@@ -8,6 +8,8 @@ repo: https://github.com/affinidi/affinidi-webvh-service
 
 # Affinidi WebVH Service
 
+*Repo: [github.com/affinidi/affinidi-webvh-service](https://github.com/affinidi/affinidi-webvh-service)*
+
 The Affinidi WebVH Service is production infrastructure for hosting, resolving, and managing [[did-webvh|did:webvh]] identifiers at scale. It's the operational backbone that makes did:webvh practical — handling the hosting, witnessing, and monitoring that individual users shouldn't have to manage themselves.
 
 ## Components

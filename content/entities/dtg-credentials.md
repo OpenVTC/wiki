@@ -8,6 +8,8 @@ repo: https://github.com/OpenVTC/dtg-credentials
 
 # dtg-credentials
 
+*Repo: [github.com/OpenVTC/dtg-credentials](https://github.com/OpenVTC/dtg-credentials)*
+
 A Rust library implementing the [[decentralized-trust-graph|Decentralized Trust Graph]] credential types. It provides the data structures and signing/verification logic for the [[verifiable-credentials|Verifiable Credentials]] that form the edges of the trust graph.
 
 ## What It Implements

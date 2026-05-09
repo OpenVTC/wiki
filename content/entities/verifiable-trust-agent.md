@@ -7,6 +7,8 @@ date-updated: 2026-05-08
 
 # Verifiable Trust Agent (VTA)
 
+*Part of [github.com/OpenVTC/verifiable-trust-infrastructure](https://github.com/OpenVTC/verifiable-trust-infrastructure)*
+
 The Verifiable Trust Agent is the central service of the [[verifiable-trust-infrastructure|Verifiable Trust Infrastructure]]. It's an always-on key management and signing service that handles the hardest part of decentralized identity: keeping cryptographic keys secure while making them usable.
 
 ## What It Does
