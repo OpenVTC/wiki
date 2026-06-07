@@ -1,16 +1,18 @@
 ---
-title: "Affinidi WebVH Service"
+title: "did-hosting-service (formerly Affinidi WebVH Service)"
 type: entity
-tags: [affinidi, webvh, did-hosting, service, secondary]
-date-updated: 2026-05-08
+tags: [affinidi, webvh, did-hosting, did-web, service, secondary, multi-method, multi-domain]
+date-updated: 2026-06-07
 repo: https://github.com/affinidi/affinidi-webvh-service
 ---
 
-# Affinidi WebVH Service
+# did-hosting-service (formerly Affinidi WebVH Service)
 
 *Repo: [github.com/affinidi/affinidi-webvh-service](https://github.com/affinidi/affinidi-webvh-service)*
 
-The Affinidi WebVH Service is production infrastructure for hosting, resolving, and managing [[did-webvh|did:webvh]] identifiers at scale. It's the operational backbone that makes did:webvh practical — handling the hosting, witnessing, and monitoring that individual users shouldn't have to manage themselves.
+Production infrastructure for hosting, resolving, and managing [[did-webvh|did:webvh]] (and, since v0.7.0, `did:web`) identifiers at scale. It's the operational backbone that makes self-hosted DIDs practical — handling the hosting, witnessing, and monitoring that individual users shouldn't have to manage themselves.
+
+The repository was **renamed from `affinidi-webvh-service` to `did-hosting-service`** in v0.7.0 (May 2026). The rename reflects two architectural shifts: the service is no longer single-method (it now hosts both `did:webvh` and `did:web` by default, with a `DidMethod` trait abstraction and compile-time feature gating), and the binaries are now named for the **capability** they expose rather than a specific underlying method (`did-host-http`, `did-host-didcomm`, `did-host-http-didcomm`).
 
 ## Components
 
@@ -46,11 +48,33 @@ The cold-start bootstrap flow (`import-secrets` CLI) can bring up an entire envi
 
 ## Recent Development
 
-The focus has shifted from "make deployment self-contained" (v0.1.x – v0.5.0) to "make every cross-service trust path explicit and tamper-resistant" (v0.6.0).
+After hardening cross-service trust paths in v0.6.0, the v0.7.0 release does the bigger architectural pivot: **multi-domain, multi-method, did-hosting-service rename, and a separate client crate**. A VTA-proxied SIOP login flow lands on top.
 
-### Post-v0.6.0 (in flight) — DID ownership management
+### v0.7.0 — 2026-05-24 — `did-hosting-service` rename + multi-domain + multi-method + client crate + Trust Tasks ACL
 
-- DID ownership management (REST + DIDComm + UI) on a feature branch
+The single largest release since v0.1.0. Bundles three coordinated specs (`docs/multi-domain-spec.md`, `docs/multi-method-hosting-spec.md`, `docs/did-hosting-client-crate-spec.md`) and a 57-task rollout plan into one cutover.
+
+- **Repository + binary rename.** `webvh-server` / `webvh-control` / `webvh-daemon` keep their service-binary names internally, but the public templates and binaries are renamed to capability names (`did-host-http`, `did-host-didcomm`, `did-host-http-didcomm`). The `webvh-*` template names remain aliased for one release.
+- **First-class domain objects.** A single deployment hosts DIDs across multiple domains. ACL `DomainScope` semantics; control-plane-driven server assignment with retain-then-purge unassignment lifecycle; transport over Trust Tasks 0.2; `trusted_proxy_cidrs` for safe `Host` / `Forwarded` handling; opt-in `/.well-known/did-hosting-domain.json` for external discovery.
+- **Multi-method.** `DidMethod` trait abstracts resolution + lifecycle differences. Both `did:webvh` and `did:web` are default-enabled; storage uses a unified `DidRecord` shape; compile-time feature gating per method.
+- **`did-hosting-client` companion crate.** Trust-Tasks URLs only; multi-domain + multi-method aware from v0.1. Intended for downstream consumers like the [[verifiable-trust-infrastructure|VTI]] daemon.
+- **Trust Tasks 0.2 ACL.** ACL operations move onto Trust Tasks 0.2 with the dual-accept envelope.
+
+Follow-on fixes in the same line: `check-name` probe/reserve/auto-assign contract (PR #38); accept canonical camelCase log/owner fields on did-management wire (PR #39); set in-band recipient on every trust-task envelope (PR #41); bump `vta-sdk` to 0.10 (lockstep with `vti-common` 0.9.1, PR #42); enable `did:webvh` + `did:web` by default in daemon; `host:port` domains resolve consistently end-to-end.
+
+### VTA-proxied SIOP login + visualization (M2B.4) — 2026-05-26
+
+End-to-end demo of the **VTA-as-credential-manager** model — the user logs in with a `did-self-issued` vault entry pinned to this RP's DID; the long-term signing key never leaves the VTA, and the page only ever sees a short-lived SIOPv2 `id_token`. Three round-trips, each timed and visualised:
+
+1. Page `POST /auth/challenge` with the entry's principal DID → RP returns a one-shot nonce bound to that DID.
+2. Wallet asks the VTA via `vault/proxy-login/0.1` to mint a SIOP `id_token` signed by the entry's signing key, embedding the RP's challenge as `nonce`. Wallet receives a `SessionBlob` with the `id_token` in an `Authorization: Bearer …` header.
+3. Page `POST /auth/` with the `id_token` → server resolves the entry's DID, verifies the signature, checks `nonce == challenge`, issues a bearer access token.
+
+UI additions: feature-detect `Login via VTA proxy` button (hidden when the wallet is too old), candidate picker modal when the user has multiple matching entries, visualisation modal with per-step timeline + decoded `id_token` claims + `SessionBlob` summary. Cleanly extends the existing `/auth/challenge` + `/auth/` routes in `did-hosting-control`; no Rust changes needed there.
+
+### Post-v0.6.0 — DID ownership management
+
+DID ownership management (REST + DIDComm + UI). `did-hosting accepts canonical webvh/*` and `did-management` spec URIs for info / list / change-owner + me/domains; alias bridge dropped in the end-state cutover (PR #28).
 
 ### v0.6.0 — 2026-05-05 — web-based ACL invites, VTA template, offline bootstrap
 

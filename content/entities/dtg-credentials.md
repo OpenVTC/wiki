@@ -2,7 +2,7 @@
 title: "dtg-credentials — Trust Graph Credential Library"
 type: entity
 tags: [dtg, credentials, library, trust-over-ip, primary]
-date-updated: 2026-05-08
+date-updated: 2026-06-07
 repo: https://github.com/OpenVTC/dtg-credentials
 ---
 
@@ -50,7 +50,14 @@ Originally developed under `LF-Decentralized-Trust-labs`, recently migrated to t
 
 ## Recent Development
 
-No further activity since v0.1.2. The recent [[dtg-credential-spec|DTG spec]] changes (bidirectional Edge Credentials in PR #31, ZKP construction split in PR #33) are not yet reflected in this implementation.
+A dependency-driven point release picks up the upstream data-integrity / TDK 0.7 line. The recent [[dtg-credential-spec|DTG spec]] changes (bidirectional Edge Credentials in PR #31, ZKP construction split in PR #33) are not yet reflected in this implementation.
+
+### v0.1.3 — 2026-06-07 — data-integrity 0.7 / TDK 0.7
+
+- `affinidi-data-integrity` 0.6 → 0.7
+- `affinidi-tdk` 0.6 → 0.7 (dev-dep)
+- `sign_and_verify` example migrated to the new TDK config builder (`TDKConfigBuilder::new()` → `TDKConfig::builder()`)
+- MSRV bumped to 1.95.0
 
 ### v0.1.2 — 2026-04-30
 

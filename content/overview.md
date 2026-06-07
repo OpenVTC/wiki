@@ -2,7 +2,7 @@
 title: "OpenVTC Ecosystem Overview"
 type: overview
 tags: [openvtc, vti, trust-graph, decentralized-identity, first-person-network]
-date-updated: 2026-05-08
+date-updated: 2026-06-07
 sources: [verifiable-trust-infrastructure, openvtc, dtg-credentials, dtg-credential-spec, affinidi-tdk, affinidi-webvh-service, didwebvh-rs]
 ---
 
@@ -52,7 +52,9 @@ These credentials form the [[decentralized-trust-graph|Decentralized Trust Graph
 
 ### Layer 5: The User Experience
 
-[[openvtc|OpenVTC]] is the command-line tool (and TUI) that ties it all together for end users. It walks you through creating your identity, establishing trust relationships with others, and participating in trust communities. Behind the scenes, it orchestrates the VTA, DIDComm messaging, and credential issuance — but from the user's perspective, it's as simple as: set up your identity, connect with people you know, and build your trust network.
+[[openvtc|OpenVTC]] is the user-facing TUI that ties it all together for end users. It walks you through creating your identity, establishing trust relationships with others, and participating in trust communities — and increasingly, in **multiple** trust communities simultaneously, each with its own persona and lifecycle (T1 of the multi-community pivot landed in June 2026). Behind the scenes, it orchestrates the VTA, DIDComm messaging, and credential issuance.
+
+On mobile, the [[verifiable-trust-infrastructure|VTI]] now ships two thin native apps — **Authenticator** (a holder's pocket approver for AAL step-up over DIDComm v2) and **PNM mobile** (mobile counterpart of the `pnm` operator CLI) — both built on a shared Rust UniFFI engine, `vta-mobile-core`.
 
 ## The First Person Network
 
@@ -62,19 +64,15 @@ The name "first person" is deliberate — this is identity asserted by *you*, no
 
 ## Where Things Are Heading
 
-As of May 2026, the ecosystem is in active early development with clear momentum toward production readiness:
+As of mid-2026 the ecosystem is moving on three fronts at once:
 
-- The **VTI/VTA** released **v0.5.0 — `sealed-bootstrap`** in May: every secret-bearing transfer between VTA, integrations, and CLIs is now an HPKE-sealed bundle; DID minting is template-driven; and **the DIDComm protocol surface can be enabled, disabled, or migrated on a running VTA without rebuilding it**, with mediator changes going through a drain set so in-flight messages keep landing while the new mediator picks up traffic. A unified `pnm services …` CLI for live runtime service management (enable/disable/list/rollback) followed in P0–P5 PRs, with the 0.6.0 workspace bump in flight on a feature branch.
-- **OpenVTC** released **v0.2.0** in May — workspace consolidation (`openvtc-cli2` → `openvtc`, the legacy `openvtc-cli` deleted), full TUI main menu (eight panels, real-time inbox), DIDComm service integration replacing manual messaging, R-DID generation across both BIP32 and VTA backends. A substantial security pass folded into the same release: per-entry random Argon2 salt, did-git-sign parent-process gating + audit log, DIDComm replay window, tagged-variant downgrade defence on `SecuredConfigFormat`, real W3C DID Core 1.0 syntax parser.
-- The **WebVH service** released **v0.6.0** in May — web-based ACL invites, VTA template, offline bootstrap, plus a substantial security pass on cross-service refresh handlers (JWS-signed envelopes binding signer to session DID), refresh-token rotation TOCTOU closed end-to-end via a new atomic `take_raw_atomic` primitive, registry/proxy trust chain hardening in `webvh-control`, and stricter watcher sync validation.
-- **DTG Credentials** is still at v0.1.2; the recent spec changes (bidirectional Edge Credentials, ZKP construction split) have not yet been picked up in the implementation.
-- The **TDK** shipped **`affinidi-tdk-common` v0.6.0** and a **mediator 0.14.0** release with pluggable storage, unified secret backend, and a new dedicated **`mediator-setup`** wizard package; **`affinidi-messaging-test-mediator`** was published as a standalone crate, immediately consumed by the OpenVTC test harness.
-- **didwebvh-rs** has been quiet at v0.5.2; tracking the DIF didwebvh 1.0 spec.
-- The **DTG specification** had two notable PRs land in late April / early May:
-    - **PR #31 (merged 2026-04-30)** — Bidirectional Edge Credentials. Both VMCs and VRCs are framed as edges between *existing* entities, each requiring a bi-directional pair to constitute a complete edge in the graph. Nodes are entities, not credentials. See [[decentralized-trust-graph]].
-    - **PR #33 (merged 2026-05-08)** — ZKP construction split. The old "Zero-Knowledge Proof Requirements" subsection under VRC is replaced by two distinct constructions: a **pairwise ZKP** (anchored to VRC; available regardless of shared community) and a **community-anchored ZKP** (anchored to VMC; the three-part proof requiring same C-DID). The Overview now states that DTG credentials SHOULD use ZKP presentation when privacy is desired, and that implementations SHOULD make ZKP presentation the default. See [[zero-knowledge-proofs]].
+- the **end-user CLI** is being rearchitected so one person can belong to many communities at once, each with its own persona and lifecycle, rather than today's one-profile-one-community model;
+- the **infrastructure** has matured into a complete VTC service (admin UI, plugins, ceremony policies, TRQP-anchored join) and is growing **phone apps** alongside the existing CLIs — an **Authenticator** that turns a holder's phone into a DIDComm-based second factor (the user receives a step-up prompt on the phone and approves it with a DID-bound passkey in the Secure Enclave), and a **PNM mobile** app that lets an operator drive their VTA from a phone instead of a terminal;
+- and the **spec** has clarified two things: ZKPs should be the default presentation mode (the spec recommends implementations make ZKP presentation the default so users get privacy without opting in), and a pairwise relationship between two entities — not membership in a community — is the foundational primitive of the trust graph.
 
-The direction of travel is toward a fully self-contained, publicly deployable trust infrastructure that any community can adopt — with mutable runtime surfaces, hardened cross-service trust paths, and ZKP-by-default privacy.
+The direction of travel is toward a fully self-contained, publicly deployable trust infrastructure that any community can adopt — with mutable runtime surfaces, hardened cross-service trust paths, ZKPs as the default way to present credentials, and the phone (not just the terminal) as a first-class place to hold and approve credentials.
+
+For a release-by-release timeline of how the ecosystem got here — including each project's recent activity log — see the [[log|wiki log]] and the **Recent Development** section on each entity page.
 
 ## Reading This Wiki
 

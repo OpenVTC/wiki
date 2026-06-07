@@ -1,8 +1,8 @@
 ---
 title: "Verifiable Trust Agent (VTA)"
 type: entity
-tags: [vta, vti, key-management, signing-oracle, infrastructure, primary]
-date-updated: 2026-05-08
+tags: [vta, vti, key-management, signing-oracle, infrastructure, primary, mobile]
+date-updated: 2026-06-07
 ---
 
 # Verifiable Trust Agent (VTA)
@@ -33,9 +33,11 @@ The VTA is built with Axum (Rust async web framework) and exposes two parallel A
 
 Both paths converge on a shared operations layer. Storage uses fjall, an embedded LSM key-value store.
 
-### Application Contexts
+### Application Contexts — now hierarchical
 
 A key architectural concept is **Application Contexts** — logical namespaces that group keys and DIDs. Each context (e.g., "vta", "mediator", "my-app") gets its own BIP-32 derivation sub-tree, isolating keys between applications while deriving from the same master seed.
+
+As of May 2026 contexts are **hierarchical**: a context ID *is* its `/`-separated path (max depth 8, e.g. `myorg/finance/payments`), with ancestry-aware ACL — parent-admin authority covers the entire subtree, so a top-level admin can authorise sub-context creation without per-context grants. Subtree delete supports cascade / refuse modes. See [[verifiable-trust-infrastructure#hierarchical-contexts-may-2026-slices-1-4|hierarchical contexts on the workspace entity]] for the slice-by-slice history.
 
 ### The VTA Seal
 
@@ -81,6 +83,33 @@ The SDK handles authentication, token refresh, secret caching, and offline fallb
 ## Recent Development
 
 Per-release detail lives on the workspace entity — see [[verifiable-trust-infrastructure#Recent Development]] for the full activity log. VTA-relevant highlights, reverse chronological:
+
+### Mobile agent (`vta-mobile-core` v0.3.0) — June 2026
+
+The VTA family now includes a UniFFI engine for mobile holders. Two iOS/Android apps share one Rust core:
+
+- **Authenticator** — pocket approver. Receives VTA/RP-pushed `auth/step-up/approve-request/0.1` over DIDComm v2, renders the reason, returns a passkey- or DID-signed approve-response.
+- **PNM mobile** — mobile counterpart of the `pnm` CLI: drives the management surface (ACL, contexts, services, DID lifecycle) over the same Trust-Task wire as the CLI.
+
+`DIDCommSession::receive_next(timeout_secs)` on `vta-sdk` adds the unsolicited-inbound primitive the mobile approver needs.
+
+### Credential exchange end-to-end — May–June 2026
+
+The VTA now sits inside the credential-exchange loop as both holder and presenter, not just a signing oracle:
+
+- **BBS (`bbs-2023`) selective disclosure** — VTA receives BBS credentials into the vault and presents them with selective disclosure (feature `bbs`); built on the new `affinidi-bbs` crate in the TDK.
+- **DCQL / OpenID4VP 1.0** — full holder query → present path inside the VTA, consent-gated, with ACL-gated holder-key resolution (`HolderKeyProvider`).
+- **Live status re-check at present time** (§14.5); status-list credential issuer signature verified on every check.
+- **DIDComm credential-exchange handlers** — query, present, issue paths, including deferred approval, sealed issuance, and Trust-Task descriptors.
+- **Holder offer → request leg** — answer a credential offer with a key-binding proof (OpenID4VCI key-binding via Ed25519 JWT).
+
+### Hierarchical contexts (slices 1–4) — May 2026
+
+A context ID *is* its `/`-separated path (max depth 8) with ancestry-aware ACL — parent-admin covers the subtree. See [Application Contexts](#application-contexts-now-hierarchical) above.
+
+### Trust Tasks 0.2 + dual-accept — June 2026
+
+A single Trust Task envelope can be accepted at one of four ladder rungs: **device / vault / passkey / step-up**. Released alongside `vta-sdk` 0.10.0. The `provision-integration` flow gained 0.2 dual-accept; the legacy FPN URI is retired.
 
 ### v0.6.0 (in flight) — runtime service management
 

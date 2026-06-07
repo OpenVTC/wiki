@@ -1,8 +1,8 @@
 ---
 title: "OpenVTC — The Trust Community CLI"
 type: entity
-tags: [openvtc, cli, tui, user-experience, primary]
-date-updated: 2026-05-08
+tags: [openvtc, cli, tui, user-experience, primary, multi-community]
+date-updated: 2026-06-07
 repo: https://github.com/OpenVTC/openvtc
 ---
 
@@ -25,7 +25,7 @@ Behind the scenes, OpenVTC orchestrates the [[verifiable-trust-agent|VTA]] (for 
 
 ## Components
 
-After the v0.2.0 workspace consolidation, the active crates are:
+After the v0.2.0 workspace consolidation and v0.2.1 cleanup, the active crates are:
 
 ### openvtc
 The user-facing TUI binary (formerly `openvtc-cli2`). The unsuffixed name is intentional, matching the convention used by uv, ruff, deno, and cargo. Eight main-menu panels:
@@ -48,10 +48,9 @@ Shared library (formerly `openvtc-lib`, `publish = false`): config management, B
 Background daemon that polls a [[didcomm|DIDComm mediator]] for incoming messages and processes protocol requests. Currently handles maintainer list queries (`https://kernel.org/maintainers/1.0/list`).
 
 ### did-git-sign
-SSH/Git signing helper that uses the VTA as a signing oracle. Auto-configured during the setup wizard. Refuses to sign unless the parent process name starts with `git` or `ssh-keygen`, and writes every signing attempt — accepted or denied — to `~/.config/did-git-sign/audit.log`.
+SSH/Git signing helper that uses the VTA as a signing oracle. Auto-configured during the setup wizard. Refuses to sign unless the parent process name starts with `git` or `ssh-keygen`, and writes every signing attempt — accepted or denied — to `~/.config/did-git-sign/audit.log`. Under the [multi-community model](#post-v021-multi-community-design-and-t1) the signing persona becomes a per-repo selection (env var and/or git config), so different communities can sign distinct repos.
 
-### robotic-maintainers
-A test service that automatically accepts relationships and issues VRCs — useful for development and testing.
+The earlier `openvtc-service` (background DIDComm daemon) and `robotic-maintainers` (auto-accept test service) crates were **removed in v0.2.1** (PR #63) — `openvtc-service`'s role is now covered inside the TUI's own DIDComm session, and the test fixture role moved to the in-tree mediator harness.
 
 ## Identity Model
 
@@ -79,7 +78,23 @@ Multiple profiles are supported via the `OPENVTC_CONFIG_PROFILE` environment var
 
 ## Recent Development
 
-The focus has shifted from security correctness alone (the v0.1.x pass) to feature completeness on top of a hardened security base (v0.2.0).
+The focus has shifted from security correctness alone (the v0.1.x pass), through feature completeness on a hardened base (v0.2.0), to architecting the **multi-community** model — converting OpenVTC from a profile-singleton into a tool that holds one VTA account and many persona-backed community memberships.
+
+### Post-v0.2.1 — multi-community design + T1 implementation
+
+Design and implementation of OpenVTC's multi-community pivot are landing in slices on top of v0.2.1.
+
+- **Multi-community design spec** (PR #65, 2026-06-03) — `docs/design/multi-community-support.md` DRAFT v4 + presentation deck. Decisions D1–D17 settle persona-per-community choice (user picks per join, lazy persona creation), VTA-as-system-of-record (the local config holds only references and UX prefs; the VTA stores personas/keys/credentials), breaking-reset migration (v1 configs are *not* migrated; the CLI detects, informs, deletes, and runs setup from scratch), per-community read-only / archive / delete lifecycle, supervised concurrent sessions (one supervised task per community session, failure-isolated), 7-day client-side pending-join timeout, `did-git-sign` per-repo persona selection. `tasks/plan.md` + `tasks/todo.md` give the dependency-ordered T1–T9 breakdown across four phases.
+- **T1 active-identity API sketch** (PR #66, 2026-06-04) — pins `IdentityContext` / `IdentityRegistry` (in `openvtc-core`) and the persona-keyed multi-session manager built as a thin layer over `affinidi-messaging-didcomm-service` 0.3.3 (whose listeners are already independent, auto-restarting tasks with dynamic add/remove). N=1 single-community on the new architecture is T1's exit criterion.
+- **VTA hierarchical contexts + MockVta folded in** (PR #68, 2026-06-04) — VTI shipped server-enforced hierarchical context paths and a `MockVta` test harness; the multi-community spec dropped its "convention now, migrate later" sub-context fallback in favour of the canonical server-enforced model (D2/D9 updated). Spec → DRAFT v5.
+- **T1 implementation slice** (PR #67, 2026-06-07) — additive config v2 in `openvtc-core`: `Account { vta_did, vta_url, top_context_id, personas, communities }`, `PersonaRecord` (self-contained `did:webvh`, VTA-managed `KeyRefs`), `CommunityRecord` (persona_ref, status, favourite, archived, member_since, per-community relationships and VRCs), `CommunityStatus { Pending, Active, Left, Rejected, Removed, Expired }` with `is_active`/`is_read_only`/`is_inactive`/`needs_attention`, stable-UUID `PersonaId` (rotation-safe). Persona-keyed `IdentityRegistry` resolves communities → personas; a **reused persona yields one shared DIDComm session serving multiple communities** (matches the DIDComm `DuplicateDid` constraint and the chosen isolation model). Still additive — not yet wired into the live `Config` / load / save path; the consumer refactor, `IdentityContext`, and breaking-reset land in subsequent slices.
+
+### v0.2.1 — 2026-06-03 — nine CLI security/hardening fixes + crate retirement
+
+- Nine CLI security and hardening fixes (PR #61)
+- Minor dependency updates (PR #60); `arboard::Clipboard` import fix; `vta-sdk` bump to 0.7 (PR #62)
+- **`openvtc-service` and `robotic-maintainers` crates removed** (PR #63). The DIDComm daemon role is covered by the TUI's own DIDComm session integration; the auto-VRC-issuance fixture is no longer needed alongside the in-tree mediator harness. Workspace members, README, CONTRIBUTING, and SECURITY updated. Historical CHANGELOG entries preserved. Closes #21 (the secure-storage-backend work for `openvtc-service` is obsolete).
+- Workspace bumps: `vta-sdk` 0.7 → 0.9; `criterion` 0.7 → 0.8 (PR #64).
 
 ### v0.2.0 — 2026-05-05 — major release (workspace consolidation + full TUI)
 
