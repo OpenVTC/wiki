@@ -2,7 +2,7 @@
 title: "Affinidi Trust Development Kit (TDK)"
 type: entity
 tags: [affinidi, tdk, library, messaging, did-resolution, bbs, openid4vc, secondary]
-date-updated: 2026-06-07
+date-updated: 2026-07-06
 repo: https://github.com/affinidi/affinidi-tdk-rs
 ---
 
@@ -29,9 +29,9 @@ Secure messaging built on [[didcomm|DIDComm v2.1]]:
 
 ### Trust Spanning Protocol (`affinidi-tsp`)
 Implementation of the Trust over IP [[trust-spanning-protocol|TSP]] specification:
-- HPKE-Auth encryption
-- CESR binary encoding
-- A leaner alternative to DIDComm for certain use cases
+- HPKE-Auth encryption (RFC 9180), CESR binary encoding
+- Direct, Routed, and Nested message modes; mediator-integrated routing and federation
+- **Graduated from experimental to supported in June 2026** and declared fully interoperable with the ToIP reference `tsp_sdk`; the mediator now serves TSP and DIDComm on the same endpoint, and clients prefer TSP when both ends support it
 
 ### Cryptographic Primitives
 - Ed25519, P-256, secp256k1 key support
@@ -57,7 +57,48 @@ The TDK is the Swiss Army knife that everything else depends on:
 
 The TDK is a multi-crate workspace; entries below name the affected crate. Direction is toward production readiness with stronger security guarantees and better modularity. Implementation is evolving quickly; treat low-level APIs as in flux.
 
-The May–June cycle (~50 commits) is dominated by three themes: a new **`affinidi-bbs` crate** plus end-to-end W3C `vc-di-bbs` selective disclosure, **JOSE centralisation** (a new `affinidi-crypto::jose` module that DIDComm 0.15 is rewired onto), and OpenID4VC family expansion (DCQL, OpenID4VCI key binding).
+The June–July cycle (193 commits, ~44,600 insertions) is the TDK's largest yet, and its headline is unambiguous: **[[trust-spanning-protocol|TSP]] became a first-class, supported transport** — interoperable with the ToIP reference implementation, federated across mediators, advertised in DID documents, and *preferred over DIDComm* when both ends support it. Around it: a unified dual-protocol client architecture (ADR 0005), a document-based **Trust Tasks** replacement for the legacy mediator admin protocol, and three coordinated quality waves (semver/API hardening, test infrastructure, mediator internals).
+
+### TSP goes first-class — 2026-06-22 → 07-04 (~60 commits)
+
+A sustained push took `affinidi-tsp` (0.1.1 → 0.1.12) from nascent library to fully interoperable, mediator-integrated, SDK-exposed transport:
+
+- **Library completion**: DID-document VID resolver, Routed/Nested message modes, ingress sniffing (#488–#490).
+- **Mediator integration**: an ingress dispatcher sniffs DIDComm vs TSP on the same endpoint (#491/#492); TSP Direct local delivery (#493); pure-TSP client authentication (#495, #533); the mediator's own TSP identity (#499); routed relay (#500); a **TSP↔DIDComm bridge** (#501); remote forwarding to another mediator (#502); `TSPTransport` advertised in the mediator's DID document (#527) and baked into generated did:peer/did:webvh DIDs (#565); raw-TSP WebSocket delivery (#534) with SDK consumer `atm.tsp().connect_websocket` (#536).
+- **ToIP interop**: CESR framing + RFC-9180 HPKE compliance (#540, #542, #543); full `tsp_sdk` wire parity for relationship Control messages (#544); declared **fully interoperable with the ToIP reference** (#545), verified by a standalone `interop/` harness round-tripping against ToIP `tsp_sdk` 0.9.0-alpha2; two-mediator TSP federation e2e (#546).
+- **Graduation + selection intelligence**: TSP moved from experimental to **supported** (#528); `atm.tsp()` relationship management (#529); TSP-preferred selection with DIDComm fallback in `send_to` (#573), learning TSP capability from relationships and observed inbound traffic (#575), proactive discovery via Discover Features 2.0 (#579). New docs: TSP cookbook, operator enablement guide.
+
+### `AffinidiMessageService` — unified DIDComm+TSP client (ADR 0005) — late June 2026
+
+Because the mediator enforces one websocket per DID, a node speaking both protocols needs one multiplexed socket. ADR 0005 (#548) proposes `AffinidiMessageService`; staged implementation landed (`live_stream_next_frame` multiplexed receive, a `TspHandler` trait, inbound TSP frame routing on the shared websocket, symmetric TSP replies — #549–#556, #568). This evolves `affinidi-messaging-didcomm-service` into a dual-protocol service layer likely to supersede `DIDCommService` as the public client surface.
+
+### Trust Tasks migration — 2026-06-23/24 (T1–T18)
+
+A rapid, complete replacement of the legacy mediator admin/ACL client protocol with document-based **Trust Tasks** carried in a DIDComm binding envelope: `atm.trust_tasks()` on the SDK, then the full account / acl / access-list / admin families (#506–#516, #518). Legacy `atm.mediator()` methods **deprecated** (#517) and all in-repo consumers migrated (#519–#523). This aligns the messaging stack with the wider VTI "everything is a trust task" document model.
+
+### Semver/API-hardening wave (W1–W19) + ADRs — 2026-06-13/14
+
+- Security: cache-server panic removal + bounded upstream resolution, BBS proof DoS bound + explicit CSPRNG, log redaction + constant-time compares, OID4VC **JWT algorithm allowlist** + nonce replay helper (#441–#445, #461).
+- API sealing: `#[non_exhaustive]` across public error enums and structs workspace-wide (#446–#449, #471–#476); a tdk-common API-stability contract (#453); ADR 0003 (public-API semver policy) + ADR 0004 (release automation) + release CI guards.
+- Structural: **`affinidi-sd-jwt-vc` merged into `affinidi-vc`** as its `sd_jwt_vc` module (the old crate is a deprecated re-export shim); new **`affinidi-task-utils`** crate for shared task supervision; facade completion with capability features for `affinidi-tdk` 0.8.
+
+### Test infrastructure wave (TI0–TI7) — mid-June 2026
+
+New **`affinidi-tdk-test-support`** crate: did:web/webvh mock servers, `StaticResolver` fixtures, a multi-mediator `TestTopology`, a docker-compose test stack with committed test-only identities, `CredentialScenario` fixtures for sd-jwt-vc and mdoc/OID4VP, seeded did:peer generation, an injectable Clock, and an in-repo cargo-fuzz workspace for the DIDComm envelope layer and SD-JWT (#439–#481).
+
+### Mediator simplification/hardening (T1–T26) — 2026-06-10 → 06-13
+
+Systematic internals cleanup: task supervision + `/livez` health split; fail-closed session handling; a central authz module replacing scattered ACL checks; per-DID WebSocket cap; a backend-conformance suite for `MediatorStore` run against Redis in CI; a Fjall circuit breaker + schema-version marker; a new **`affinidi-messaging-mediator-config`** crate extracting the TOML schema; bounded privileged-change audit log (#401–#438). Preceded by cross-mediator DIDComm federation work: least-privilege anonymous relay, minimal relay ACLs, per-hop re-wrapping `relay_mode=rewrap` (#383–#400).
+
+### Secrets backends + mediator setup — early July 2026
+
+Native **Kubernetes Secrets** backend (#558) and **HashiCorp Vault** Kubernetes/AppRole auth + Enterprise namespaces (#557), wired into recipes and the interactive wizard — the same enterprise-deployment direction as VTI's `vti-secrets`. Opt-in P-256 key suite for mediator-setup (#531).
+
+### Version movement — June–July 2026
+
+The mediator went 0.15.15 → **0.16.41** (~26 releases) and messaging-sdk 0.18.7 → 0.18.49; the `affinidi-tdk` facade hit **0.8.3**; `affinidi-vc` 0.2.1 (absorbing sd-jwt-vc); `affinidi-openid4vci` 0.2.1 (breaking: alg allowlist threading); did-resolver cache-server 0.7.5 → 0.9.2 (hardening wave). vta-sdk consumed at 0.18 by window end. Notable fixes: did:cheqd made opt-in so the resolver SDK no longer forces the rustls ring backend (#486); data-integrity 0.7.5 rejects forged undefined attributes in bbs-2023 safe mode (#382).
+
+The May–June cycle below (~50 commits) was dominated by the new **`affinidi-bbs` crate**, **JOSE centralisation**, and OpenID4VC family expansion.
 
 ### `affinidi-bbs` v0.1.0 → v0.3.0 — May–June 2026 — BBS signatures, blind BBS, per-verifier pseudonym
 

@@ -2,7 +2,7 @@
 title: "DTG Credential Specification (ToIP DTGWG)"
 type: entity
 tags: [spec, dtg, trust-over-ip, primary]
-date-updated: 2026-05-08
+date-updated: 2026-07-06
 repo: https://github.com/trustoverip/dtgwg-cred-tf
 ---
 
@@ -36,6 +36,10 @@ The repo contains prose specifications in Markdown — no code. The wiki entity 
 ## Recent Development
 
 The spec is at v0.3; recent activity is per-PR. (PR numbers serve the role of version identifiers below since the spec version itself hasn't bumped.)
+
+### `first-working-draft` branch — 2026-05-26 — toward a formal ToIP deliverable
+
+A pending branch adds `working_draft_v0_1.md`: the ToIP **Spec-Up-T** template instantiated as "Decentralized Trust Graph Credentials — Core Specification, Version 0.1, Working Draft." No normative content yet — it's the scaffolding (IPR boilerplate under the JDF/ToIP DTGWG charter, required Security / Privacy / Governance / Conformance sections, Spec-Up-T glossary machinery) for converting the informal `dtg.md` v0.3 spec into a formal ToIP Approved Deliverable. `main` is otherwise unchanged since PR #33.
 
 ### PR #33 — 2026-05-08 — Split VRC/VMC ZKP proofs into pairwise and community-anchored constructions
 

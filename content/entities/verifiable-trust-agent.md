@@ -2,7 +2,7 @@
 title: "Verifiable Trust Agent (VTA)"
 type: entity
 tags: [vta, vti, key-management, signing-oracle, infrastructure, primary, mobile]
-date-updated: 2026-06-07
+date-updated: 2026-07-06
 ---
 
 # Verifiable Trust Agent (VTA)
@@ -84,6 +84,26 @@ The SDK handles authentication, token refresh, secret caching, and offline fallb
 
 Per-release detail lives on the workspace entity — see [[verifiable-trust-infrastructure#Recent Development]] for the full activity log. VTA-relevant highlights, reverse chronological:
 
+### TSP as preferred transport — late June–July 2026
+
+The VTA's transport preference officially flipped to **[[trust-spanning-protocol|TSP]] > DIDComm > REST**. DIDs double as TSP VIDs reusing the existing Ed25519/X25519 keys — no new key material; capability discovery is DID-document-driven (`TSPTransport` service advertised in DID templates, matched by type); TSP runs as a first-class managed service (`ServiceState::Tsp`, enable/disable/rollback via `pnm services`) over the *same* mediator websocket as DIDComm. Feature-gated and opt-in today; intended default-on after field exercise.
+
+### Personal AI agents — June 2026
+
+The VTA is being positioned as the trust/identity/secrets substrate under AI agent runtimes: `AgentSession` on vta-sdk, the new **`vta-mcp`** MCP server exposing the VTA's signing oracle / secrets vault / discovery to MCP hosts (Claude Desktop named explicitly), an `ai-agent` DID template, a per-context KV store for agent memory, scoped VC issue/revoke, and an ephemeral derive-and-sign trust task.
+
+### Security campaign (P0–P3) — June 2026
+
+The VTA-relevant core of the workspace-wide hardening push: AES-GCM AAD binding of stored values to their keyspace location (defeats ciphertext cut-and-paste by an untrusted Nitro parent); TEE **anti-rollback** (MAC'd integrity manifest + external CAS counter + attestation-gated anchor writer); DIDComm sender authentication; master-seed zeroization; step-up enforcement on vault release / proxy-login / sign-trust-task; fail-closed secret backends; an OpenAPI 3.1 spec for the full VTA surface; audit-trail tamper-evidence hash chain. Secrets backends were extracted into the reusable **`vti-secrets`** crate (Vault, KMS/TEE, Kubernetes Secrets).
+
+### Mobile approver becomes a cryptographic party — July 2026
+
+`vta-mobile-core` reached 0.6.11: push-gateway wake model, step-up **approve-response 0.2** with structured `authorizationContext`, and **signed denial** — the phone now cryptographically signs both outcomes of an authorization decision, not just approvals.
+
+### did:webvh self-hosting — June–July 2026
+
+The VTA serves its own did:webvh log at canonical `did.jsonl` paths, preloads its self-DID into the resolver cache (and re-syncs after runtime DID-log mutations), and backdates/spaces `versionTime` to avoid same-second log-entry collisions.
+
 ### Mobile agent (`vta-mobile-core` v0.3.0) — June 2026
 
 The VTA family now includes a UniFFI engine for mobile holders. Two iOS/Android apps share one Rust core:
@@ -148,6 +168,6 @@ A single Trust Task envelope can be accepted at one of four ladder rungs: **devi
 - P-256 keys
 - Prometheus metrics
 
-The direction has decisively shifted from "make the VTA usable" to "make the VTA's runtime surface mutable in production without downtime or rebuilds."
+The direction has shifted twice: first from "make the VTA usable" to "make the VTA's runtime surface mutable in production without downtime or rebuilds," and now (mid-2026) to broadening *who* the VTA serves — phones as cryptographic approvers, AI agents as first-class clients, enterprises with owner/user separation of duty — over a transport stack converging on TSP.
 
 See also: [[verifiable-trust-infrastructure]], [[bip32-key-derivation]], [[openvtc]]

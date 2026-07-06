@@ -2,7 +2,7 @@
 title: "did-hosting-service (formerly Affinidi WebVH Service)"
 type: entity
 tags: [affinidi, webvh, did-hosting, did-web, service, secondary, multi-method, multi-domain]
-date-updated: 2026-06-07
+date-updated: 2026-07-06
 repo: https://github.com/affinidi/affinidi-webvh-service
 ---
 
@@ -48,7 +48,29 @@ The cold-start bootstrap flow (`import-secrets` CLI) can bring up an entire envi
 
 ## Recent Development
 
-After hardening cross-service trust paths in v0.6.0, the v0.7.0 release does the bigger architectural pivot: **multi-domain, multi-method, did-hosting-service rename, and a separate client crate**. A VTA-proxied SIOP login flow lands on top.
+After hardening cross-service trust paths in v0.6.0 and pivoting to multi-domain / multi-method in v0.7.0, the June–July cycle (14 commits, all unreleased work heading toward a presumptive 0.8.0 — also the announced removal target for the deprecated legacy `/api/acl` REST surface, sunset header 2026-12-01) converges the service on the **Trust Tasks** framework as its universal wire abstraction and adds **[[trust-spanning-protocol|TSP]]** as a transport.
+
+### TSP transport alongside DIDComm — 2026-07-07 (#58) — "everything is a trust task"
+
+The headline change, and a clean illustration of the architecture: every wire operation in the workspace is a **Trust Task** — a versioned, JSON, transport-agnostic document — and the dispatch core doesn't care which transport delivered it. Adding TSP was therefore adding one *transport binding*, not a new protocol. Three bindings now exist: HTTPS (`POST /api/trust-tasks`), DIDComm v2 (mediator envelope), and TSP.
+
+- TSP rides the **same per-DID mediator websocket** as DIDComm (no second socket): `affinidi-messaging-didcomm-service` unpacks inbound TSP frames, authenticates the sender VID, and routes to a new `WebvhTspHandler`, which dispatches through the shared core.
+- `build_did_document` can emit a `#tsp` service of type `TSPTransport`, ordered *before* `#vta-didcomm` to match the VTA templates' canonical TSP-first order; a new `resolve_transport` helper prefers a peer's `TSPTransport` and falls back to `DIDCommMessaging`.
+- All DID-management ops (check-name, publish, register, delete, change-owner, info, list, witness/publish) became reachable as trust-task documents over both TSP and DIDComm via a `bridge_did_management` facade; legacy `MSG_*` messages kept for back-compat.
+- Scope limit (direction signal): inbound request/response over TSP is fully supported, but proactive outbound push (control→server sync) still uses DIDComm — the framework has no outbound Trust-Task sender yet.
+
+### Trust-flow hardening — June–July 2026
+
+- **Step-up converges on holder-self-signs** (#57): the wallet signs an `auth/step-up/approve-response/0.2` Trust Task with a W3C Data Integrity proof (eddsa-jcs-2022) over its session-subject key, and the RP verifies that proof directly — the VTA is **no longer a trusted third party** for step-up. Includes a cross-language interop test against the JS wallet (`@openvtc/pnm-core`) proving both eddsa-jcs-2022 implementations canonicalise byte-identically.
+- A VTA-provisioned daemon now auto-trusts its provisioning VTA to publish DIDs (idempotent Admin ACL seeding at setup, #55); passkey-authenticated ACL writes fixed under trust-tasks-proof 0.2's stricter issuer rule via a `TransportBoundVerifier` (#44); the UI resolves the SIOP RP DID from the control plane at runtime instead of a build-time env var (#51).
+
+### Ops/deployment maturity — June 2026
+
+- Two new SecretStore backends ported from VTI's `vti-secrets` design: **HashiCorp Vault** KV v2 (K8s ServiceAccount JWT / static token / AppRole, background token renewal) and native **Kubernetes Secrets** (#53); priority chain now AWS → GCP → Azure → Vault → K8s → keyring → plaintext, wired into the wizard and the non-interactive TOML setup recipes.
+- **Fuzzing harness** (#48): a detached cargo-fuzz crate with four libFuzzer targets, including a structure-aware one built on [[didwebvh-rs]]'s new `arbitrary` feature — a coordinated cross-repo fuzzing push (both landed 2026-06-14). Plus an OpenAPI 3.1 spec for the upload/resolve API with a drift-checked committed snapshot.
+- Fixes: percent-decode the did:webvh host authority before domain validation — previously every port-bearing host like `localhost%3A8534` got a 400 (#56); DynamoDB binary-key prefix-scan fix (#43).
+
+Earlier release history:
 
 ### v0.7.0 — 2026-05-24 — `did-hosting-service` rename + multi-domain + multi-method + client crate + Trust Tasks ACL
 
