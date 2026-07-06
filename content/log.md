@@ -1,12 +1,30 @@
 ---
 title: "Wiki Log"
 type: log
-date-updated: 2026-06-07
+date-updated: 2026-07-06
 ---
 
 # Wiki Log
 
 A record of major wiki updates: new sources ingested, significant concept and entity additions, and meaningful structural changes.
+
+---
+
+## [2026-07-06] June–July refresh — multi-community lands, TSP goes first-class, new vti-setup source
+
+Another record month across the ecosystem (289 commits in VTI, 193 in the TDK, 80 in OpenVTC), refreshed across all entity activity logs.
+
+**New source: [[vti-setup]]** — github.com/OpenVTC/vti-setup joins as a secondary entity: persona-organized setup guides (developer / community manager / sysop) for standing up the full VTI stack, from a throwaway "explore" sandbox to a hardened systemd + TOML-recipe "deploy" path, with tested, version-pinned walkthroughs.
+
+**Multi-community is done** — [[openvtc]] executed its entire T1–T9 multi-community plan in one month, capped by the `Banyan` milestone tag: one VTA account, many persona-backed memberships, a real [[invitation-credential|VIC]] join flow (vault storage, subject-linkage proof, verdict-model admission), reciprocal member VMCs, and a Ctrl+K community switcher. [[invitation-credential]] gained an Implementation Status section — it's the first credential type to go spec → working code end-to-end.
+
+**TSP goes first-class** — in a coordinated push across three repos, the ToIP Trust Spanning Protocol graduated from experimental to supported and the official transport preference flipped to **TSP > DIDComm > REST**: the [[affinidi-tdk|TDK]]'s mediator became dual-protocol (same endpoint, same websocket, TSP↔DIDComm bridging, cross-mediator federation, ToIP reference interop), the [[verifiable-trust-infrastructure|VTI]] shipped TSP as a first-class managed service, and [[affinidi-webvh-service|did-hosting-service]] added it as a third transport binding under its "everything is a trust task" model. The [[trust-spanning-protocol]] concept page was rewritten accordingly.
+
+**VTI hardening + new surfaces** — [[verifiable-trust-infrastructure]] documents the P0–P3 security campaign (TEE anti-rollback, storage AAD binding, audit hash chains, OpenAPI 3.1 specs, fuzzing), four new crates (`vta-mcp`, `vtc-client`, `vti-secrets`, `vti-fuzz`), crates.io trusted publishing, and two new product thrusts: **personal AI agents** (the VTA as trust anchor under agent runtimes, MCP bridge included) and **enterprise fleet management**. The mobile approver now cryptographically signs denials as well as approvals.
+
+**Elsewhere** — [[didwebvh-rs]] shipped 0.5.5/0.5.6 (fuzzing infrastructure + caller-settable `versionTime`); [[affinidi-webvh-service]] hardened step-up to holder-self-signs (the VTA is no longer a trusted third party there); and the [[dtg-credential-spec]] has scaffolding on a branch for its first formal ToIP Working Draft via Spec-Up-T.
+
+[[overview]] Layers 3 and 5 and "Where Things Are Heading" rewritten for July 2026; [[index]] updated.
 
 ---
 

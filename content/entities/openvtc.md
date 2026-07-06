@@ -2,7 +2,7 @@
 title: "OpenVTC — The Trust Community CLI"
 type: entity
 tags: [openvtc, cli, tui, user-experience, primary, multi-community]
-date-updated: 2026-06-07
+date-updated: 2026-07-06
 repo: https://github.com/OpenVTC/openvtc
 ---
 
@@ -19,7 +19,7 @@ OpenVTC implements the [[first-person-network|First Person Protocol]] for the "K
 1. **Set up your identity** — generate keys, create your Persona DID ([[did-webvh|did:webvh]]), host it on the domain of your choice
 2. **Connect with people** — send and accept relationship requests via [[didcomm|DIDComm]]
 3. **Build your trust network** — exchange [[relationship-credential|Relationship Credentials]], receive [[endorsement-credential|endorsements]], get [[witness-credential|witness attestations]]
-4. **Participate in communities** — join VTCs, respond to community protocol messages
+4. **Participate in communities** — join VTCs (presenting a [[invitation-credential|Verifiable Invitation Credential]] where required), respond to community protocol messages — and since June 2026, belong to **multiple communities at once**, each under its own persona
 
 Behind the scenes, OpenVTC orchestrates the [[verifiable-trust-agent|VTA]] (for key management), DIDComm messaging (for communication), and credential issuance (for trust building).
 
@@ -48,7 +48,7 @@ Shared library (formerly `openvtc-lib`, `publish = false`): config management, B
 Background daemon that polls a [[didcomm|DIDComm mediator]] for incoming messages and processes protocol requests. Currently handles maintainer list queries (`https://kernel.org/maintainers/1.0/list`).
 
 ### did-git-sign
-SSH/Git signing helper that uses the VTA as a signing oracle. Auto-configured during the setup wizard. Refuses to sign unless the parent process name starts with `git` or `ssh-keygen`, and writes every signing attempt — accepted or denied — to `~/.config/did-git-sign/audit.log`. Under the [multi-community model](#post-v021-multi-community-design-and-t1) the signing persona becomes a per-repo selection (env var and/or git config), so different communities can sign distinct repos.
+SSH/Git signing helper that uses the VTA as a signing oracle. Auto-configured during the setup wizard. Refuses to sign unless the parent process name starts with `git` or `ssh-keygen`, and writes every signing attempt — accepted or denied — to `~/.config/did-git-sign/audit.log`. Since the multi-community work (T8, June 2026) the signing persona is a per-repo selection via env var or git config, so different communities can sign distinct repos.
 
 The earlier `openvtc-service` (background DIDComm daemon) and `robotic-maintainers` (auto-accept test service) crates were **removed in v0.2.1** (PR #63) — `openvtc-service`'s role is now covered inside the TUI's own DIDComm session, and the test fixture role moved to the in-tree mediator harness.
 
@@ -78,7 +78,31 @@ Multiple profiles are supported via the `OPENVTC_CONFIG_PROFILE` environment var
 
 ## Recent Development
 
-The focus has shifted from security correctness alone (the v0.1.x pass), through feature completeness on a hardened base (v0.2.0), to architecting the **multi-community** model — converting OpenVTC from a profile-singleton into a tool that holds one VTA account and many persona-backed community memberships.
+The focus has shifted from security correctness alone (the v0.1.x pass), through feature completeness on a hardened base (v0.2.0), through architecting the **multi-community** model, to **executing that pivot in full**: as of the `Banyan` milestone tag (2026-06-22), OpenVTC holds one VTA account and many persona-backed community memberships, live.
+
+### June 2026 — multi-community executed (T1–T9 complete) + VIC join flow — `Banyan` milestone
+
+The entire multi-community plan landed in a single month (80 commits, PRs #69–#149; ~21,600 insertions). The window ends with a lightweight milestone tag, **`Banyan`** (2026-06-22, at PR #148) — note the shift from `vX.Y.Z` tags to codenames. The workspace version is still 0.2.1 and the changelog hasn't caught up; commit history, the DRAFT v5 spec, and the tag are ground truth.
+
+**T1–T9 all complete.** Beyond the T1 foundation (config v2 + supervised multi-session manager, one recoverable DIDComm task per community session, #110/#111), the slices landed in order: `context_path` hierarchy mirroring `vti-common` validation (T2, #112); State-A bootstrap split from the monolithic ~19-step wizard — account bootstrap mints **no** persona DID (T3, #113); communities overview with favourite toggle and a **Ctrl+K community switcher** (T4, #114); join flow with identity choice — reuse a persona or mint a fresh `did:webvh` — and live session registration without restart (T5, #115/#116); pending-resolution lifecycle with the 7-day timeout → Expired (T6, #117); leave / archive / inactive-only delete with read-only styling (T7, #118); `did-git-sign` per-repo persona selection (T8, #119); and end-to-end integration tests against a real mediator and VTI's `MockVta` (T9, #120–#122).
+
+**The join path got real — Verifiable Invitation Credentials + verdict-model admission.** The spec's "stub VP" placeholder (deferred decision D4) was replaced within the same window by a concrete credential mechanism:
+
+- Join over DIDComm: submit_join to the VTC (#69), submit-receipt reconciliation (#71), credential delivery flipping Pending → Active (#72), minted-persona rollback on failed join (#74, #123), **one DIDComm listener per persona** (#79) — the messaging backbone of multi-community.
+- **[[invitation-credential|VIC]] presentation at join** (#127), VIC storage in the VTA credential vault (#130), **subject-linkage proof** to join under a fresh DID (#131), full VIC lifecycle management from the VTA panel (import/archive/soft-delete/restore/purge, #136).
+- **Verdict-model join** (#136): a `VerdictResponse` drives admission — allow → Active, deny → Rejected, refer/request_more → Pending — plus DIDComm problem-report handling, fixing joins that previously sat stuck Pending for 7 days on rejection.
+- Join UX/robustness burst (#137–#145): community-matched VIC selection, Trust Task document framing, W3C-compliant join VP, identity-first join with per-persona VIC badges.
+- **Multi-membership + reciprocity**: multiple memberships per community under distinct personas (#146); issuing a **reciprocal member VMC** back to the community (#147) and auto-answering a VTC `members/request-vmc` (#148 — the `Banyan` commit). Membership is now bidirectional in practice, matching the spec's bi-directional edge model.
+
+**Supporting streams in the same window:**
+
+- **R-series architectural hardening** (R17–R27, #89–#109): protocol state machine hoisted into `openvtc-core` (new 1,800-line `messaging.rs`), `Arc<Mutex>` flattened out of the domain model, typed credential registry replacing string-matched VC kinds, typed VTA/Auth errors, a TUI architecture design doc.
+- **TUI responsiveness** (#92–#97): background-dispatch pattern for network actions, coalesced/offloaded `Config::save`, Argon2 KDF off the async runtime, cancellable mid-flight join/setup.
+- **Security & privacy fixes** (#82–#88): `VRCIssued` now gated on relationship, issuer binding, and proof verification; private-config contents no longer logged; DIDs truncated in handler logs; private key redacted from `did-git-sign` debug output; fuzzing groundwork (#125/#126) with feature-gated `Arbitrary` derives on parse-surface types.
+- Final fix of the window (#149, 06-27): repair R-DID `key_info` ids that caused a mediator auth loop.
+- Dependency escalation tracking VTI's cadence: vta-sdk 0.10 → 0.17 → 0.18.1 plus affinidi-tdk 0.8 in ten days — OpenVTC is functioning as the reference client for the VTI stack.
+
+**Still open:** VP requirement discovery (the one unresolved spec item, D4), persona key rotation, per-community capabilities beyond the ported main page.
 
 ### Post-v0.2.1 — multi-community design + T1 implementation
 

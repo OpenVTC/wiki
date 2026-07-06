@@ -2,8 +2,8 @@
 title: "Invitation Credential (VIC)"
 type: concept
 tags: [credentials, dtg, invitation, onboarding]
-date-updated: 2026-04-09
-sources: [dtg-credential-spec]
+date-updated: 2026-07-06
+sources: [dtg-credential-spec, openvtc, verifiable-trust-infrastructure]
 ---
 
 # Invitation Credential (VIC)
@@ -24,5 +24,9 @@ This flexibility lets communities choose between centralized invitation (only th
 VICs are [[credential-categories|Invitation Credentials]] — they bootstrap new participants but don't create persistent graph structure. Once the invitee completes onboarding and receives a [[membership-credential|Membership Credential (VMC)]], the invitation has served its purpose.
 
 The [[verifiable-trust-agent|VTA/PEP]] processes invitation credentials during the onboarding flow.
+
+## Implementation Status
+
+As of June 2026 the VIC is **implemented end-to-end**, making it the first invitation mechanism to go from spec to working code. On the community side, the VTC service supports automatic join via VIC — with role-on-invite, revocation, QR-sized invitations in the admin UI, and a verdict-model admission pipeline. On the member side, [[openvtc|OpenVTC]] presents a VIC at join, stores VICs in the VTA credential vault, and supports a **subject-linkage proof** so an invitee can join under a freshly minted DID different from the one the VIC names. See the Recent Development sections on [[openvtc]] and [[verifiable-trust-infrastructure]].
 
 See also: [[membership-credential]], [[credential-categories]], [[verifiable-trust-community]], [[verifiable-trust-network]]

@@ -2,8 +2,8 @@
 title: "OpenVTC Ecosystem Overview"
 type: overview
 tags: [openvtc, vti, trust-graph, decentralized-identity, first-person-network]
-date-updated: 2026-06-07
-sources: [verifiable-trust-infrastructure, openvtc, dtg-credentials, dtg-credential-spec, affinidi-tdk, affinidi-webvh-service, didwebvh-rs]
+date-updated: 2026-07-06
+sources: [verifiable-trust-infrastructure, openvtc, dtg-credentials, dtg-credential-spec, affinidi-tdk, affinidi-webvh-service, didwebvh-rs, vti-setup]
 ---
 
 # OpenVTC Ecosystem Overview
@@ -38,7 +38,7 @@ The VTA is the heart of the [[verifiable-trust-infrastructure|Verifiable Trust I
 
 ### Layer 3: Secure Communication
 
-Participants communicate via [[didcomm|DIDComm v2]] — end-to-end encrypted messaging where the encryption is tied to your DID. Messages are routed through mediators, so participants don't need to know each other's IP addresses. The [[affinidi-tdk|Affinidi Trust Development Kit]] provides the messaging infrastructure, including a mediator service and support for the newer [[trust-spanning-protocol|Trust Spanning Protocol (TSP)]].
+Participants communicate via [[didcomm|DIDComm v2]] — end-to-end encrypted messaging where the encryption is tied to your DID. Messages are routed through mediators, so participants don't need to know each other's IP addresses. The [[affinidi-tdk|Affinidi Trust Development Kit]] provides the messaging infrastructure, including a mediator service. As of mid-2026 the mediator is **dual-protocol**: it also speaks the leaner ToIP [[trust-spanning-protocol|Trust Spanning Protocol (TSP)]] on the same connection, and the ecosystem's official transport preference is now TSP first, with DIDComm as the interop fallback.
 
 ### Layer 4: Trust Credentials
 
@@ -52,9 +52,11 @@ These credentials form the [[decentralized-trust-graph|Decentralized Trust Graph
 
 ### Layer 5: The User Experience
 
-[[openvtc|OpenVTC]] is the user-facing TUI that ties it all together for end users. It walks you through creating your identity, establishing trust relationships with others, and participating in trust communities — and increasingly, in **multiple** trust communities simultaneously, each with its own persona and lifecycle (T1 of the multi-community pivot landed in June 2026). Behind the scenes, it orchestrates the VTA, DIDComm messaging, and credential issuance.
+[[openvtc|OpenVTC]] is the user-facing TUI that ties it all together for end users. It walks you through creating your identity, establishing trust relationships with others, and participating in trust communities — including **multiple** trust communities simultaneously, each with its own persona and lifecycle: the multi-community pivot completed in June 2026 (the `Banyan` milestone), with a working invitation-credential join flow and a Ctrl+K community switcher. Behind the scenes, it orchestrates the VTA, DIDComm messaging, and credential issuance.
 
 On mobile, the [[verifiable-trust-infrastructure|VTI]] now ships two thin native apps — **Authenticator** (a holder's pocket approver for AAL step-up over DIDComm v2) and **PNM mobile** (mobile counterpart of the `pnm` operator CLI) — both built on a shared Rust UniFFI engine, `vta-mobile-core`.
+
+And for anyone who wants to stand the whole stack up themselves — from a throwaway learning VM to a hardened production deployment — the [[vti-setup]] repo provides tested, version-pinned setup guides organized by persona (developer, community manager, sysop).
 
 ## The First Person Network
 
@@ -64,13 +66,15 @@ The name "first person" is deliberate — this is identity asserted by *you*, no
 
 ## Where Things Are Heading
 
-As of mid-2026 the ecosystem is moving on three fronts at once:
+As of July 2026, several of the fronts described in earlier versions of this page have *landed* — and the frontier has moved:
 
-- the **end-user CLI** is being rearchitected so one person can belong to many communities at once, each with its own persona and lifecycle, rather than today's one-profile-one-community model;
-- the **infrastructure** has matured into a complete VTC service (admin UI, plugins, ceremony policies, TRQP-anchored join) and is growing **phone apps** alongside the existing CLIs — an **Authenticator** that turns a holder's phone into a DIDComm-based second factor (the user receives a step-up prompt on the phone and approves it with a DID-bound passkey in the Secure Enclave), and a **PNM mobile** app that lets an operator drive their VTA from a phone instead of a terminal;
-- and the **spec** has clarified two things: ZKPs should be the default presentation mode (the spec recommends implementations make ZKP presentation the default so users get privacy without opting in), and a pairwise relationship between two entities — not membership in a community — is the foundational primitive of the trust graph.
+- **Multi-community is done.** The end-user CLI's rearchitecture completed in a single month (the `Banyan` milestone, June 2026): one VTA account, many persona-backed community memberships, a real invitation-credential join flow with verdict-based admission, and reciprocal membership credentials flowing both ways. What remains is polish: presentation-requirement discovery, persona key rotation, richer per-community views.
+- **TSP is the new transport direction.** In a coordinated June–July push across the TDK, VTI, and did-hosting-service, the ToIP [[trust-spanning-protocol|Trust Spanning Protocol]] graduated from experiment to supported transport — interoperable with the ToIP reference implementation, served by the same mediators as DIDComm, and now *preferred* over DIDComm wherever both ends support it.
+- **The VTA is broadening who it serves.** Two new client classes emerged in June: **AI agents** — the VTA is being positioned as the trust anchor under personal-AI-agent runtimes, with an MCP server (`vta-mcp`) exposing its signing oracle and secrets vault to hosts like Claude Desktop, agent DID templates, and scoped credential issuance — and **enterprises**, with a proposed fleet-management model that separates owner and user duties. Meanwhile the phone completed its promotion: the mobile approver now cryptographically signs both approvals *and* denials.
+- **Production posture is real.** The VTI ran a systematic P0–P3 security campaign (TEE anti-rollback, storage AAD binding, audit hash chains, OpenAPI specs, fuzzing) and now publishes its crates via trusted publishing; the TDK sealed its public APIs behind a semver policy; three repos coordinated a fuzzing push; and the new [[vti-setup]] repo gives operators tested walkthroughs from sandbox to hardened deployment.
+- **The spec is formalizing.** The DTG credential spec has scaffolding on a branch for its first formal ToIP Working Draft, using the Spec-Up-T template.
 
-The direction of travel is toward a fully self-contained, publicly deployable trust infrastructure that any community can adopt — with mutable runtime surfaces, hardened cross-service trust paths, ZKPs as the default way to present credentials, and the phone (not just the terminal) as a first-class place to hold and approve credentials.
+The direction of travel is unchanged but closer: a fully self-contained, publicly deployable trust infrastructure that any community can adopt — now with the phone and the AI agent, not just the terminal, as first-class holders and approvers of credentials, and TSP as the emerging common transport underneath it all.
 
 For a release-by-release timeline of how the ecosystem got here — including each project's recent activity log — see the [[log|wiki log]] and the **Recent Development** section on each entity page.
 

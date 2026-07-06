@@ -2,7 +2,7 @@
 title: "didwebvh-rs — did:webvh Rust Implementation"
 type: entity
 tags: [didwebvh, did, library, dif, secondary]
-date-updated: 2026-06-07
+date-updated: 2026-07-06
 repo: https://github.com/decentralized-identity/didwebvh-rs
 ---
 
@@ -10,7 +10,7 @@ repo: https://github.com/decentralized-identity/didwebvh-rs
 
 *Repo: [github.com/decentralized-identity/didwebvh-rs](https://github.com/decentralized-identity/didwebvh-rs)*
 
-A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version 0.5.4.
+A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version 0.5.6.
 
 ## What It Provides
 
@@ -38,7 +38,18 @@ This is a foundational building block. The [[affinidi-tdk|Affinidi TDK]] uses it
 
 ## Recent Development
 
-After a quiet patch in late April / early May, the library shipped two consecutive releases that closed an external security-audit list and then a spec-compliance issue.
+The library is in maintenance-and-hardening mode: after the security-audit and spec-compliance releases of May–June, the June–July additions are fuzzing infrastructure for the verifier core plus targeted API affordances driven by downstream VTA/hosting-service integration needs. Both are additive — no breaking changes across 0.5.x.
+
+### v0.5.6 — 2026-06-29 — caller-settable `versionTime` on create/update
+
+- `CreateDIDConfig` / `UpdateDIDConfig` gain an optional `version_time` (default keeps `now()`). Motivation: `versionTime` serialises at second granularity and must be strictly increasing, so an automated back-to-back create-then-update — e.g. a [[verifiable-trust-agent|VTA]] provisioning flow — produced same-second entries that made the DID unresolvable. Callers can now backdate/space entries; a real-world integration bug found by the hosting-service side (PR #48).
+
+### v0.5.5 — 2026-06-14 — feature-gated `Arbitrary` + structure-aware fuzz harness
+
+- New off-by-default `arbitrary` feature: `Arbitrary` impls across the public log-entry and parameters types, making the structural proof path (shape enforcement, did:key resolution, cryptosuite gating) fuzz-reachable without valid signatures (PR #46, closes #44).
+- New workspace-detached `fuzz/` crate with cargo-fuzz targets (parameters_validate, logentry_deserialize, chain_validate, proof_verify); ~6M smoke executions, no crashes; weekly fuzz CI.
+- New public API beyond fuzzing: `DIDWebVHState::from_log_entries()` — a filesystem-free way to validate an in-memory chain.
+- Why it matters: this is the crate that verifies did:webvh log chains for the whole ecosystem, and the `arbitrary` feature is what enabled the structure-aware fuzz target in [[affinidi-webvh-service|did-hosting-service]] the same day — a coordinated cross-repo fuzzing push.
 
 ### v0.5.4 — 2026-06-07 — witness IDs as `did:key` + dep refresh
 

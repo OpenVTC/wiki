@@ -1,7 +1,7 @@
 ---
 title: "Wiki Index"
 type: index
-date-updated: 2026-06-07
+date-updated: 2026-07-06
 ---
 
 # Wiki Index
@@ -37,7 +37,7 @@ date-updated: 2026-06-07
 ### Protocols
 - [[witnessed-vrc-exchange]] — Five-phase Witnessed Session-Based VRC Exchange protocol
 - [[didcomm]] — DIDComm v2: end-to-end encrypted DID-based messaging, mediators
-- [[trust-spanning-protocol]] — TSP: leaner messaging alternative with HPKE-Auth + CESR
+- [[trust-spanning-protocol]] — TSP: the ecosystem's now-preferred transport (HPKE-Auth + CESR), with DIDComm fallback
 
 ### Governance & Community
 - [[trust-registries]] — Authoritative governance: roles, policies, PHC determination
@@ -59,6 +59,7 @@ Each entity page covers both the project's structure (components, role, dependen
 - [[dtg-credential-spec]] — ToIP DTG Working Group authoritative credential specification (v0.3)
 
 ### Secondary (Building Blocks)
-- [[affinidi-tdk]] — Affinidi TDK: DID resolution, messaging, crypto primitives
-- [[affinidi-webvh-service]] — WebVH Service: did:webvh hosting infrastructure
+- [[affinidi-tdk]] — Affinidi TDK: DID resolution, messaging (DIDComm + TSP), crypto primitives
+- [[affinidi-webvh-service]] — did-hosting-service: did:webvh / did:web hosting infrastructure
 - [[didwebvh-rs]] — didwebvh-rs: reference did:webvh Rust implementation
+- [[vti-setup]] — vti-setup: persona-organized guides for standing up the full VTI stack, from sandbox to hardened deployment
