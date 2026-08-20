@@ -2,13 +2,13 @@
 title: "Witnessed VRC Exchange Protocol"
 type: concept
 tags: [protocol, witness, vrc, flow, didcomm]
-date-updated: 2026-04-09
-sources: [dtg-credential-spec]
+date-updated: 2026-08-19
+sources: [dtg-credential-spec, dtg-credentials]
 ---
 
 # Witnessed VRC Exchange Protocol
 
-The Witnessed Session-Based VRC Exchange (v0.2) is a five-phase protocol for creating [[relationship-credential|Relationship Credentials (VRCs)]] with third-party [[witness-credential|Witness]] attestation. It ensures that both the relationship and the witness proof are cryptographically bound to a specific session.
+The Witnessed Session-Based VRC Exchange (v0.2, kept as supporting material in the DTG task-force repo; its per-direction VWC pattern became normative in the [[dtg-credential-spec|spec]]'s Working Draft 01) is a five-phase protocol for creating [[relationship-credential|Relationship Credentials (VRCs)]] with third-party [[witness-credential|Witness]] attestation. It ensures that both the relationship and the witness proof are cryptographically bound to a specific session.
 
 ## Why Witnessed Exchange?
 
@@ -39,7 +39,7 @@ The Witness performs three checks on each submission:
 ### Phase 4: Credential Distribution
 
 1. The Witness mints two [[witness-credential|Witness Credentials (VWCs)]] — one for each observed VRC
-2. Each VWC includes an optional SHA-256 digest of the witnessed VRC (multibase/multihash encoded)
+2. Each VWC carries a `taskContext` naming this session's trust-task thread and (since WD01, REQUIRED) a `digest` of the witnessed VRC — SHA-256 over its JCS canonical form, encoded `sha256:<hex>` — with `credentialSubject.id` set to the issuer of that VRC; see [[witness-credential]] and [[trust-task-context-binding]]
 3. Distribution is cross-wise: Alice receives the VWC witnessing Bob's VRC, and Bob receives the VWC witnessing Alice's VRC
 
 ### Phase 5: Verification

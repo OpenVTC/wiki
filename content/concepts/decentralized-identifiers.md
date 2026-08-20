@@ -2,8 +2,8 @@
 title: "Decentralized Identifiers (DIDs)"
 type: concept
 tags: [did, identity, w3c, standards]
-date-updated: 2026-04-09
-sources: [verifiable-trust-infrastructure, openvtc, didwebvh-rs, affinidi-tdk]
+date-updated: 2026-08-19
+sources: [verifiable-trust-infrastructure, openvtc, didwebvh-rs, affinidi-tdk, affinidi-webvh-service, dtg-credential-spec]
 ---
 
 # Decentralized Identifiers (DIDs)
@@ -53,7 +53,12 @@ The DTG specification defines a formal taxonomy of DID types, each serving a spe
 - **M-DID** — Member DID (identifies an individual within a community)
 - **R-DID** — Relationship DID (unique per relationship, for privacy)
 - **P-DID** — Persona DID (for selective persona disclosure)
-- **W-DID** — Witness DID (for witness attestations)
+
+(The earlier W-DID / Witness DID was dropped in the spec's Working Draft 01; witnesses act under an M-DID or as a VTA.)
+
+## Agent Names — human-readable shortcuts for DIDs
+
+A DID is unreadable to humans. Since July 2026 the ecosystem layers **agent names** on top — URLs whose path starts with `/@`, such as `example.com/@alice` or the *community form* `example.com/@` for the VTC that owns the domain. An agent name is a *shortcut layer*, not a DID method: the name URL redirects to a DID, the DID resolves normally, and the DID document **must claim the name back in `alsoKnownAs`** before any software displays it — otherwise anyone could point a name at someone else's DID. The [[affinidi-tdk|TDK]] resolves them (`agent-names` crate, `resolve_any()`), [[affinidi-webvh-service|did-hosting-service]] serves `/@name` redirects and keeps the registry, the [[verifiable-trust-agent|VTA]] manages a persona's names as Trust Tasks, and [[openvtc]] shows a verified name wherever a DID would appear and accepts names wherever a DID is entered.
 
 ## How DID Resolution Works
 

@@ -1,12 +1,28 @@
 ---
 title: "Wiki Log"
 type: log
-date-updated: 2026-07-06
+date-updated: 2026-08-19
 ---
 
 # Wiki Log
 
 A record of major wiki updates: new sources ingested, significant concept and entity additions, and meaningful structural changes.
+
+---
+
+## [2026-08-19] July–August refresh — the Cypress release, the spec moves house, five new sources
+
+**Cypress is out.** On 2026-08-17 the ecosystem cut **`Cypress`**, its third coordinated, cross-project release and the first to go through formal release candidates — tagged across [[verifiable-trust-infrastructure|VTI]] (vta-service 0.17 / vta-sdk 0.25), [[openvtc|OpenVTC]] (v0.3.0 → 0.3.1), [[dtg-credentials]] (0.2.0), the [[affinidi-tdk|Affinidi TDK]] (mediator 0.18.19), [[affinidi-webvh-service|did-hosting-service]] (0.8.x) and [[verifiable-git-infrastructure|VGI]] (0.4.5), with the [[vti-setup]] guides re-verified and pinned to it. A new page, **[[coordinated-releases]]**, explains the Aspen → Banyan → Cypress convention and lists exactly which versions go together.
+
+**The spec has a new home — and a first formal draft.** The DTG credential spec left the task-force repo for **`trustoverip/dtgwg-cred-spec`** and became *DTG Core Credentials v1.0, Working Draft 01* under the ToIP/JDF process. [[dtg-credential-spec]] is repointed and rewritten. Substantive changes, all reflected across the concept pages: three functional categories instead of four (the relationship card leaves for a companion *Verifiable Data Structures* spec), four DID types instead of five (W-DID dropped), a new **`taskContext`** binding (new page: **[[trust-task-context-binding]]**), and a [[witness-credential|Witness Credential]] that must now name the exchange and carry a required digest of the specific VRC it attests — `sha256:` + hex over JCS, one VWC per direction — changes driven by a wallet implementer's feedback. A ~50-term glossary arrived with it, including a VTA vocabulary the wiki now gives a home: **[[vta-topology]]** (personal/community × local/cloud VTAs, VTA networks, PNM, PNV, VTSP). [[dtg-credentials]] 0.2.0 tracks WD01 — fixing a real silent-drop bug on the way — but flags an unresolved digest-encoding divergence from the spec.
+
+**Five new sources.** [[verifiable-git-infrastructure]] (VGI) — `did-git-sign` extracted from OpenVTC plus a `verify-trust` GitHub Action that checks every PR commit against a VTC Trust Registry, fail-closed: Know Your Developer as a required CI check. And the **web-login family**: [[vta-browser-plugin]] (the VTA Wallet — passkeys ↔ VTA DIDs, three login shapes, in-browser consent approver, heading for the Chrome Web Store), [[rp-sdk-js]] (relying-party verification), [[vti-didcomm-js]] (browser DIDComm). The iOS authenticator, push gateway, a sampling placeholder and the org's governance repo are mentioned where relevant without pages.
+
+**Convergence across the stack.** The VTI's 340-commit month folded every wire operation onto canonical Trust-Task URIs (legacy REST routes now sign-posted with usage metrics gating deletion), collapsed three approval mechanisms into one runtime-manageable model with a break-glass, decomposed `vta-service` into eleven crates, moved to release-plz, made TSP *selectable* (a VTA can now run TSP-only), and added ISO mdoc, non-extractable keys, hardened non-TEE mode and Nitro tenant config over vsock. The TDK shipped a **reliable messaging delivery layer** (durable outbox, delivery evidence, ack-after-handoff), **agent names** (`example.com/@alice`, verified through `alsoKnownAs`), authcrypt-by-default, and DIDComm v1 for Aries/Credo interop. OpenVTC v0.3.0 made the join ceremony robust to asynchronous delivery (stored-mail pickup, status polling) and added agent names, TSP joins, and a Capabilities panel. did-hosting-service shipped 0.8.0 (transport as a negotiable property), `/@name` resolution, and a clean cut onto registry URIs — and, correcting an earlier wiki claim, did *not* remove its legacy `/api/acl` yet. [[didwebvh-rs]] reached 0.6.0.
+
+**Deployment.** [[vti-setup]] now pins to Cypress, its developer walkthroughs are rewritten for the current TUI (no-persona setup, join by DID or agent name, TSP), the VTA Farm is open self-signup — and **Kubernetes deployment instructions are coming soon alongside the VTA Farm**, so that deploying a VTA for an individual gets easier whichever way you go.
+
+[[overview]] rewritten for August 2026 (Cypress as the headline); [[index]] restructured with a Releases section and the seven new pages; `sources.md` extended.
 
 ---
 

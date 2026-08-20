@@ -1,8 +1,8 @@
 ---
 title: "Verifiable Trust Agent (VTA)"
 type: entity
-tags: [vta, vti, key-management, signing-oracle, infrastructure, primary, mobile]
-date-updated: 2026-07-06
+tags: [vta, vti, key-management, signing-oracle, infrastructure, primary, mobile, tsp, mdoc]
+date-updated: 2026-08-19
 ---
 
 # Verifiable Trust Agent (VTA)
@@ -16,22 +16,25 @@ The Verifiable Trust Agent is the central service of the [[verifiable-trust-infr
 The VTA is a **signing oracle** — applications send it data to sign, and it returns signatures. The private keys never leave the VTA's security boundary. This means applications that need to issue [[verifiable-credentials|credentials]], update [[decentralized-identifiers|DIDs]], or send authenticated [[didcomm|DIDComm messages]] don't need to manage keys themselves.
 
 Key capabilities:
-- **Key generation and derivation** — all keys derive from a single BIP-39 seed via [[bip32-key-derivation|BIP-32]], supporting Ed25519, X25519, and P-256
-- **Signing oracle** — sign payloads on behalf of applications without exposing keys
-- **DID management** — create and manage [[did-webvh|did:webvh]] and did:key identifiers
-- **Session management** — JWT-based authentication with DIDComm challenge-response
-- **Access control** — role-based ACL (Super Admin → Admin → Initiator → Application → Reader → Monitor)
-- **Backup and restore** — encrypted backups using Argon2id
+- **Key generation and derivation** — keys derive from a single BIP-39 seed via [[bip32-key-derivation|BIP-32]] (Ed25519, X25519, P-256); since August 2026 the VTA can also hold **non-extractable internal keys** (no derivation path, never exported, excluded from backup) and **imported** Ed25519 keys for deterministic did:keys
+- **Signing oracle** — sign payloads on behalf of applications without exposing keys, behind a three-gate authorization model (caller context scope → resource-bound `signable_keys` policy → unscoped keys super-admin-only), narrowable per actor with `allowedKeys`
+- **DID management** — create and manage [[did-webvh|did:webvh]], did:key and did:peer identifiers, including human-readable **agent names** (`example.com/@alice`) claimed in `alsoKnownAs`
+- **Credential holder (vault)** — receive, store, verify and present credentials in W3C Data Integrity, BBS, SD-JWT and (August 2026) **ISO mdoc** formats, over DIDComm/TSP credential-exchange and OID4VP
+- **Session management** — DID-keyed sessions; JWT-based REST auth with DIDComm/TSP challenge-response
+- **Access control** — role-based ACL (Super Admin → Admin → Initiator → Application → Reader → Monitor) with context scope and least-privilege approvers ("may approve" ≠ "may act")
+- **Approvals** — one runtime-manageable approvals model (`pnm approvals`) driven by Rego policy rules: step-up, task-execution consent pushed to approver devices, and an offline break-glass
+- **Backup and restore** — encrypted backups using Argon2id (15-character minimum password)
 - **Audit logging** — every operation is logged for compliance
 
 ## Architecture
 
-The VTA is built with Axum (Rust async web framework) and exposes two parallel API paths:
+The VTA is built with Axum (Rust async web framework). Every operation is a **Trust Task** — a versioned JSON document with a canonical `trusttasks.org/spec/*` URI — and the same document can arrive over three transports:
 
-1. **REST API** — HTTP endpoints authenticated with EdDSA JWTs
-2. **DIDComm API** — encrypted DIDComm v2 messages via a mediator
+1. **[[trust-spanning-protocol|TSP]]** — preferred since mid-2026; a VTA can now run TSP-only
+2. **[[didcomm|DIDComm v2]]** — encrypted messages via a mediator (the interop fallback)
+3. **REST** — HTTP endpoints authenticated with EdDSA JWTs; the Trust-Task document now rides the HTTPS binding too, and every superseded REST route is sign-posted with its successor task and a usage metric that gates its eventual removal
 
-Both paths converge on a shared operations layer. Storage uses fjall, an embedded LSM key-value store.
+All paths converge on one operations layer. Storage uses fjall, an embedded LSM key-value store, with AES-GCM at-rest encryption (TEE-derived keys in enclave mode; the `[hardened]` mode for non-TEE deployments since August 2026). Since July 2026 the service is a thin "spine" over eleven subsystem crates (`vta-keys`, `vta-vault`, `vta-policy`, `vta-webvh`, `vta-tee`, `vta-backup`, …) — see [[verifiable-trust-infrastructure#Components]].
 
 ### Application Contexts — now hierarchical
 
@@ -56,8 +59,11 @@ The VTA can run inside an AWS Nitro Enclave — a hardware-isolated virtual mach
 
 - Keys are unsealed via AWS KMS, pinned to the enclave's attestation (PCR0 + PCR8)
 - Communication happens over vsock (virtual socket) rather than network
-- An 8-layer defense-in-depth security model protects key material
+- Since August 2026 tenant config is **not baked into the enclave image**: one image / one PCR0 per fleet, the config envelope is delivered over vsock at boot and its digest is anchored in the attestation (`POST /attestation/config-report`)
+- An 8-layer defense-in-depth security model protects key material; TEE anti-rollback via an external CAS counter
 - An enclave proxy handles external routing
+
+A plain non-TEE container image (with `[hardened]` at-rest encryption) also exists since August 2026, and the personal-use path is a managed VTA on the **VTA Farm** — see [[vti-setup]].
 
 ### Seed Storage Backends
 The master seed can be stored in:
@@ -68,7 +74,7 @@ The master seed can be stored in:
 
 ## SDK Integration
 
-Third-party services integrate with the VTA via the `vta-sdk` crate:
+Third-party services integrate with the VTA via the `vta-sdk` crate (0.25 at the `Cypress` release — consumed by [[openvtc]], [[affinidi-webvh-service|did-hosting-service]], the [[affinidi-tdk|TDK]] mediator, [[verifiable-git-infrastructure|VGI]], and the [[vta-browser-plugin]]'s generated type bindings):
 
 ```rust
 // Simplified integration pattern
@@ -84,9 +90,23 @@ The SDK handles authentication, token refresh, secret caching, and offline fallb
 
 Per-release detail lives on the workspace entity — see [[verifiable-trust-infrastructure#Recent Development]] for the full activity log. VTA-relevant highlights, reverse chronological:
 
+### Cypress + convergence — July–August 2026
+
+The VTA shipped in the coordinated **`Cypress`** release ([[coordinated-releases]], 2026-08-17) as `vta-service` 0.17.0 / `vta-sdk` 0.25.0 — the first release cut through formal RCs and the new release-plz process. The month's VTA-relevant themes:
+
+- **Every operation is a canonical Trust Task.** ACL, keys, config/provisioning, audit, webvh and credential-exchange surfaces all folded onto published `trusttasks.org/spec/*` URIs; payloads emit canonical lowerCamelCase (#1000, breaking); Trust Tasks ride the HTTPS binding on REST too (#1001); every superseded REST route is sign-posted with its successor and a usage metric (#1007). See [[verifiable-trust-infrastructure#Trust-Task canonicalisation]].
+- **TSP is selectable, and DIDComm is optional.** `TransportChoice` with `Auto` = TSP > DIDComm > REST actually implemented (#797); a VTA can speak TSP without DIDComm (#937); TSP offered in the setup wizard and advertised at mint (#933/#934, #959).
+- **One approvals model.** Step-up floors and config consent rules retired; Rego rules are the only trigger, manageable at runtime with `pnm approvals`, enforced on REST and webvh routes, with an offline break-glass (#909–#915). Approvers are least-privilege and need not hold VTA authority.
+- **Signing oracle guarantees**: three-gate authorization documented and pinned (#814), `allowedKeys` per-actor narrowing (#865), **non-extractable internal signing keys** (#995), deterministic did:key from an imported key (#953).
+- **ISO mdoc holder**: receive → verify against IACA trust anchors → store → present over OID4VP with a P-256 `ecdsa-jcs-2019` consent receipt (#984–#993).
+- **Hardened non-TEE mode** (#835) and **Nitro tenant config over vsock** (#939).
+- **Decomposition** of vta-service into eleven subsystem crates (#780–#791).
+- **Messaging** now runs on the TDK's reliable delivery layer (`MessagingService` / outbox, #675–#691); agent names end-to-end (`pnm did-mgmt agent-names`).
+- **Mobile**: request proofs verified on-device before prompting (#871); device Trust-Task submission with no REST over DIDComm and TSP (#792); `vta-mobile-core` 0.6.18.
+
 ### TSP as preferred transport — late June–July 2026
 
-The VTA's transport preference officially flipped to **[[trust-spanning-protocol|TSP]] > DIDComm > REST**. DIDs double as TSP VIDs reusing the existing Ed25519/X25519 keys — no new key material; capability discovery is DID-document-driven (`TSPTransport` service advertised in DID templates, matched by type); TSP runs as a first-class managed service (`ServiceState::Tsp`, enable/disable/rollback via `pnm services`) over the *same* mediator websocket as DIDComm. Feature-gated and opt-in today; intended default-on after field exercise.
+The VTA's transport preference officially flipped to **[[trust-spanning-protocol|TSP]] > DIDComm > REST**. DIDs double as TSP VIDs reusing the existing Ed25519/X25519 keys — no new key material; capability discovery is DID-document-driven (`TSPTransport` service advertised in DID templates, matched by type); TSP runs as a first-class managed service (`ServiceState::Tsp`, enable/disable/rollback via `pnm services`) over the *same* mediator websocket as DIDComm. Feature-gated and opt-in at the time; by August a selectable transport, with TSP-only VTAs supported.
 
 ### Personal AI agents — June 2026
 

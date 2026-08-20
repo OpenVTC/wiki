@@ -1,8 +1,8 @@
 ---
 title: "dtg-credentials — Trust Graph Credential Library"
 type: entity
-tags: [dtg, credentials, library, trust-over-ip, primary]
-date-updated: 2026-06-07
+tags: [dtg, credentials, library, trust-over-ip, primary, cypress]
+date-updated: 2026-08-19
 repo: https://github.com/OpenVTC/dtg-credentials
 ---
 
@@ -14,14 +14,14 @@ A Rust library implementing the [[decentralized-trust-graph|Decentralized Trust 
 
 ## What It Implements
 
-Version 0.3 of the DTG credential specification from the Trust over IP Foundation's DTG Working Group Credential Task Force. See [[dtg-credentials-overview|DTG Credential Types]] for the full taxonomy.
+The [[dtg-credential-spec|DTG Core Credentials specification]] from the Trust over IP Foundation's DTG Working Group Credentials Task Force — **v1.0 Working Draft 01** since crate version 0.2.0 (August 2026; 0.1.x tracked the informal v0.3). See [[dtg-credentials-overview|DTG Credential Types]] for the full taxonomy.
 
 ## Architecture
 
 The library is compact — two source files and an example:
 
-- **`lib.rs`** — Core types: `DTGCredential` wrapper, `DTGCommon` (W3C VC structure), `DTGCredentialType` enum, `CredentialSubject` variants (Basic, Endorsement, Witness, RCard), signing/verification methods
-- **`create.rs`** — Builder methods for each credential type (`new_vmc`, `new_vrc`, `new_vic`, `new_vpc`, `new_vec`, `new_vwc`, `new_rcard`)
+- **`lib.rs`** — Core types: `DTGCredential` wrapper, `DTGCommon` (W3C VC structure, including the WD01 `taskContext` property), `DTGCredentialType` enum, `CredentialSubject` variants (Basic, Endorsement, Witness; RCard *deprecated*), signing/verification methods, VWC digest helpers (`digest_multibase()`, `verify_digest()`)
+- **`create.rs`** — Builder methods for each credential type (`new_vmc`, `new_vrc`, `new_vic`, `new_vpc`, `new_vec`, `new_vwc`; `new_rcard` deprecated)
 
 ## Usage
 
@@ -43,14 +43,24 @@ The library supports both W3C VC 1.1 and 2.0, handling field name differences (`
 - `affinidi-data-integrity` — W3C Data Integrity proof creation/verification (EdDSA JCS 2022)
 - `affinidi-secrets-resolver` — key management
 - `serde` — JSON serialization with camelCase and untagged enum dispatch
+- `serde_json_canonicalizer` (JCS / RFC 8785), `sha2`, `multibase` — VWC digest computation (since 0.2.0)
 
 ## Provenance
 
-Originally developed under `LF-Decentralized-Trust-labs`, recently migrated to the `OpenVTC` GitHub organization. Being prepared for public release on crates.io.
+Originally developed under `LF-Decentralized-Trust-labs`, migrated to the `OpenVTC` GitHub organization in spring 2026. Published on crates.io since 0.1.1 (2026-03-29; 0.1.0 was never published). MSRV 1.95.
 
 ## Recent Development
 
-A dependency-driven point release picks up the upstream data-integrity / TDK 0.7 line. The recent [[dtg-credential-spec|DTG spec]] changes (bidirectional Edge Credentials in PR #31, ZKP construction split in PR #33) are not yet reflected in this implementation.
+After a quiet spring, the crate made its first semantic move in August 2026: **0.2.0 tracks the spec's v1.0 Working Draft 01** (see [[dtg-credential-spec]]) — and in doing so fixed a live interoperability bug. It is part of the coordinated **`Cypress`** release ([[coordinated-releases]]; the `Cypress` and `VTI-Cypress-RC-1` tags both point at the 0.2.0 HEAD; `Banyan` = `RC-0` = 0.1.3). The [[verifiable-trust-infrastructure|VTI]] (#916) and [[openvtc]] (#205) moved onto 0.2 the same day — VMC/VEC/VIC bytes are unchanged, so the bump was painless for them.
+
+### v0.2.0 — 2026-08-10 — track DTG Core Credentials WD01 (#8, `feat!`; release notes #9)
+
+- **`taskContext` added to `DTGCommon`** (+ accessors). This was a real bug, not just a schema catch-up: `DTGCommon` lacked the field and had no `deny_unknown_fields`, so serde silently *dropped* `taskContext` on deserialise — and because `sign()` serialises the credential, issuers signed a document missing the field while verifiers hashed a different document than the one that was signed.
+- **BREAKING**: `new_vwc(issuer, subject, valid_from, valid_until, task_context: String, digest: Option<String>, witness_context)`; deserialising a `WitnessCredential` without `taskContext` fails with the new `DTGCredentialError::MissingTaskContext`; new `Canonicalization(String)` error.
+- New VWC digest helpers `digest_multibase()` / `verify_digest()` — the digest covers the referenced VRC exactly as it stands, including its `proof`, over its JCS canonical form.
+- `DTGCredentialType::RCard`, `CredentialSubject::RCard`, `CredentialSubjectRCard` and `new_rcard()` **deprecated** (not removed) — the relationship card left the spec for a planned VDS companion.
+- **⚠ VWC digest divergence (flagged in the README/CHANGELOG, unresolved).** WD01 says the digest MUST be encoded as `sha256:` + lowercase hex; the crate encodes it as a multibase base58btc multihash (`z…`), following the W3C `digestMultibase` convention. Same SHA-256 over the same JCS bytes — only the string encoding differs — but string comparison fails both ways, so `verify_digest()` rejects spec-conformant VWCs and conformant verifiers reject crate-produced ones. To be raised with the DTGWG. A second, undeclared gap: the crate still treats `digest` as `Option` (written against the PR #7 state); spec PR #14 two days later made it REQUIRED, so a VWC built with `digest: None` is now non-conformant.
+- History reconstructed: 0.1.2 and 0.1.3 had been published but never recorded; the async `sign()` change actually shipped in 0.1.1 (2026-03-29); placeholder dates replaced with crates.io dates; four rustdoc bare-URL warnings fixed.
 
 ### v0.1.3 — 2026-06-07 — data-integrity 0.7 / TDK 0.7
 

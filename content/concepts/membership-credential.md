@@ -2,7 +2,7 @@
 title: "Membership Credential (VMC)"
 type: concept
 tags: [credentials, dtg, membership, community, personhood, edge, zkp]
-date-updated: 2026-05-08
+date-updated: 2026-08-19
 sources: [dtg-credential-spec, dtg-credentials]
 ---
 
@@ -33,7 +33,7 @@ VMCs also express the relationship between [[verifiable-trust-network|VTNs]] and
 
 ## Community-Anchored ZKP
 
-The VMC is the anchor for the **community-anchored ZKP** construction defined in spec §5.2. When both parties to a [[relationship-credential|VRC]] hold VMCs from the same community, the holder can prove the existence of a relationship *within the community's governance context* — without revealing the specific DIDs or other credential details. When the community's VMCs qualify as [[personhood-credential|PHCs]], that personhood assurance carries forward into every relationship proven through this construction.
+The VMC is the anchor for the **community-anchored ZKP** construction defined in the spec's VMC section. When both parties to a [[relationship-credential|VRC]] hold VMCs from the same community, the holder can prove the existence of a relationship *within the community's governance context* — without revealing the specific DIDs or other credential details. When the community's VMCs qualify as [[personhood-credential|PHCs]], that personhood assurance carries forward into every relationship proven through this construction.
 
 This is one of the two ZKP constructions defined for [[credential-categories|Edge Credentials]]; the other is the pairwise construction anchored to the VRC. See [[zero-knowledge-proofs]] for the full picture, including how to choose between them.
 

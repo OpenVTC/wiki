@@ -2,7 +2,7 @@
 title: "Verifiable Credentials (VCs)"
 type: concept
 tags: [credentials, w3c, standards, trust]
-date-updated: 2026-04-09
+date-updated: 2026-08-19
 sources: [dtg-credentials, verifiable-trust-infrastructure, openvtc]
 ---
 
@@ -43,6 +43,10 @@ The [[dtg-credentials-overview|Decentralized Trust Graph Credentials]] are a spe
 
 ## Selective Disclosure
 
-The [[affinidi-tdk|Affinidi TDK]] also supports **Selective Disclosure JWTs (SD-JWT)** per RFC 9901. This lets credential holders reveal only specific claims from a credential — for example, proving you're over 18 without revealing your exact birthdate. This is important for privacy-preserving trust relationships.
+The [[affinidi-tdk|Affinidi TDK]] also supports **Selective Disclosure JWTs (SD-JWT)** per RFC 9901. This lets credential holders reveal only specific claims from a credential — for example, proving you're over 18 without revealing your exact birthdate. This is important for privacy-preserving trust relationships. The TDK also implements **BBS signatures** (`affinidi-bbs`, `vc-di-bbs`) for unlinkable selective disclosure — the basis of the DTG spec's [[zero-knowledge-proofs|ZKP-by-default]] posture.
+
+## Credential Formats the Stack Handles
+
+The [[verifiable-trust-agent|VTA]]'s vault is format-plural: W3C Data Integrity proofs (EdDSA JCS/RDFC 2022, BBS-2023, and since August 2026 `ecdsa-jcs-2019` for P-256 keys), SD-JWT, and — as of the `Cypress` release — **ISO 18013-5 mdoc**, received and verified against configured IACA trust anchors and presented over OpenID4VP with an ISO 18013-7 session transcript. DTG credentials themselves are W3C VCs (v2.0 primary, v1.1 legacy) signed with Data Integrity.
 
 See also: [[dtg-credentials-overview]], [[decentralized-identifiers]], [[decentralized-trust-graph]]

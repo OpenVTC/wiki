@@ -1,8 +1,8 @@
 ---
 title: "did-hosting-service (formerly Affinidi WebVH Service)"
 type: entity
-tags: [affinidi, webvh, did-hosting, did-web, service, secondary, multi-method, multi-domain]
-date-updated: 2026-07-06
+tags: [affinidi, webvh, did-hosting, did-web, service, secondary, multi-method, multi-domain, tsp, agent-names, cypress]
+date-updated: 2026-08-19
 repo: https://github.com/affinidi/affinidi-webvh-service
 ---
 
@@ -16,17 +16,20 @@ The repository was **renamed from `affinidi-webvh-service` to `did-hosting-servi
 
 ## Components
 
-The service is a Rust workspace. As of v0.6.0, six service crates plus a UI crate and a shared library:
+The service is a Rust workspace. Since the v0.7.0 rename the crates are named for the *capability* they expose, and since 0.8.0 (July 2026) they are **versioned per crate** — so a snapshot lists several numbers. Versions below are those in the coordinated **`Cypress`** release ([[coordinated-releases]], 2026-08-17):
 
-| Service | Port | Role |
-|---------|------|------|
-| **webvh-server** | 8530 | Core DID hosting — create, upload, resolve, delete DIDs via REST with DIDComm auth |
-| **webvh-witness** | 8531 | Generate cryptographic witness proofs for DID integrity |
-| **webvh-control** | 8532 | Management UI, service registry, reverse proxy, passkey auth, ACL |
-| **webvh-watcher** | 8533 | Read-only DID mirror for redundancy (receives pushed updates) |
-| **webvh-daemon** | 8534 | All-in-one binary (server + witness + watcher + control) for simple deployments |
-| **webvh-ui** | — | Web UI assets (added in v0.6.0) |
-| **webvh-common** | — | Shared library: clients, DID operations, auth, storage, config |
+| Crate | Port | Role | Cypress |
+|-------|------|------|---------|
+| **did-hosting-server** | 8530 | Core DID hosting — create, upload, resolve, delete DIDs; serves `did.jsonl` and `/@name` agent-name redirects | 0.8.3 |
+| **webvh-witness** | 8531 | Generate cryptographic witness proofs for DID integrity (DIDComm-only) | 0.8.3 |
+| **did-hosting-control** | 8532 | Management UI backend, service registry, reverse proxy, passkey auth, ACL, agent-name registry (source of record) | 0.8.8 |
+| **webvh-watcher** | 8533 | Read-only DID mirror for redundancy (receives pushed updates) | 0.8.3 |
+| **did-hosting-daemon** | 8534 | All-in-one binary (server + witness + watcher + control) for simple deployments | 0.8.3 |
+| **did-hosting-client** | — | Companion client crate for talking to a hosting node (DID management, agent names) | 0.1.2 |
+| **webvh-ui** | — | Web UI bundle (packaged for cargo publish since #157) | 1.1.0 |
+| **did-hosting-common** | — | Shared library: clients, DID operations, auth, storage, config, trust-task pipeline | 0.8.6 |
+
+Every node is a **three-transport, document-driven** endpoint: HTTPS (`POST /api/trust-tasks`), [[didcomm|DIDComm v2]], and [[trust-spanning-protocol|TSP]] all deliver the same Trust Task documents to one dispatch core, and a node's DID document is the authority for which transports it offers.
 
 ## How It Works
 
@@ -48,7 +51,29 @@ The cold-start bootstrap flow (`import-secrets` CLI) can bring up an entire envi
 
 ## Recent Development
 
-After hardening cross-service trust paths in v0.6.0 and pivoting to multi-domain / multi-method in v0.7.0, the June–July cycle (14 commits, all unreleased work heading toward a presumptive 0.8.0 — also the announced removal target for the deprecated legacy `/api/acl` REST surface, sunset header 2026-12-01) converges the service on the **Trust Tasks** framework as its universal wire abstraction and adds **[[trust-spanning-protocol|TSP]]** as a transport.
+After hardening cross-service trust paths in v0.6.0 and pivoting to multi-domain / multi-method in v0.7.0, the July–August 2026 cycle (101 commits, PRs #59–#167) shipped **0.8.0** — "transport as a first-class negotiable property of every node" — then converged the service hard on the ToIP **Trust Tasks** registry as its wire authority, added **agent names** as a new product surface, and landed in the coordinated **`Cypress`** release ([[coordinated-releases]]). Note: the wiki previously reported that 0.8.0 would *drop* the legacy `/api/acl` REST surface; it did not — at HEAD it is still served with `Deprecation`/`Sunset: 2026-12-01` headers pointing at `/api/trust-tasks`.
+
+### Cypress snapshot + Trust-Tasks 0.9 — 2026-08-17 (#167)
+
+The `Cypress` tag (2026-08-17) sits on #167, which moved the workspace to **trust-tasks 0.9 / vta-sdk 0.25** (framework errors now `trust-task-error/0.5`; payload policy chosen once in `run_pipeline`). Snapshot versions: server/daemon/watcher/witness 0.8.3, control 0.8.8, common 0.8.6, client 0.1.2, UI 1.1.0. Release candidates `VTI-Cypress-RC-0` (#152, 07-30) and `VTI-Cypress-RC-1` (#159, 08-10) preceded it. Much of the post-0.8.3 work sits under "Unreleased" in the CHANGELOG — the tag is the cross-project reference point, not a CHANGELOG release.
+
+Security/interop fixes in the run-up: unrouted DIDComm messages now get an `e.p.msg.unsupported-task` problem-report instead of silence (#152, control 0.8.7); the DIDComm trust-task envelope is gated against replay like the bare path (#155, control 0.8.8); `payloadDigest` emitted as `digestMultibase` rather than hex, coordinated with VTI #911 (#159); UI recognises rejections again (#160); one `framework_error_type_uri()` so unrouted paths can't emit a different error version (#162). Dependency ladder: trust-tasks 0.2 → 0.4 (#158) → 0.6 (#164) → 0.9 (#167); vta-sdk 0.20 → 0.23 → 0.24 + vti-common 0.12 → 0.25; [[didwebvh-rs]] 0.6 (#136).
+
+### Canonicalisation onto the Trust Tasks registry — 0.8.3 — 2026-07-28 → 07-29
+
+A clean cutover (no dual-accept — pre-production policy) to the consolidated, registry-published task URIs: `did-management/agent-name/update/0.1 {state: active|parked}` replaces set/enable/disable; `did/publish/0.1` retired in favour of `did/register`; REST `Trust-Task` headers moved from the service's own `did-hosting/*/1.0` to canonical `spec/did-management/*` plus new `did/set-state` / `domain/set-state` (#144). The VTI side responded the next day (VTI #879 "stop sending Trust-Task URIs did-hosting retired in 0.8.3"). The old `confirm/*` pair became `task-consent/{request,decision}/0.1` with a mandatory verified Data Integrity proof and `payloadDigest` binding (#145, control 0.8.4); the *request* leg of task-consent and step-up approve-request is now signed too (`eddsa-jcs-2022`, via `trust-tasks-proof` 0.2.2; #149–#151). Also: UI honours `retryable`/`retryAfter` (#140), clock-skew-tolerant proofs (#138/#139), idempotent `acl/grant` retry (#142). Direction signal: the service keeps its own URIs only where the registry has no spec; everything else follows the registry.
+
+### Agent names — `/@name` — 2026-07-21 → 07-23 (#103–#137)
+
+The big new feature of the cycle, and the hosting-side half of the ecosystem's **agent names** story (see [[decentralized-identifiers]] and [[openvtc]]): a human-memorable handle like `example.com/@alice` that resolves to a DID. The *server* answers `/@name` with a 302 to the DID, derived at the edge from the signed DID log's `alsoKnownAs`; the *control plane* keeps the registry — including parked names — and is the source of record: publish reconciles the registry (#110) and enforces reserved/taken preconditions so a name can't be hijacked via publish (#113). Names are managed as Trust Tasks over DIDComm/TSP (#105, #129) and REST (#106; owner-auth, not step-up, on remove/disable #108), surfaced in UI cards for manage/park/resume (#107, #109) with DIDs resolved to names across the UI (#122, #130), advertised on `/api/server-info` (#114), exposed in `did-hosting-client` (#115), default name = the DID's path segment (#119), and accepted wherever an ACL takes a DID — resolved once at write time (#134). The **community form** `{domain}/@` is bound structurally to `.well-known` only (#127, #137). A decision was recorded *not* to advertise the control plane in DID documents (#117).
+
+### 0.8.0 → 0.8.2 — 2026-07-15 — transport as a negotiable property
+
+0.8.0 (#89) bundled the TSP work below plus: the DID document is authoritative for *send* transport — `resolve_send_binding` precedence document → config → fail, no blind-DIDComm default (#86); a standalone server advertises its messaging transports on its own DID (#87); mediator-configured node DIDs omit the `WebVHHosting` service (#88); `identity-rotate-keys` for the service's own key-agreement and signing keys with grace/drain (#82, #84); runtime DID pick-up without restart (#78); **edit a DID document through the user's agent** from the UI — the service proposes, the VTA dry-runs and decides whether consent is needed (#77, fixed end-to-end in #79); root-DID `.well-known` fixes (#72, #80). 0.8.1 added delta-sync on register and self-resolve from the local store (#93); 0.8.2 stopped a metadata-only identity change from rotating (and destroying) key material (#95, safety nets #96). Follow-on hardening: a nightly unlocked-resolve CI canary (#75); the `?domain=` cross-tenant check — silently dropped by axum — enforced on publish/delete (#94); batched `MSG_SYNC_BATCH` (≤50 DIDs / 512 KB) under the mediator rate limit (#97); delegated updates auto-publish on the wallet's grant event instead of polling (#99–#102).
+
+### TSP decoupled from DIDComm — 2026-07-07 → 07-10 (#59–#71)
+
+Follow-through on #58: DID-management ops accepted as trust-task documents over HTTPS too (`POST /api/trust-tasks` via `bridge_did_management`, #60; step-up over TSP declared a deliberate non-goal — no session to bind); a typed `did-hosting/did/*/1.0` protocol with eight ops — check-name, info, list, delete, publish, register, change-owner, witness-publish — carrying the `didLog` the upstream record-centric spec had no room for (#61); **outbound** control→server sync and domain pushes over TSP when the target advertises `TSPTransport` (#62/#63), closing the "no outbound Trust-Task sender" gap noted for #58; **TSP fully decoupled from DIDComm** — `FEATURES_TSP`, `Protocols` BOTH / TSP_ONLY / DIDCOMM_ONLY, a 3-way `TransportSelection` wizard/recipe field, TSP→DIDComm send fallback, DID docs advertising only the selected transports; the witness stays DIDComm-only (#64); TSP-only nodes mint the `did-host-http-tsp` VTA template (#65); DID-document services shown as badges across the controller UI (#67–#69); server registration and health as transport-agnostic trust tasks with a `trust_task_capable` flag for rolling upgrades (#70); observed control-link transport recorded per service instance ("↓in/↑out", #71).
 
 ### TSP transport alongside DIDComm — 2026-07-07 (#58) — "everything is a trust task"
 
@@ -57,7 +82,7 @@ The headline change, and a clean illustration of the architecture: every wire op
 - TSP rides the **same per-DID mediator websocket** as DIDComm (no second socket): `affinidi-messaging-didcomm-service` unpacks inbound TSP frames, authenticates the sender VID, and routes to a new `WebvhTspHandler`, which dispatches through the shared core.
 - `build_did_document` can emit a `#tsp` service of type `TSPTransport`, ordered *before* `#vta-didcomm` to match the VTA templates' canonical TSP-first order; a new `resolve_transport` helper prefers a peer's `TSPTransport` and falls back to `DIDCommMessaging`.
 - All DID-management ops (check-name, publish, register, delete, change-owner, info, list, witness/publish) became reachable as trust-task documents over both TSP and DIDComm via a `bridge_did_management` facade; legacy `MSG_*` messages kept for back-compat.
-- Scope limit (direction signal): inbound request/response over TSP is fully supported, but proactive outbound push (control→server sync) still uses DIDComm — the framework has no outbound Trust-Task sender yet.
+- Scope limit at the time: inbound request/response over TSP was fully supported, but proactive outbound push (control→server sync) still used DIDComm — closed days later by #62/#70 (above).
 
 ### Trust-flow hardening — June–July 2026
 

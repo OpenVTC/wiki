@@ -2,15 +2,15 @@
 title: "DTG Credential Categories"
 type: concept
 tags: [credentials, dtg, taxonomy, categories]
-date-updated: 2026-05-08
+date-updated: 2026-08-19
 sources: [dtg-credential-spec]
 ---
 
 # DTG Credential Categories
 
-The DTG specification organizes its credential types into four **descriptive** (non-normative) functional categories. These categories don't appear in credential schemas — they're a conceptual framework for understanding what each credential type does in the [[decentralized-trust-graph|trust graph]].
+The [[dtg-credential-spec|DTG Core Credentials specification]] (v1.0 Working Draft 01) organizes its six credential types into three **descriptive** (non-normative) functional categories. These categories don't appear in credential schemas — they're a conceptual framework for understanding what each credential type does in the [[decentralized-trust-graph|trust graph]].
 
-## The Four Categories
+## The Three Categories
 
 ### Edge Credentials
 
@@ -31,15 +31,11 @@ Attach additional data to existing graph structure without creating new edges.
 
 - **[[persona-credential|VPC (Persona)]]** — links a persona identity to an existing relationship
 - **[[endorsement-credential|VEC (Endorsement)]]** — endorses skills or reputation of an existing member
-- **[[witness-credential|VWC (Witness)]]** — third-party attestation that an edge (VRC exchange) actually occurred
+- **[[witness-credential|VWC (Witness)]]** — third-party attestation that a specific edge (VRC) was established in a specific exchange; one VWC per direction
 
-### Verifiable Data Structures (VDS)
+### What happened to the fourth category?
 
-Structured data exchange — not technically DTG credentials.
-
-- **RCard (Relationship Card)** — human-readable contact information (vCard/jCard per RFC 7095)
-
-Note: RCard does **not** include `DTGCredential` in its W3C type array — its type is `["VerifiableCredential", "RelationshipCard"]`. It is a Verifiable Data Structure, not a credential in the DTG sense.
+Until July 2026 the spec (v0.3) listed a fourth category, **Verifiable Data Structures (VDS)**, containing the **RCard / relationship card** — human-readable contact information (vCard/jCard per RFC 7095) in a verifiable wrapper, typed `["VerifiableCredential", "RelationshipCard"]` *without* the `DTGCredential` parent. Working Draft 01 removed it from this spec: the relationship card is a VDS ("a data structure digitally signed by the publisher so that subscribers can verify the original and any updates — a VC is one kind of VDS, an r-card is another"), not a DTG credential, and will be defined in a planned companion, **DTG Core Verifiable Data Structures**, alongside an *agent card* modelled on the A2A protocol's AgentCard. The [[dtg-credentials]] crate deprecated (but kept) its RCard types in 0.2.0.
 
 ## The Formal Type Hierarchy
 
@@ -54,12 +50,9 @@ VerifiableCredential
     ├── PersonaCredential (VPC)
     ├── EndorsementCredential (VEC)
     └── WitnessCredential (VWC)
-
-VerifiableCredential
-└── RelationshipCard (RCard)  ← NOT a DTGCredential
 ```
 
-The only abstract parent in the formal hierarchy is `DTGCredential`. The four descriptive categories above are for human understanding only.
+The only abstract parent in the formal hierarchy is `DTGCredential`. The three descriptive categories above are for human understanding only. Every type may also carry a `taskContext` binding it to the trust-task exchange that produced it — see [[trust-task-context-binding]].
 
 ## ZKP Anchor Points
 

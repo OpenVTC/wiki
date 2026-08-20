@@ -2,7 +2,7 @@
 title: "didwebvh-rs — did:webvh Rust Implementation"
 type: entity
 tags: [didwebvh, did, library, dif, secondary]
-date-updated: 2026-07-06
+date-updated: 2026-08-19
 repo: https://github.com/decentralized-identity/didwebvh-rs
 ---
 
@@ -10,7 +10,7 @@ repo: https://github.com/decentralized-identity/didwebvh-rs
 
 *Repo: [github.com/decentralized-identity/didwebvh-rs](https://github.com/decentralized-identity/didwebvh-rs)*
 
-A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version 0.5.6.
+A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version 0.6.0 (July 2026).
 
 ## What It Provides
 
@@ -38,7 +38,20 @@ This is a foundational building block. The [[affinidi-tdk|Affinidi TDK]] uses it
 
 ## Recent Development
 
-The library is in maintenance-and-hardening mode: after the security-audit and spec-compliance releases of May–June, the June–July additions are fuzzing infrastructure for the verifier core plus targeted API affordances driven by downstream VTA/hosting-service integration needs. Both are additive — no breaking changes across 0.5.x.
+The library is in maintenance-and-hardening mode: after the security-audit and spec-compliance releases of May–June and the June fuzzing infrastructure, July 2026 brought a parse-time spec fix (0.5.7) and a pre-release audit sweep that was promoted to **0.6.0** because it carries small breaking API changes. Activity is low (two PRs since July 6) — the crate is stable, and its downstream consumers (the [[affinidi-tdk|TDK]], [[affinidi-webvh-service|did-hosting-service]], the [[verifiable-trust-agent|VTA]], [[openvtc]]) all moved onto 0.6 within days.
+
+### v0.6.0 — 2026-07-19 — `affinidi-did-common` 0.4 + pre-release audit fixes (#50)
+
+Originally planned as 0.5.8, promoted to a minor because of breaking changes. MSRV stays 1.95.0 (README badge corrected).
+
+- **Breaking**: `DIDWebVHError`, `URLType`, `LogEntryValidationStatus` are now `#[non_exhaustive]` (downstream `match`es need a `_ =>` arm); the whole-crate `affinidi_secrets_resolver` re-export (deprecated since 0.5.0) is removed.
+- **Fixed**: the `update_did()` migrate path silently dropped `portable` (a shared `apply_param_overrides` now); a successor-version check overflow on `versionId == u32::MAX` (debug panic / release wrap to 0 that would let a chain restart numbering — attacker-reachable via `verify_log_entry`) is now a `ValidationError`; a CLI update-flow panic on empty `active_update_keys`.
+- **Deps**: `affinidi-did-common` 0.3 → **0.4** (the release that adds typed `alsoKnownAs` — the foundation of ecosystem-wide *agent names*; this crate had to ship before did-common 0.4 could propagate, per TDK ADR 0003); `affinidi-data-integrity` pinned 0.7.7 to avoid two did-common copies.
+- **Tests**: 22 `ignore` doctests → `no_run` (24/24 compile); the `witness-update` interop vector un-ignored and **inverted to assert rejection** — a self-lowered witness threshold must be judged against the then-active witnesses (a security-motivated divergence to be raised with the didwebvh-test-suite); interop suite 13/13.
+
+### v0.5.7 — 2026-07-10 — reject IP-literal hosts at parse time (#49, closes #47)
+
+`WebVHURL::parse_did_url()` tested the still-percent-encoded host, so `127%2E0%2E0%2E1` passed as a domain; host parsing now goes through `url::Host::parse` (percent-decodes, IDNA), which also rejects alternate IPv4 spellings (`2130706433`, `0x7f.0.0.1`, `127.1`, `0177.0.0.1`) and illegal hosts up front. Not a resolver vulnerability — the post-normalisation `reject_ip_host()` already blocked fetches — but the spec requires `invalidDid` at parse time (fixes the `negative-pct-encoded-ip-host` test-suite vector). Lockfile refresh cleared RUSTSEC-2026-0204 (crossbeam-epoch); clippy clean on Rust 1.97.
 
 ### v0.5.6 — 2026-06-29 — caller-settable `versionTime` on create/update
 

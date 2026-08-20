@@ -2,7 +2,7 @@
 title: "Relationship Credential (VRC)"
 type: concept
 tags: [credentials, dtg, relationships, trust, edge, zkp]
-date-updated: 2026-05-08
+date-updated: 2026-08-19
 sources: [dtg-credential-spec, dtg-credentials, openvtc]
 ---
 
@@ -50,7 +50,7 @@ This construction is available to **any two parties who hold a VRC between them*
 
 ### Community-Anchored ZKP (when both parties hold VMCs from the same community)
 
-When both parties to a VRC hold [[membership-credential|VMCs]] from the same community, the holder MAY additionally construct a **community-anchored ZKP** of the relationship — anchored under VMC §5.2. The proof demonstrates:
+When both parties to a VRC hold [[membership-credential|VMCs]] from the same community, the holder MAY additionally construct a **community-anchored ZKP** of the relationship — anchored under the VMC. The proof demonstrates:
 
 1. Possession of the VRC
 2. Possession of the underlying [[membership-credential|VMC]] (proving membership)

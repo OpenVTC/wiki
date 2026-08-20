@@ -1,8 +1,8 @@
 ---
 title: "OpenVTC — The Trust Community CLI"
 type: entity
-tags: [openvtc, cli, tui, user-experience, primary, multi-community]
-date-updated: 2026-07-06
+tags: [openvtc, cli, tui, user-experience, primary, multi-community, agent-names, tsp, cypress]
+date-updated: 2026-08-19
 repo: https://github.com/OpenVTC/openvtc
 ---
 
@@ -16,48 +16,48 @@ OpenVTC is the user-facing tool for participating in [[verifiable-trust-communit
 
 OpenVTC implements the [[first-person-network|First Person Protocol]] for the "Know Your Developer" use case. From a user's perspective:
 
-1. **Set up your identity** — generate keys, create your Persona DID ([[did-webvh|did:webvh]]), host it on the domain of your choice
-2. **Connect with people** — send and accept relationship requests via [[didcomm|DIDComm]]
-3. **Build your trust network** — exchange [[relationship-credential|Relationship Credentials]], receive [[endorsement-credential|endorsements]], get [[witness-credential|witness attestations]]
-4. **Participate in communities** — join VTCs (presenting a [[invitation-credential|Verifiable Invitation Credential]] where required), respond to community protocol messages — and since June 2026, belong to **multiple communities at once**, each under its own persona
+1. **Set up your account** — bind the TUI to your [[verifiable-trust-agent|VTA]] (a managed one on the VTA Farm or your own — see [[vti-setup]]); since June 2026 setup mints *no* persona — personas are created from the dashboard when you first need one
+2. **Create personas** — mint Persona DIDs ([[did-webvh|did:webvh]]), optionally with a human-readable **agent name** (`example.com/@alice`, shown wherever a DID would be)
+3. **Connect with people** — send and accept relationship requests over [[trust-spanning-protocol|TSP]] or [[didcomm|DIDComm]]
+4. **Build your trust network** — exchange [[relationship-credential|Relationship Credentials]], receive [[endorsement-credential|endorsements]], get [[witness-credential|witness attestations]]
+5. **Participate in communities** — join VTCs by DID *or* agent name (presenting a [[invitation-credential|Verifiable Invitation Credential]] where required, or sending an open request for admin approval), and belong to **multiple communities at once**, each under its own persona; see which capabilities each community has enabled
+6. **Sign your commits** — set up [[verifiable-git-infrastructure|did-git-sign]] so git commits are signed by a VTA-held key that a community's Trust Registry authorises
 
-Behind the scenes, OpenVTC orchestrates the [[verifiable-trust-agent|VTA]] (for key management), DIDComm messaging (for communication), and credential issuance (for trust building).
+Behind the scenes, OpenVTC orchestrates the VTA (for key management and the credential vault), TSP/DIDComm messaging on the TDK's reliable delivery layer (for communication), and Trust-Task documents (for every protocol exchange).
 
 ## Components
 
-After the v0.2.0 workspace consolidation and v0.2.1 cleanup, the active crates are:
+The workspace is two crates (version **0.3.1** at the `Cypress` tag; v0.3.0 was the last tagged release):
 
 ### openvtc
-The user-facing TUI binary (formerly `openvtc-cli2`). The unsuffixed name is intentional, matching the convention used by uv, ruff, deno, and cargo. Eight main-menu panels:
+The user-facing TUI binary (formerly `openvtc-cli2`). The unsuffixed name is intentional, matching the convention used by uv, ruff, deno, and cargo. Main-menu panels:
 
 - **Inbox** — real-time task processing (auto-handles trust-pongs, relationship finalization, rejections; queues interactive tasks; detail views for inbound/outbound requests, VRCs, pings, informational messages)
+- **Communities** — overview of memberships with favourites, a **Ctrl+K** switcher, join (`j` — by community DID or agent name, optional VIC paste), per-community **Capabilities** panel (`c`), leave/archive
 - **Relationships** — list/detail/new-request views, inline alias editing, R-DID privacy toggle, trust-ping with RTT latency
 - **Credentials** — Received/Issued tabs, raw VRC JSON in detail view, clipboard copy, VRC request and removal
+- **VTA** — transports the VTA advertises (TSP / DIDComm / REST), persona **agent names** management (`g`), VIC list, key count, backend type
 - **Settings** — inline editing, config export/import, passphrase protection management, hardware token detection, factory reset
-- **VTA Service** — VTA URL, DID, credential DID, key count, backend type
-- **Logs** — scrollable timestamped activity log with copy
-- **Help/Status** — DID clipboard copy hotkeys with visual feedback
-- **Quit**
+- **Logs** — scrollable, transport-attributed, 200-entry durable activity log with copy
+- **Help/Status**, **Quit**
 
-The `openvtc-cli` legacy prompt-driven binary was deleted in v0.2.0 — all ongoing work lives in `openvtc`.
+It also has a non-TUI subcommand, **`openvtc health [--vtc <did>] [--json]`** (0.3.1), which probes the VTA, mediator, DID hosting, and optionally a community, with graded results.
 
 ### openvtc-core
-Shared library (formerly `openvtc-lib`, `publish = false`): config management, BIP-32 key derivation, relationship state machines, credential operations, and OpenPGP card support. After v0.2.0, no longer depends on `ratatui` or `dialoguer` — TUI deps don't bleed into `openvtc-service` or `robotic-maintainers`.
+Shared library (`publish = false`): config (v2 `Account` / `PersonaRecord` / `CommunityRecord` / `IdentityRegistry`), BIP-32 key derivation, relationship state machines, `messaging.rs` (a pure protocol state machine), `didcomm.rs` (the transport, built on `affinidi-messaging-delivery`, with stored-mail pickup), `tsp.rs`, `agent_name.rs`, `capabilities.rs`, `presentation.rs` (DCQL → consent summary → `vp_token`), `join.rs`, `health.rs`, and OpenPGP card support. MSRV 1.95, edition 2024.
 
-### openvtc-service
-Background daemon that polls a [[didcomm|DIDComm mediator]] for incoming messages and processes protocol requests. Currently handles maintainer list queries (`https://kernel.org/maintainers/1.0/list`).
-
-### did-git-sign
-SSH/Git signing helper that uses the VTA as a signing oracle. Auto-configured during the setup wizard. Refuses to sign unless the parent process name starts with `git` or `ssh-keygen`, and writes every signing attempt — accepted or denied — to `~/.config/did-git-sign/audit.log`. Since the multi-community work (T8, June 2026) the signing persona is a per-repo selection via env var or git config, so different communities can sign distinct repos.
-
-The earlier `openvtc-service` (background DIDComm daemon) and `robotic-maintainers` (auto-accept test service) crates were **removed in v0.2.1** (PR #63) — `openvtc-service`'s role is now covered inside the TUI's own DIDComm session, and the test fixture role moved to the in-tree mediator harness.
+### Crates that have left the workspace
+- **`did-git-sign`** — the git/SSH signing helper that uses the VTA as a signing oracle was developed and dogfooded here (auto-configured by the setup wizard since v0.1.6; per-repo persona selection since T8) and then **extracted to its own repo, [[verifiable-git-infrastructure|Verifiable Git Infrastructure (VGI)]], in July 2026** (#159). OpenVTC now consumes the published crate (0.4.5 at Cypress) only for `init::install/uninstall` and signing config, and pins VGI's `verify-trust` GitHub Action for its own CI. A standing obligation recorded in `Cargo.toml`: VGI's `vta-sdk` line must track OpenVTC's, or two `vta-sdk` copies land in the binary.
+- **`openvtc-service`** (background DIDComm daemon) and **`robotic-maintainers`** (auto-accept test service) were removed in v0.2.1 (#63); the daemon's role is covered by the TUI's own messaging runtime, and the test-fixture role moved to the in-tree mediator harness. **`openvtc-cli`** (legacy prompt-driven binary) was deleted in v0.2.0.
 
 ## Identity Model
 
 OpenVTC uses a two-layer identity model:
 
-- **Persona DID (P-DID)** — your primary, public identity, created as a [[did-webvh|did:webvh]] and hosted on the domain of your choice as a `did.jsonl` file
-- **Relationship DIDs (R-DIDs)** — private `did:peer` identifiers, one per relationship, so your Persona DID isn't exposed in every interaction
+- **Persona / Membership DIDs** — your public identities, one per community membership, created as [[did-webvh|did:webvh]] hosted on the domain of your choice (via the VTA's configured DID host) and optionally claimed by an **agent name** in `alsoKnownAs`
+- **Relationship DIDs (R-DIDs)** — private `did:peer` identifiers, one per relationship, so your persona DID isn't exposed in every interaction
+
+A name is only ever *displayed* if it forward-resolves and round-trips back to the labelled DID (user alias → verified agent name → truncated DID); the DID, never the name, is what gets persisted.
 
 ## Configuration
 
@@ -78,11 +78,35 @@ Multiple profiles are supported via the `OPENVTC_CONFIG_PROFILE` environment var
 
 ## Recent Development
 
-The focus has shifted from security correctness alone (the v0.1.x pass), through feature completeness on a hardened base (v0.2.0), through architecting the **multi-community** model, to **executing that pivot in full**: as of the `Banyan` milestone tag (2026-06-22), OpenVTC holds one VTA account and many persona-backed community memberships, live.
+The focus has moved from security correctness (v0.1.x), through feature completeness (v0.2.0), through the multi-community pivot (`Banyan`, June 2026), to **making the multi-community client reliable and humane**: the July–August cycle (83 commits, PRs #152–#237) shipped **v0.3.0** — the join ceremony's asynchronous half — plus **agent names**, TSP as a live transport, a per-community Capabilities panel, the reliable delivery layer underneath, and the extraction of did-git-sign into VGI; it ends in the coordinated **`Cypress`** release ([[coordinated-releases]]).
+
+### v0.3.0 — 2026-08-15 — the join ceremony's asynchronous half; `Cypress` — 2026-08-17
+
+The first tagged release since v0.2.0 (21 May) — 0.2.1 was written up but never tagged, so it ships here too. The theme: a community's reply must reach the applicant *whether or not* it happened to be connected when the reply was sent, and a join left unresolved is reconciled by *asking* rather than waiting. Four fixes, all to the same class of bug (a join sits `Pending` while the community's outbox reports `Sent`, and relaunching the app "fixes" it):
+
+- **Connect the applicant persona before submitting** (#217) — auto-admitted joins returned VMC + VEC in under a second while the persona's socket came up ~29 s later, so both credentials were stored at the mediator and never pushed.
+- **Collect stored mail on connect** (#218) — a mediator live-streams only to a recipient connected at that instant, and redelivers a stored inbox only when a new socket *displaces* an old one; `Messaging::pickup_stored` now drains message-pickup 3.0 on every connect (ack *after* handoff, 200 per connect), and the messaging runtime starts **before** the State-A branch so a first-run join has a live socket.
+- **Ask a community about a join it has not answered** (#219) — `join-requests/status/0.1` had only its receiving half implemented; a minute tick now polls each `Pending` join with an immediate poll at launch, per-record backoff 1 → 2 → 4 → 8 min capped at 15, ≤4 polls per tick; the community's own `requestId` is adopted from `refer`/`request_more` verdicts (`CommunityRecord::request_id_confirmed`); the poll takes the transport the submit took.
+- **0.3.1** (08-16, untagged but at `Cypress`): a first-run join could never be answered (#221); `openvtc health` with live progress (#222); poll a join **without** knowing its request id (#226, with VTC #985); prefill the community from a pasted VIC and drop a phantom setup step (#227); an explicit paste row and **13 unreachable setup pages (~3,800 lines) removed** (#228); say so when a mint comes back without TSP (#223); never drop an inbound message already acked (#224).
+
+**Cypress**: `VTI-Cypress-RC-0` (07-31, #203), `VTI-Cypress-RC-1` (08-11, #210), `Cypress` (08-17, #229 — trust-tasks 0.9 / vta-sdk 0.25 / did-git-sign 0.4.5, workspace 0.3.1). Post-Cypress (#230–#237): VIC list and startup listeners moved off the event loop, State-A fixes (agent names, identity removal, settings before a community exists, #235), exhaustive action matches so loop divergence cannot recur (#236), agent-name verbs off the state-handler loop (#237, first "R14" perf batch), the TDK auth-refresh fix (#232). Caveat: the CHANGELOG does not cover #152–#203 (agent names, VGI, capabilities, delivery, TSP) — commit history is ground truth for those.
+
+### Agent names — 2026-07-22/23 (#163–#182)
+
+OpenVTC is the *display* side of the ecosystem's agent-names story (the [[affinidi-tdk|TDK]] resolves, [[affinidi-webvh-service|did-hosting-service]] serves `/@name`). `openvtc_core::agent_name` delegates to the TDK `agent-names` crate; a name is shown only if it forward-resolves **and round-trips back to the labelled DID** (spoof guard), cached in `ProtectedConfig` (24 h TTL, 5-min negative TTL) with an off-loop refresh sweep. Precedence on every DID surface: user alias → verified agent name → truncated DID (#165, #174–#182, #179). Input: the join VTC-DID entry and relationship requests accept `example.com/@name` (#166) — the DID is persisted, never the name. Personas' names are managed from the VTA panel via six `did-management/agent-name` Trust Tasks with a confirm-before-remove (#167, #169). Three rules were added to the repo's CLAUDE.md.
+
+### Capabilities, TSP, delivery layer, VGI — July 2026
+
+- **Per-community Capabilities panel** (#157/#158): `governance/capability/list` over DIDComm; enabled/available/delegated rows, manifest detail, enable/disable documents signed `eddsa-jcs-2022` by the persona; wire code from the published `trust-tasks-capability-client`.
+- **TSP as a live transport**: the VTA panel stops misreporting a TSP VTA (#187); trust tasks over a TSP leg of the session with bounded discovery and DIDComm degrade (#196); the **join ceremony over TSP** when the community offers it (#201; `openvtc_core::tsp`); reopen TSP after bootstrap rather than falling back to REST (#207); record the submit transport and refuse a community that advertises none (#210); choose TSP only when *our own* mediator can carry it (#211); `add_tsp_service: true` on mint (#213).
+- **Messaging rebuilt on the delivery layer** (#191–#195): the DIDComm transport moved into `openvtc-core`, `ListenerSpec` replaces the framework type, production messaging runs on `affinidi-messaging-delivery` (one `DidCommTransport` per identity, `Delivery::Guaranteed` outbox, `dispatch_inbound` replaces the Router; `affinidi-messaging-didcomm-service` dropped), and a supervisor rebuilds a listener whose ATM died.
+- **DCQL consent** (#197): `openvtc_core::presentation` — held credentials → `evaluate_query` (DCQL) → `DisclosureRequest` → `present` (`vp_token`). Re-scoped the old D4 open item: the verified path is `credential-exchange/query|present`, not the submit-slot VP.
+- **VGI / did-git-sign** (#152–#160): `did-git-sign verify-trust` (sshsig parsing, DID-document key match, TRQP authorization against the VTC Trust Registry, fail-closed), PGP exemption keyring + composite GitHub Action, org-fallback grants + committed web-flow platform keyring — then the whole thing **extracted to [[verifiable-git-infrastructure]]** and consumed as a published crate (#159), with the Action pinned (#160).
+- Also: the `spec/vtc` Trust-Task registry authority followed (#171–#173, #190); untrusted strings cut on character boundaries, not byte offsets — a remote panic found by fuzzing (#202); completed task trackers archived (#162), cross-service networking discipline recorded (#161).
 
 ### June 2026 — multi-community executed (T1–T9 complete) + VIC join flow — `Banyan` milestone
 
-The entire multi-community plan landed in a single month (80 commits, PRs #69–#149; ~21,600 insertions). The window ends with a lightweight milestone tag, **`Banyan`** (2026-06-22, at PR #148) — note the shift from `vX.Y.Z` tags to codenames. The workspace version is still 0.2.1 and the changelog hasn't caught up; commit history, the DRAFT v5 spec, and the tag are ground truth.
+The entire multi-community plan landed in a single month (80 commits, PRs #69–#149; ~21,600 insertions). The window ends with a lightweight milestone tag, **`Banyan`** (2026-06-22, at PR #148) — note the shift from `vX.Y.Z` tags to codenames. At the time the workspace version was still 0.2.1 and the changelog hadn't caught up (it did in v0.3.0); commit history, the DRAFT v5 spec, and the tag were ground truth.
 
 **T1–T9 all complete.** Beyond the T1 foundation (config v2 + supervised multi-session manager, one recoverable DIDComm task per community session, #110/#111), the slices landed in order: `context_path` hierarchy mirroring `vti-common` validation (T2, #112); State-A bootstrap split from the monolithic ~19-step wizard — account bootstrap mints **no** persona DID (T3, #113); communities overview with favourite toggle and a **Ctrl+K community switcher** (T4, #114); join flow with identity choice — reuse a persona or mint a fresh `did:webvh` — and live session registration without restart (T5, #115/#116); pending-resolution lifecycle with the 7-day timeout → Expired (T6, #117); leave / archive / inactive-only delete with read-only styling (T7, #118); `did-git-sign` per-repo persona selection (T8, #119); and end-to-end integration tests against a real mediator and VTI's `MockVta` (T9, #120–#122).
 
@@ -102,7 +126,7 @@ The entire multi-community plan landed in a single month (80 commits, PRs #69–
 - Final fix of the window (#149, 06-27): repair R-DID `key_info` ids that caused a mediator auth loop.
 - Dependency escalation tracking VTI's cadence: vta-sdk 0.10 → 0.17 → 0.18.1 plus affinidi-tdk 0.8 in ten days — OpenVTC is functioning as the reference client for the VTI stack.
 
-**Still open:** VP requirement discovery (the one unresolved spec item, D4), persona key rotation, per-community capabilities beyond the ported main page.
+**Still open at the time:** VP requirement discovery (D4 — re-scoped in July by #197 to the `credential-exchange/query|present` path), persona key rotation (still open), per-community capabilities (shipped July, #157).
 
 ### Post-v0.2.1 — multi-community design + T1 implementation
 

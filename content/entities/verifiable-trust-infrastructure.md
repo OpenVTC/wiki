@@ -1,8 +1,8 @@
 ---
 title: "Verifiable Trust Infrastructure (VTI)"
 type: entity
-tags: [vti, infrastructure, workspace, primary]
-date-updated: 2026-07-06
+tags: [vti, infrastructure, workspace, primary, cypress, tsp, trust-tasks]
+date-updated: 2026-08-19
 repo: https://github.com/OpenVTC/verifiable-trust-infrastructure
 ---
 
@@ -14,27 +14,40 @@ The Verifiable Trust Infrastructure is a Rust workspace containing the core serv
 
 ## Components
 
-The workspace has grown to fifteen crates as the VTC service matured, the mobile + WebAuthn surfaces were added, and (June 2026) the secrets, AI-agent, and VTC-client surfaces were split into their own crates:
+The workspace has grown to **26 members**: in late July 2026 the monolithic `vta-service` was decomposed into eleven subsystem crates (`docs/05-design-notes/vta-service-decomposition.md` — vta-service/src shrank from ~114k to ~87k lines, −23%), on top of the June additions (secrets, AI-agent, VTC-client, fuzzing). Versions shown are those in the coordinated **`Cypress`** release ([[coordinated-releases]], 2026-08-17); ★ = new since July 2026.
 
-| Crate | Purpose |
-|-------|---------|
-| **[[verifiable-trust-agent\|vta-service]]** | The main VTA server — key management, signing, auth |
-| **vta-sdk** | Data model and client library for VTA integration |
-| **vta-enclave** | AWS Nitro Enclave wrapper for VTA |
-| **vta-mobile-core** | UniFFI engine behind the Authenticator + PNM mobile apps (DIDComm, Trust Tasks, AAL step-up). Android AAR / iOS xcframework, not crates.io. |
-| **vta-mcp** | MCP stdio server bridging VTA capabilities (signing oracle, secrets vault, device check-in, discovery) to MCP hosts like Claude Desktop *(new, June 2026)* |
-| **vti-webauthn** | DID-VM-resolved WebAuthn verifier |
-| **vtc-service** | [[verifiable-trust-community\|VTC]] daemon — community lifecycle, policies, credentials, public website, admin UX |
-| **vtc-client** | Thin client SDK for a VTC — the VTC counterpart to vta-sdk *(new, June 2026)* |
-| **vti-common** | Shared auth, ACL, storage, config, error handling; includes `context_path` (hierarchical context paths + ancestry-aware ACL) |
-| **vti-secrets** | Pluggable secret-store backends (plaintext, HashiCorp Vault, KMS/TEE, Kubernetes Secrets), lifted out of vta-service for external reuse *(new, June 2026)* |
-| **vta-cli-common** | Shared CLI command implementations |
-| **cnm-cli** | Community Network Manager (multi-community client) |
-| **pnm-cli** | Personal Network Manager (single-VTA client) |
-| **didcomm-test** | DIDComm connectivity test harness |
-| **vti-fuzz** | cargo-fuzz workspace — Nitro-attestation and verify-path targets *(new, June 2026)* |
+| Crate | Purpose | Cypress |
+|-------|---------|---------|
+| **[[verifiable-trust-agent\|vta-service]]** | The VTA server "spine" — HTTP routes, Trust-Task dispatch, messaging bridge, orchestration; re-exports the subsystem crates | 0.17.0 |
+| **vta-sdk** | Public client SDK / data model — consumed by eight sibling repos (OpenVTC, did-hosting-service, the TDK mediator, VGI, the browser plugin's type bindings …) | 0.25.0 |
+| ★ **vta-config** | `AppConfig` TOML shape and sub-configs | 0.3.8 |
+| ★ **vta-keyspaces** | Keyspace-name registry (shared storage vocabulary) | 0.1.4 |
+| ★ **vta-audit** | `audit!` tracing macro + audit-keyspace persistence | 0.1.6 |
+| ★ **vta-keys** | Master-seed storage, BIP-32 derivation, key wrapping, seed-store backends — and, since 0.2.5, non-extractable internal keys | 0.2.5 |
+| ★ **vta-vault** | Holder credential vault: store / query / receive / verify / present / status-refresh — Data Integrity, BBS, SD-JWT and (since 0.3.0) ISO mdoc | 0.3.0 |
+| ★ **vta-webvh** | WebVH hosting infrastructure: DID-record store, client to a did:webvh host, DID-auth handshake | 0.1.9 |
+| ★ **vta-policy** | Regorus (Rego) Policy Decision Point, default policy bundle, consent model, decision evaluators | 0.2.7 |
+| ★ **vta-support** | Mid-layer services: trust-context storage, sealed-transfer helper, sealed-bootstrap nonce store | 0.2.7 |
+| ★ **vta-tee** | Nitro / SEV-SNP attestation providers, KMS attest/decrypt + storage-key derivation, anchor MAC, first-boot DID autogen | 0.1.8 |
+| ★ **vta-backup** | Encrypted full-state export/import, sealed backup-bundle store + TTL sweeper | 0.1.10 |
+| ★ **vta-sweepers** | Background TTL sweepers (ACL grant expiry, pending consent, soft-deleted vault purge) | 0.1.3 |
+| **vta-enclave** | AWS Nitro Enclave binary (TEE mode) — *not published* | 0.7.7 |
+| **vta-mobile-core** | UniFFI engine behind the Authenticator + PNM mobile apps (DIDComm/TSP, Trust Tasks, AAL step-up); Android AAR / iOS xcframework | 0.6.18 |
+| **vta-mcp** | MCP stdio server bridging VTA capabilities to MCP hosts like Claude Desktop — *not published* | 0.1.5 |
+| **vti-webauthn** | DID-VM-resolved WebAuthn verifier | 0.1.1 |
+| **vtc-service** | [[verifiable-trust-community\|VTC]] daemon — community lifecycle, policies, credentials, public website, admin UI — *not published* (`publish = false`) | 0.11.58 |
+| **vtc-client** | Thin client SDK for a VTC — the VTC counterpart to vta-sdk | 0.3.7 |
+| **vti-common** | Shared auth, ACL, storage, config, error handling; `context_path` (hierarchical contexts) | 0.12.1 |
+| **vti-secrets** | Pluggable secret-store backends (plaintext, HashiCorp Vault, KMS/TEE, Kubernetes Secrets) | 0.1.14 |
+| **vta-cli-common** | Shared CLI command implementations | 0.11.0 |
+| **cnm-cli** | Community Network Manager (multi-community client) | 0.11.22 |
+| **pnm-cli** | Personal Network Manager (single-VTA client) | 0.12.6 |
+| **didcomm-test** | DIDComm connectivity test harness — *not published* | 0.6.9 |
+| **tests/e2e** | In-process end-to-end harness (MockVta / MockVtc) — *not published* | 0.6.0 |
 
-The `vti-didcomm-js` crate (JavaScript DIDComm primitives + spec test vectors) was extracted into its own repository in the May–June cycle. Since June 2026 the workspace crates are published to crates.io through CI via **trusted publishing** (GitHub OIDC).
+(`vti-fuzz` is a nested cargo-fuzz workspace, not a member.) Layering: L0 vti-common / vta-sdk / vti-secrets → L1 keyspaces / config / audit → L2 support / keys / vault / webvh / policy → L3 tee / backup / sweepers → L4 vta-service.
+
+The `vti-didcomm-js` crate (JavaScript DIDComm primitives + spec test vectors) was extracted into its own repository in May 2026 — see [[vti-didcomm-js]]. **Publishing** moved in August 2026 to **release-plz** (#938): merging a PR is no longer releasing — release-plz keeps one `chore: release` PR open, and merging *that* tags each crate (`<crate>-v<ver>`), generates per-crate CHANGELOGs from conventional commits, runs `cargo-semver-checks`, and publishes via crates.io trusted publishing (GitHub OIDC). 20 of 26 crates publish; the six internal ones are vtc-service, vta-enclave, vta-mcp, vta-mobile-core, didcomm-test, vti-fuzz.
 
 ## How It Fits in the Stack
 
@@ -57,27 +70,77 @@ Applications at the top (like [[openvtc|OpenVTC]]) use VTI to manage keys and si
 ## Dependencies
 
 Key external dependencies:
-- `affinidi-tdk` — DID resolution, messaging, data integrity proofs
-- `didwebvh-rs` — did:webvh operations
-- `dtg-credentials` — trust graph credential types
+- `affinidi-tdk` (0.8.5, enforced-authcrypt line) — DID resolution, messaging, data integrity proofs; `affinidi-messaging-delivery` — the reliable outbox layer both services now run on; `affinidi-tsp`
+- `trust-tasks-*` 0.9 — the ToIP Trust Tasks document framework every wire operation is expressed in
+- `didwebvh-rs` 0.6 — did:webvh operations
+- `dtg-credentials` 0.2 — trust graph credential types (DTG Core Credentials WD01)
+- `affinidi-mdoc` — ISO mdoc; `regorus` — Rego policy engine
 - `fjall` — embedded key-value storage
 - `axum` — async HTTP framework
-- `ed25519-dalek` — Ed25519 cryptography
+- `ed25519-dalek` 3 / `curve25519-dalek` 5 — Ed25519/X25519 cryptography (SLIP-0010 derivation now in-tree)
 
 ## Tech Stack
 
-- **Language**: Rust (edition 2024, requires 1.85+)
+- **Language**: Rust (edition 2024, `rust-version` 1.95)
 - **Async runtime**: Tokio
 - **HTTP**: Axum 0.8
 - **Storage**: fjall (embedded LSM)
-- **Crypto**: ed25519-dalek, x25519-dalek, p256
+- **Crypto**: ed25519-dalek 3, x25519-dalek, p256
 - **Auth**: EdDSA JWTs, DIDComm challenge-response
 
 ## Recent Development
 
 This page is the canonical activity log for the VTI workspace. The [[verifiable-trust-agent|VTA entity]] keeps a focused, VTA-relevant subset. Implementation continues to evolve quickly; treat low-level details as in flux.
 
-The June–July cycle (289 commits, PRs #313–#624 since 2026-06-07) matches the record May–June push and pivots the workspace twice: first a systematic **P0–P3 security and architecture campaign** capped by the **`Banyan` milestone tag** (2026-06-22 — tree-named milestones, following `openvtc-aspen`, now appear to be the release convention), then a sharp turn to **[[trust-spanning-protocol|TSP]] enablement** with transport preference officially flipped to **TSP > DIDComm > REST**. Two new product thrusts emerged alongside: **personal AI agents** (the VTA as the trust anchor under agent runtimes, with a new `vta-mcp` MCP server) and **enterprise fleet management** (owner/user separation of duty).
+The July–August cycle (≈340 commits, PRs #625 → #1008 since 2026-07-06) is the VTI's third consecutive record month, and it ends in the coordinated **`Cypress`** release ([[coordinated-releases]]) — the first tree-named milestone to go through formal release candidates (`VTI-Cypress-RC-0` 08-02, `VTI-Cypress-RC-1` 08-11) and the first cut as a crates.io-published snapshot under the new release-plz process. Thematically the month was about *converging*: every wire operation folded onto the canonical ToIP **Trust Tasks** registry URIs; the three approval mechanisms collapsed into **one approvals model**; the `vta-service` monolith was **decomposed** into eleven subsystem crates; and TSP went from opt-in feature to a *selectable* transport a VTA can run without DIDComm at all. New capabilities arrived too — **ISO mdoc** receive/present, **non-extractable internal keys**, a hardened non-TEE mode, Nitro tenant config over vsock — but the dominant signal is a codebase preparing for a 1.0 shape.
+
+### Cypress — 2026-08-17 — coordinated release, release-plz, RC process
+
+The annotated `Cypress` tag points at a release-plz `chore: release` merge (#997). Snapshot versions are in the Components table above (vta-service **0.17.0**, vta-sdk **0.25.0**, vtc-service 0.11.58, vti-common 0.12.1, pnm 0.12.6, cnm 0.11.22, vta-mobile-core 0.6.18). Versions at the start of the window for comparison: vta-sdk 0.18.17, vta-service 0.10.23, vtc-service 0.10.13. Two RCs preceded it: RC-0 at #893 (keys import canonical on every transport, 08-02) and RC-1 at #935 (changelog sign-posting, 08-11) — `Banyan → Cypress` is simply the next letter in the tree-named sequence, but the RC discipline is new.
+
+**release-plz (#938, 08-12).** Replaces the hand-rolled `publish.yml` / `cut-release.sh` / version-bump guards and the `changelog.d/` fragments introduced only two weeks earlier (#878): one open Release PR, per-crate tags, git-cliff CHANGELOGs, `cargo-semver-checks`-derived bumps, trusted publishing (the workflow had to keep the name `publish.yml` because crates.io pins the filename, #943). #938 first cut the published set 21 → 7; #962 (08-13) reversed most of that because `openvtc-core` dev-depends on `vta-service` for `MockVta` and `vti-common` re-exports `vta_sdk::acl` types — a frozen vta-service stopped compiling against a moving vti-common. Current rule (`RELEASING.md`): 20 of 26 publish. Fourteen `chore: release` merges landed between #938 and HEAD. Also: a plain non-TEE `Dockerfile` + CI (#955), the Nitro image cached with cargo-chef and built in CI (#956), CI diet (#961), a DCO exemption for verified org-member commits so release merges can pass (#944), bounded CI jobs (#1002, #1006).
+
+### Trust-Task canonicalisation — everything folds onto `trusttasks.org/spec/*` — July–August 2026
+
+The largest single stream. The VTC programme (#710; `docs/05-design-notes/vtc-trust-task-registry-migration.md`, COMPLETE 2026-07-27): manifest census (#711), config/audit/acl/policy repointed to canonical (#724–#729), join-requests ceremony → `spec/vtc` (#733, #743, #806), admin passkeys → canonical `auth/passkey` (#809), **admin-login and the legacy `/v1/config` surface retired (#828)**, **config export/import repointed — retiring the last `openvtc/vtc` bindings (#834)**; all 66 entries in the VTC's `trust-tasks/index.json` are now `retired` with `supersededBy`; `decide` replaces approve/reject and accept folds into `members/vmc` (#863). The VTA side: ACL → canonical `acl/*` (#842) with `acl/change-role` split out (#855); config + provisioning → canonical, and the VTA stops rewriting its own DID (#841); audit → `audit/list/0.1` (#848); webvh `dids/get-log` → `dids/get`, `servers/{add,update}` → `servers/register` (#849/#850); credential-exchange bound to published URIs (#837); keys → canonical `keys/*` (#888, #893 = RC-0); did-templates onto the six-task 2.0 family (#864); `sign()` and every twinned RPC method reach TSP via the Trust-Task bridge (#861); a conformance sweep so every published task matches its schema (#866); a reverse registry-parity harness (#860). Wire level: **#1000 (breaking) emits canonical lowerCamelCase on 53 Trust-Task payload structs, accepting snake_case via 126 aliases**; #1001 carries Trust Tasks over the HTTPS binding on REST too; **#1007 marks every superseded REST route (60 route → task pairs) with a successor `Link` and a usage metric, gating deletion on zero usage**. The plan for the last ~67 unpublished task URIs — fold, generalise, author only what is genuinely new — is `docs/05-design-notes/canonical-task-reduction.md` (#840). Direction: REST retirement is now *measured*, not scheduled.
+
+### TSP: selectable, and optionally DIDComm-free — July–August 2026
+
+TSP moved from "feature-gated and opt-in" to a **selectable transport** — `TransportChoice::{Tsp, Didcomm}` plus `Auto`, with the documented `TSP > DIDComm > REST` preference now *implemented* (#797, 07-25), and a TSP leg per surface rather than a whole-client switch (#810). **A VTA can speak TSP without DIDComm** (#937): the connect supervisor runs on `didcomm || tsp`, the cargo features are decoupled, CI builds the tsp-only combination. The setup wizard offers TSP and advertises it at mint (#933/#934, `transport-neutral-mediator.md`); a minted did:webvh can advertise TSP at the VTA's mediator (#959). On the VTC side: Trust Tasks accepted over TSP (#833), self-remove and member-VMC dispatched as Trust Tasks (#838), communities **choose their transports at setup and publish which they offer and whether they answer** (#926/#929, #923 "serve the TSP we advertise, and refuse to pretend otherwise"), the admin UI shows which transport each service is actually reached on (#965), and **the trust registry is reached by DID over TSP or DIDComm** (#963; probe order fixed #981, retriable at boot #966). webvh DID mutations and the domain relay reach TSP (#885, #891); mobile gained a TSP receive session and device push over TSP (#694–#697). What's still open (per #937's "what this does not do"): a fully transport-neutral mediator config, per-protocol mediator registration, and whether TSP-only sessions still need the DIDComm auth leg.
+
+### One approvals model — policy gate, consent, break-glass — July–August 2026
+
+Three mechanisms — `[auth.step_up]` floors, config consent rules, and the Rego Policy Decision Point — collapsed into one. The PDP on regorus landed with opt-in enforcement (#637, 07-12) and became the single step-up authority (#641); **task-execution consent** (DTTE, #645–#653) pushes a human-readable, site-named, dry-run-effects consent request to approver devices; approvers are least-privilege ("may approve" ≠ "may act", #684, #779) and need not hold VTA authority (#907). Then the convergence: **one approval model manageable at runtime (`pnm approvals`, #909)**, the gate enforced on REST routes (#912) and the webvh update route (#913), **step-up floors and config consent rules retired — rules are the only trigger (#914, breaking)**, and an **offline break-glass** `vta approvals/policy {list,remove,disable}` for a rules lockout (#915). Canonical request bodies with witnesses built from them (#925, #928); the step-up approve-request itself is now signed (#870) and minted as 0.2 (#873). Docs: `docs/02-vta/approvals.md`, `task-consent.md`, `approvals-convergence.md` (status: landed). Related: DID-keyed sessions unify REST with intrinsic-sender transports (#627–#629).
+
+### Signing oracle: authorization model, `allowedKeys`, non-extractable keys — July–August 2026
+
+#814 turns the signing oracle's authorization model into a documented *guarantee*: three gates in `operations::keys::sign_payload` (caller context scope; resource-bound `signable_keys` policy binding even super-admin; unscoped keys super-admin-only), one enforcement point for REST/DIDComm/Trust Task. **`allowedKeys` (#865)** adds actor-scoped per-key narrowing on ACL entries. A design review of multi-tenant signing (#817) concludes no authorization refinement can distinguish a compromised multi-domain signer — only splitting credentials or a second factor can. **Non-extractable internal signing keys (#995, vta-keys 0.2.5)**: CSPRNG keys with no derivation path, in their own `INTERNAL_KEYS` keyspace excluded from backup, export refused in code (admin is not a bypass), forbidden as webvh update keys; `pnm keys create --internal`. Also: import an external Ed25519 key for a deterministic did:key (#953); backup password minimum raised to 15 characters (#875).
+
+### ISO mdoc — receive, store, present over OID4VP — 2026-08-16 (#984–#993)
+
+A single-day burst gave the vault a first-class `CredentialFormat` identity for **ISO 18013-5 mdoc** (#984); verify-and-store on receive (#986); issuer resolution against configured **IACA trust anchors** (`[vault] mdoc_iaca_trust_anchors`, #987); acceptance over `vault/credentials/receive` as `credentialBase64` (#989); an mdoc bound to the VTA key that can present it (#990); and **presentation over OID4VP** with an ISO 18013-7 `SessionTranscript`, a P-256 `ecdsa-jcs-2019` consent receipt, and `HolderIdentity::{Subject, DeviceKey}` (#993, breaking). Depends on `affinidi-mdoc` 0.2.7 and the TDK's new `ecdsa-jcs-2019` cryptosuite. The VTA is now a holder for W3C DI, BBS, SD-JWT *and* mdoc — the four credential formats that matter for government / travel / age use cases.
+
+### `vta-service` decomposition — 2026-07-24/25 (#780–#791)
+
+Eleven subsystem crates extracted from the monolith in two days (`vta-config`, `vta-keyspaces`, `vta-audit`, `vta-keys`, `vta-vault`, `vta-webvh`, `vta-policy`, `vta-support`, `vta-tee`, `vta-backup`, `vta-sweepers`; backup extracted with dependency inversion #790; TEE and policy #791) — 27k lines moved, AWS SDK out of the default build graph with vta-tee, semver checks switched off for the subsystem crates because nobody consumes their APIs directly. The decomposition note sets a stopping rule: extract only if it improves compile granularity, testability, or dependency surface.
+
+### Hardened non-TEE + TEE fleet config — July–August 2026
+
+`[hardened]` at-rest encryption for non-TEE deployments with first-boot auto-migration of existing rows (#835) — closing the gap between "runs in Nitro" and "runs on a VM". In the enclave, tenant config is **no longer baked into the EIF**: one image / one PCR0 per fleet, a config envelope delivered over vsock:5800, a TEE-mode floor, the config digest anchored in the NSM attestation, and `POST /attestation/config-report` (#939). The TEE security-model doc was re-grounded against current code (KMS Recipient attestation, seven vsock channels, #832); a dual-unlock design note (#736); NSM ioctl `len` must be u64 (#819); per-crate COPY layering for the Nitro image (#826).
+
+### Mobile, messaging, webvh, VTC — July–August 2026
+
+- **Mobile**: device Trust-Task submission with *no REST* over DIDComm and TSP (#792); mobile as a second device for task-consent (#690); **request proofs verified on-device before prompting** (#871, mobile-core 0.6.17); DID→name display seam (#800); 0.6.18 for the `digestMultibase` consent digest (#911).
+- **Messaging**: both services cut over to the TDK's reliable **`affinidi-messaging-delivery`** layer (`MessagingService` + `DidCommTransport` + `VtiOutboxStore`; #675–#691), Guaranteed-send state visible (#899), one ATM per process with a shutdown that actually closes the socket (#844), websocket leak fixes (#846/#847), mediator ACL auto-provisioning (#652), DID-routing mediators via `--mediator-did` (#952), unknown inbound protocols dropped not fatal (#905), `affinidi-tdk` hard-pinned at the enforced-authcrypt line (#908).
+- **did:webvh**: agent-name Trust Tasks end-to-end (`pnm did-mgmt agent-names …`, `alsoKnownAs` claim; #718–#723, #758, #777); wedge/recovery fixes — unpublished local head, missing confirmed-publish marker, partial edit serialising nulls (#894–#896), sign with the update keys in force (#972); `--did-log-file` for offline publishing (#932); host reconcile task aligned with the spec published upstream (#976/#977); stop sending URIs did-hosting retired in 0.8.3 (#879); find DIDs a host serves that this VTA has no record of (#976).
+- **VTC**: headless two-phase setup with an explicit secrets backend (#625); **signed audit checkpoints so truncating the log stops being invisible** (#798, #808); REST-only auth refresh for mediator-less clients (#796); `submit_join` signs its own document and needs no token (#882); an applicant can poll a join without knowing its request id (#985, breaking — the VTC half of OpenVTC v0.3.0's async join work); "step-up means recent" for admin promotion (#811); a community advertises the registry authoritative for it (#877); `cli` answers a consent gate instead of dying on it (#897).
+- **Design notes worth reading**: governance policy as a credential (#859, Option A `GovernancePolicyCredential`, deferred pending sign-off), `sdk-session-hub.md`, `registry-drift-triage.md`, `vtc-audit-checkpoints.md`.
+
+### Dependency moves — July–August 2026
+
+trust-tasks-rs **0.2 → 0.9** (0.4 #911 with the consent digest becoming `digestMultibase`; 0.6 #979; 0.9 #996; error doc 0.3 → 0.5); **dtg-credentials 0.1.3 → 0.2** (#916 — DTG Core Credentials WD01, see [[dtg-credentials]]; VMC/VEC/VIC bytes unchanged); **curve25519-dalek 5 / ed25519-dalek 3 (#887, breaking)** with SLIP-0010 derivation moved in-tree, dropping `ed25519-dalek-bip32` (#890); didwebvh-rs 0.6 (#712); messaging-sdk 0.19.8 / mediator 0.18.18 / delivery 0.1.14 / affinidi-tsp 0.1.14; the long-standing `[patch.crates-io] vta-sdk` self-pin finally dropped (#958). Configurable unauth rate limit (#936); payload validation against published schemas (#657); reactive re-auth on 401/403 (#633).
+
+The June–July cycle (289 commits, PRs #313–#624 since 2026-06-07) matched the record May–June push and pivoted the workspace twice: first a systematic **P0–P3 security and architecture campaign** capped by the **`Banyan` milestone tag** (2026-06-22), then a sharp turn to **[[trust-spanning-protocol|TSP]] enablement** with transport preference officially flipped to **TSP > DIDComm > REST**. Two new product thrusts emerged alongside: **personal AI agents** (the VTA as the trust anchor under agent runtimes, with a new `vta-mcp` MCP server) and **enterprise fleet management** (owner/user separation of duty).
 
 ### TSP enablement — late June–July 2026 — transport preference flips to TSP > DIDComm > REST
 
@@ -85,7 +148,7 @@ The headline of the cycle. A 2026-06-22 decision record (`docs/05-design-notes/m
 
 Key locked decisions: DIDs are TSP VIDs reusing existing Ed25519/X25519 keys (no new key material); one dual-protocol mediator serves both TSP and DIDComm; capability discovery is DID-document-driven, matched by service `type` not `#id` fragment (ids renamed to `#didcomm` / `#tsp` / `#rest`); a `tsp` cargo feature mirrors `didcomm`, off by default initially.
 
-Implementation landed as a stacked PR train (2026-06-25 → 07-03): `tsp` feature across sdk/service/enclave/vtc (#580); `TSPTransport` service patchers with TSP-first canonical ordering (#581) and advertisement in DID templates (#584); a peer-matching engine for capability discovery + protocol selection (#583); TSP as a first-class managed service — `ServiceState::Tsp` with enable/update/disable/rollback over REST, DIDComm, and CLI (#585–#589) and declarative setup (#598); a TSP inbound listener over the shared mediator websocket (#595, #601 — no second socket, no mediator flapping); vault unsealing of `tsp-message` sealed envelopes (#594); a TSP round-trip health probe (`pnm health` TSP ping, #610–#618); and an operator guide (`docs/02-vta/tsp.md`). Strictly additive today — feature-gated and opt-in — but the stated intent is default-on after field exercise.
+Implementation landed as a stacked PR train (2026-06-25 → 07-03): `tsp` feature across sdk/service/enclave/vtc (#580); `TSPTransport` service patchers with TSP-first canonical ordering (#581) and advertisement in DID templates (#584); a peer-matching engine for capability discovery + protocol selection (#583); TSP as a first-class managed service — `ServiceState::Tsp` with enable/update/disable/rollback over REST, DIDComm, and CLI (#585–#589) and declarative setup (#598); a TSP inbound listener over the shared mediator websocket (#595, #601 — no second socket, no mediator flapping); vault unsealing of `tsp-message` sealed envelopes (#594); a TSP round-trip health probe (`pnm health` TSP ping, #610–#618); and an operator guide (`docs/02-vta/tsp.md`). Strictly additive at the time — feature-gated and opt-in; by August TSP had become a selectable transport with TSP-only VTAs supported (see above).
 
 ### Security hardening + architecture campaign (P0–P3) — 2026-06-10 → 06-16
 
