@@ -2,8 +2,8 @@
 title: "Trust Spanning Protocol (TSP)"
 type: concept
 tags: [tsp, messaging, trust-over-ip, encryption, transport]
-date-updated: 2026-07-06
-sources: [affinidi-tdk, verifiable-trust-infrastructure, affinidi-webvh-service]
+date-updated: 2026-08-19
+sources: [affinidi-tdk, verifiable-trust-infrastructure, affinidi-webvh-service, openvtc, vta-browser-plugin, vti-setup]
 ---
 
 # Trust Spanning Protocol (TSP)
@@ -29,6 +29,6 @@ Design decisions worth knowing: DIDs double as TSP VIDs **reusing existing Ed255
 
 ## Relationship to DIDComm
 
-TSP and DIDComm serve similar purposes (secure, DID-based messaging) but make different trade-offs. DIDComm is more established with broader tooling; TSP is leaner and tracks the ToIP standards direction. The current posture is **TSP-preferred, DIDComm as the interop layer**: TSP support is feature-gated and opt-in today, with stated intent to make it default-on after field exercise, and proactive outbound flows in some services still use DIDComm.
+TSP and DIDComm serve similar purposes (secure, DID-based messaging) but make different trade-offs. DIDComm is more established with broader tooling; TSP is leaner and tracks the ToIP standards direction. The current posture is **TSP-preferred, DIDComm as the interop layer** — and by August 2026 that is implemented, not aspirational: the VTA exposes TSP as a *selectable* transport (`Auto` = TSP > DIDComm > REST), can run **TSP-only with no DIDComm at all**, offers TSP in its setup wizard and advertises it on minted DIDs; communities choose and publish their transports at setup, and the trust registry is reachable by DID over TSP; did-hosting-service decoupled TSP from DIDComm with a three-way transport selection and pushes outbound sync over TSP; [[openvtc]] runs the join ceremony over TSP when the community offers it (choosing TSP only when its own mediator can carry it); and the browser wallet ships a pure-TypeScript `vti-tsp-js`. The [[vti-setup]] Cypress walkthroughs default every component to TSP + DIDComm. What remains DIDComm-only: the did:webvh witness, and interop with the wider Aries/Credo world (for which the mediator now also speaks DIDComm v1).
 
 See also: [[didcomm]], [[affinidi-tdk]], [[verifiable-trust-infrastructure]]

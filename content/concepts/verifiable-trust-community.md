@@ -2,8 +2,8 @@
 title: "Verifiable Trust Communities (VTCs)"
 type: concept
 tags: [vtc, community, trust, membership]
-date-updated: 2026-04-13
-sources: [verifiable-trust-infrastructure, openvtc]
+date-updated: 2026-08-19
+sources: [verifiable-trust-infrastructure, openvtc, dtg-credential-spec]
 ---
 
 # Verifiable Trust Communities (VTCs)
@@ -45,7 +45,9 @@ The [[verifiable-trust-infrastructure|VTI]] workspace includes a **VTC Service**
 
 - **CNM CLI** (Community Network Manager) — for managing multiple communities
 - **PNM CLI** (Personal Network Manager) — for individual participation in communities
-- **OpenVTC Service** — a background daemon that responds to community protocol messages (e.g., maintainer list queries)
+- the **[[openvtc|OpenVTC TUI]]** — the member-side client: join by DID or agent name, present a VIC, see which capabilities a community has enabled, hold many memberships under distinct personas
+
+Since mid-2026 a community **chooses and publishes the transports it offers** (TSP, DIDComm, REST) and which trust registry is authoritative for it, and its admin console (`/admin`, passkey-protected) approves joins, issues the member's VMC + role VEC, and manages the ACL. The spec's Working Draft 01 names the bootstrap roles: an **initiator** generates the C-DID, instantiates the community VTA and invites **community trust anchors (CTAs)**, who are automatically issued VMCs; a **Policy Enforcement Point (PEP)** enforces the community's issuance/revocation policies. See [[vta-topology]] for how a community is served by a *network* of its members' agents.
 
 ## Trust Policies
 

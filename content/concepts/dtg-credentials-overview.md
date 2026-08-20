@@ -2,17 +2,17 @@
 title: "DTG Credential Types"
 type: concept
 tags: [credentials, dtg, trust-graph, trust-over-ip]
-date-updated: 2026-05-08
+date-updated: 2026-08-19
 sources: [dtg-credential-spec, dtg-credentials]
 ---
 
 # DTG Credential Types
 
-The Decentralized Trust Graph (DTG) is populated by a family of [[verifiable-credentials|Verifiable Credential]] types, each representing a different kind of trust relationship. These are defined by the Trust Over IP Foundation's DTG Working Group Credential Task Force (spec v0.3) and implemented in the [[dtg-credentials|dtg-credentials]] library.
+The Decentralized Trust Graph (DTG) is populated by a family of [[verifiable-credentials|Verifiable Credential]] types, each representing a different kind of trust relationship. These are defined by the Trust Over IP Foundation's DTG Working Group Credentials Task Force in the [[dtg-credential-spec|DTG Core Credentials specification]] (v1.0 Working Draft 01 since July 2026) and implemented in the [[dtg-credentials|dtg-credentials]] library (0.2.0 tracks WD01).
 
 All DTG credentials share a common W3C VC format with JSON-LD contexts, signed using EdDSA JCS 2022 Data Integrity Proofs. They use the `https://firstperson.network/credentials/dtg/v1` JSON-LD context. Both W3C VC v2.0 (primary) and v1.1 (legacy) are supported.
 
-The spec organizes credentials into four [[credential-categories|descriptive functional categories]]: Edge, Invitation, Annotation, and Verifiable Data Structures. These categories are for conceptual understanding only — they don't appear in credential schemas.
+The spec (v1.0 Working Draft 01, July 2026) organizes its six credential types into three [[credential-categories|descriptive functional categories]]: Edge, Invitation, and Annotation. These categories are for conceptual understanding only — they don't appear in credential schemas.
 
 DTG credentials MAY be presented using standard W3C VC presentation methods, but they SHOULD be presented as [[zero-knowledge-proofs|zero-knowledge proofs]] whenever privacy preservation is desired — and implementations SHOULD make ZKP presentation the default. The spec defines two ZKP constructions for Edge Credentials: a **pairwise** construction anchored to the VRC, and a **community-anchored** construction anchored to the VMC. See [[zero-knowledge-proofs]].
 
@@ -46,12 +46,12 @@ An [[endorsement-credential|Endorsement Credential]] lets one person vouch for a
 ### Witness Credential (VWC) — Annotation
 **"I witnessed that this relationship is genuine."**
 
-A [[witness-credential|Witness Credential]] is a third-party attestation. Includes optional SHA-256 digest of the witnessed VRC (multibase/multihash) and a `witnessContext` object with event, session ID, and verification method (e.g., "in-person-proximity"). See [[witnessed-vrc-exchange]] for the full protocol.
+A [[witness-credential|Witness Credential]] is a third-party attestation — by a person, or by a VTA applying a community's witnessing policy. Since WD01 it MUST carry `taskContext` (the exchange it was issued in — see [[trust-task-context-binding]]) and a required `digest` of the specific VRC it attests (SHA-256 over the VRC's JCS canonical form, encoded `sha256:<hex>`); `credentialSubject.id` is the issuer of that VRC, and a witnessed bidirectional exchange yields one VWC per direction. An optional `witnessContext` object carries event, session ID, and verification method (e.g., "in-person-proximity"). See [[witnessed-vrc-exchange]] for the full protocol.
 
-### Relationship Card (RCard) — Verifiable Data Structure
+### Relationship card (r-card) — a companion Verifiable Data Structure, not a credential
 **"Here is my contact information."**
 
-An RCard carries vCard/jCard contact information (per RFC 7095) in a verifiable wrapper. **Not a DTGCredential** — its type array is `["VerifiableCredential", "RelationshipCard"]`, without the `DTGCredential` parent type.
+An r-card carries vCard/jCard contact information (per RFC 7095) in a verifiable wrapper — "a modern, self-updating vCard," typically exchanged alongside VRCs. It is **not a DTGCredential** and, since WD01, is no longer defined in the core spec at all: it moves to a planned *DTG Core Verifiable Data Structures* companion (with an agent card). The [[dtg-credentials]] crate keeps deprecated RCard types for now.
 
 ## How They Fit Together
 

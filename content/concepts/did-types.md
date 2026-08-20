@@ -2,13 +2,15 @@
 title: "DID Types in the DTG"
 type: concept
 tags: [did, taxonomy, identity, dtg]
-date-updated: 2026-04-09
+date-updated: 2026-08-19
 sources: [dtg-credential-spec, openvtc]
 ---
 
 # DID Types in the DTG
 
 The [[decentralized-trust-graph|Decentralized Trust Graph]] uses a taxonomy of [[decentralized-identifiers|DID]] types, each serving a specific role. Understanding these types is key to understanding how identity and privacy work in the ecosystem.
+
+Since Working Draft 01 of the [[dtg-credential-spec|spec]] (July 2026) the official list is **four**: the earlier **W-DID** (Witness DID) was dropped — a witness acts under an M-DID or as a VTA applying community policy. The spec frames these as *DTG verifiable identifiers (VIDs)*: this version uses DIDs exclusively, but future versions may admit other ToIP VIDs such as X.509 or KERI AIDs. Every DTG node is identified by at least one DTG VID and reached through a [[vta-topology|VTA]].
 
 ## The Taxonomy
 
@@ -18,7 +20,6 @@ The [[decentralized-trust-graph|Decentralized Trust Graph]] uses a taxonomy of [
 | **M-DID** | Member DID | An individual member within a community | [[did-webvh\|did:webvh]] |
 | **R-DID** | Relationship DID | A specific relationship between two individuals | did:peer |
 | **P-DID** | Persona DID | A persona identity linked to a relationship | [[did-webvh\|did:webvh]] |
-| **W-DID** | Witness DID | A witness attesting to a relationship | [[did-webvh\|did:webvh]] |
 
 ## Privacy Through DID Separation
 
@@ -27,7 +28,7 @@ The separation of DID types is a deliberate privacy design. The spec requires th
 - Your M-DID identifies you within a community but isn't exposed in individual relationships
 - Each R-DID is unique to one relationship, so counterparties can't correlate your connections
 - P-DIDs let you selectively reveal personal information to specific relationships
-- W-DIDs keep witness identity separate from their other roles
+- Witnesses attest under an existing identity — an M-DID, or a VTA acting under community policy — rather than a dedicated type
 
 ## How They Map to Credentials
 
@@ -38,7 +39,7 @@ The separation of DID types is a deliberate privacy design. The spec requires th
 | [[invitation-credential\|VIC]] | C-DID or authorized M-DID | Invitee's DID |
 | [[persona-credential\|VPC]] | P-DID | Counterparty's DID |
 | [[endorsement-credential\|VEC]] | Endorser's DID | Endorsee's DID |
-| [[witness-credential\|VWC]] | W-DID | Witnessed party's DID |
+| [[witness-credential\|VWC]] | M-DID, or the DID of a VTA acting under VTC policy | Issuer of the attested VRC (the observed party) |
 
 ## BIP-32 Derivation
 

@@ -2,7 +2,7 @@
 title: "BIP-32 Key Derivation"
 type: concept
 tags: [cryptography, keys, bip32, bip39]
-date-updated: 2026-04-09
+date-updated: 2026-08-19
 sources: [verifiable-trust-infrastructure, openvtc]
 ---
 
@@ -71,5 +71,9 @@ The seed is the crown jewel. In the OpenVTC ecosystem, it can be stored in:
 - **Hardware enclave** (AWS Nitro) — for VTA deployments where keys must never touch unprotected memory
 
 The [[verifiable-trust-agent|VTA]] adds another layer: it acts as a signing oracle, so applications never see the keys at all — they submit payloads and get signatures back.
+
+## The Exceptions (August 2026)
+
+Derivation from one seed is the rule, but the [[verifiable-trust-agent|VTA]] now deliberately holds two kinds of key *outside* the tree: **non-extractable internal signing keys** — generated from a CSPRNG with no derivation path, stored in their own keyspace that is excluded from backup, never exportable (admin is not a bypass), and forbidden as did:webvh update keys — for cases where "this key can never leave this VTA" matters more than "this key can be recovered from the mnemonic"; and **imported** Ed25519 keys, for a deterministic did:key that must match a key created elsewhere. The derivation code itself also moved in-tree (SLIP-0010, dropping the `ed25519-dalek-bip32` dependency) when the workspace moved to curve25519-dalek 5.
 
 See also: [[verifiable-trust-agent]], [[decentralized-identifiers]]

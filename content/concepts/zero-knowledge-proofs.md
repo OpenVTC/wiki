@@ -2,7 +2,7 @@
 title: "Zero-Knowledge Proofs in the DTG"
 type: concept
 tags: [zkp, privacy, credentials, dtg, presentation]
-date-updated: 2026-05-08
+date-updated: 2026-08-19
 sources: [dtg-credential-spec]
 ---
 
@@ -24,7 +24,7 @@ The spec defines two ZKP constructions for [[credential-categories|Edge Credenti
 
 ### 1. Pairwise ZKP (anchored to the VRC)
 
-**Where:** [[relationship-credential|VRC]], spec §5.1.
+**Where:** [[relationship-credential|VRC]], the spec's VRC section.
 
 **What it proves:** Possession of a valid VRC, with selective disclosure of chosen attributes, subject DIDs, or predicates over them. The canonical application is to disclose the parties' [[did-types|P-DIDs (Persona DIDs)]] while hiding the underlying [[did-types|R-DIDs]] — a public, verifiable claim that two known personas have a relationship, without exposing the private pairwise channel between them or enabling correlation across the holder's other presentations.
 
@@ -36,7 +36,7 @@ This construction is what makes the [[persona-credential|VPC's "Banksy Maneuver"
 
 ### 2. Community-Anchored ZKP (anchored to the VMC)
 
-**Where:** [[membership-credential|VMC]], spec §5.2.
+**Where:** [[membership-credential|VMC]], the spec's VMC section.
 
 **What it proves:** A three-part proof of relationship-within-a-shared-community:
 

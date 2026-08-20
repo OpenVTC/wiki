@@ -2,7 +2,7 @@
 title: "The Decentralized Trust Graph (DTG)"
 type: concept
 tags: [trust-graph, dtg, trust-over-ip, credentials]
-date-updated: 2026-04-30
+date-updated: 2026-08-19
 sources: [dtg-credential-spec, dtg-credentials, openvtc, verifiable-trust-infrastructure]
 ---
 
@@ -77,7 +77,7 @@ When the parties share a community, the holder can additionally construct a comm
 
 ## The DTG Specification
 
-The credential types that populate the DTG are defined by the **Trust Over IP Foundation's DTG Working Group Credential Task Force Specification** (v0.3). The [[dtg-credentials|dtg-credentials]] library provides the Rust implementation. See [[dtg-credentials-overview]] for the complete taxonomy and [[credential-categories]] for the functional classification.
+The credential types that populate the DTG are defined by the **Trust Over IP Foundation's DTG Working Group Credentials Task Force** in the [[dtg-credential-spec|DTG Core Credentials specification]] — since July 2026 a formal ToIP deliverable at v1.0 Working Draft 01, which also gives *node* and *edge* their glossary definitions (a **DTG node** is an entity — person, device, AI agent, community — identified by at least one DTG verifiable identifier and reachable via a [[vta-topology|VTA]]; a **DTG edge** is a cryptographically verifiable trust relationship between two nodes, formed by a pair of edge credentials). The [[dtg-credentials|dtg-credentials]] library provides the Rust implementation. See [[dtg-credentials-overview]] for the complete taxonomy and [[credential-categories]] for the functional classification.
 
 ## Why Decentralized?
 

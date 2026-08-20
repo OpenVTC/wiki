@@ -1,8 +1,8 @@
 ---
 title: "Affinidi Trust Development Kit (TDK)"
 type: entity
-tags: [affinidi, tdk, library, messaging, did-resolution, bbs, openid4vc, secondary]
-date-updated: 2026-07-06
+tags: [affinidi, tdk, library, messaging, did-resolution, bbs, openid4vc, agent-names, tsp, secondary, cypress]
+date-updated: 2026-08-19
 repo: https://github.com/affinidi/affinidi-tdk-rs
 ---
 
@@ -21,11 +21,17 @@ High-performance [[decentralized-identifiers|DID]] resolution with local and net
 - Integrates with [[didwebvh-rs]] for webvh verification
 
 ### Messaging (`affinidi-messaging`)
-Secure messaging built on [[didcomm|DIDComm v2.1]]:
+Secure messaging built on [[didcomm|DIDComm v2.1]] — and, since August 2026, DIDComm **v1** for interop with Aries/Credo-lineage wallets:
 - SDK, mediator/relay service, and terminal chat client
-- Authcrypt and anoncrypt encryption modes
-- Message forwarding and routing
-- Production features: circuit breakers, rate limiting, graceful shutdown
+- Authcrypt and anoncrypt packing; since 0.19.0 (July 2026) **unpack accepts only authenticated envelopes by default** (`authcrypt`, `authcrypt(sign)`, `anoncrypt(authcrypt)`) and enforces `from == skid`
+- Message forwarding and routing; cross-mediator forwarding when the next hop is a DID
+- Production features: circuit breakers, rate limiting, graceful shutdown, `explicit_allow` ACL mode gating authentication
+
+### Reliable delivery (`affinidi-messaging-core`, `affinidi-messaging-delivery`) — *new July 2026*
+The transport-neutral contracts and the reliability layer above them. `affinidi-messaging-core` defines `MessagingProtocol` (packing) and the `MessageTransport` trait (truthful `send` → hop-acceptance receipt, re-falsifiable connection state, `inbound()` + `ack()` *after* durable handoff). `affinidi-messaging-delivery` adds a durable **outbox** (`Queued → Sent → Delivered | Unconfirmed | Failed`), a `MessagingService` front-end (`send(BestEffort|Guaranteed)`, thread-correlated `request`, `subscribe`), delivery evidence (outbox-drain, layer-receipt, protocol-reply), escalate-on-expiry, multi-transport and multi-identity operation, and a conformance suite. This is what the [[verifiable-trust-agent|VTA]], the VTC service, and [[openvtc]] now run their messaging on.
+
+### Agent names (`agent-names`) — *new July 2026*
+Human-memorable handles for DIDs — `example.com/@alice`, or the community form `example.com/@` — implemented as a *shortcut layer*, not a DID method: the name URL redirects to a DID, the DID resolves normally, and the DID document **must claim the name back in `alsoKnownAs`** (typed in `affinidi-did-common` 0.4) before it is ever displayed. Exposed via `resolve_any()` in the resolver cache SDK, an opt-in `resolve-name` endpoint on the cache server (rate-limited by the new `affinidi-rate-limit` crate), and display-name shortcuts. See [[decentralized-identifiers]].
 
 ### Trust Spanning Protocol (`affinidi-tsp`)
 Implementation of the Trust over IP [[trust-spanning-protocol|TSP]] specification:
@@ -39,8 +45,8 @@ Implementation of the Trust over IP [[trust-spanning-protocol|TSP]] specificatio
 - Multibase/multicodec encoding
 - RDF canonicalization
 
-### Credentials (`affinidi-sd-jwt`)
-Selective Disclosure JWT (SD-JWT) per RFC 9901 — issue, present, and verify credentials with selective claim disclosure.
+### Credentials (`affinidi-vc`, `affinidi-sd-jwt`, `affinidi-bbs`, `affinidi-mdoc`, OpenID4VC crates)
+W3C VC data model + Data Integrity suites (EdDSA JCS/RDFC 2022, BBS-2023, and since August 2026 `ecdsa-jcs-2019` for P-256 device keys); Selective Disclosure JWT (RFC 9901); BBS signatures / blind BBS / pseudonyms; **ISO mdoc** (CBOR codecs for `IssuerSigned` and `DeviceResponse`, August 2026) — the format the VTA now receives and presents over OID4VP; `affinidi-openid4vp` / `affinidi-openid4vci`; status lists and trust lists.
 
 ### Meeting Place (`affinidi-meeting-place`)
 Discovery and connection service using DIDs.
@@ -57,7 +63,47 @@ The TDK is the Swiss Army knife that everything else depends on:
 
 The TDK is a multi-crate workspace; entries below name the affected crate. Direction is toward production readiness with stronger security guarantees and better modularity. Implementation is evolving quickly; treat low-level APIs as in flux.
 
-The June–July cycle (193 commits, ~44,600 insertions) is the TDK's largest yet, and its headline is unambiguous: **[[trust-spanning-protocol|TSP]] became a first-class, supported transport** — interoperable with the ToIP reference implementation, federated across mediators, advertised in DID documents, and *preferred over DIDComm* when both ends support it. Around it: a unified dual-protocol client architecture (ADR 0005), a document-based **Trust Tasks** replacement for the legacy mediator admin protocol, and three coordinated quality waves (semver/API hardening, test infrastructure, mediator internals).
+The July–August 2026 cycle (103 commits, PRs #589–#716) shifted from *transports* to *reliability and names*: a new **reliable messaging delivery layer**, the **agent names** shortcut layer, a run of security-by-default breaking changes (authcrypt enforced, ACL gating authentication), and **DIDComm v1** for Aries/Credo interop — capped by the coordinated **`Cypress`** release ([[coordinated-releases]], tag at #715, 2026-08-17). Four new crates: `affinidi-messaging-delivery`, `agent-names`, `affinidi-rate-limit`, `affinidi-messaging-didcomm-v1`.
+
+### Cypress snapshot — 2026-08-17
+
+At the `Cypress` tag: mediator **0.18.19**, messaging-sdk **0.19.8**, messaging-delivery **0.1.14**, messaging-core 0.1.6, didcomm-v1 0.2.0, didcomm-service 0.3.26, tdk-common 0.6.7, did-auth 0.3.10, did-resolver-cache-server 0.9.10 / cache-sdk 0.8.22, did-common 0.4.1, agent-names 0.1.3, `affinidi-tdk` facade 0.8.5, trust-tasks-rs 0.9, vta-sdk 0.25. Release candidates `VTI-Cypress-RC-0` (#674, 08-02) and `VTI-Cypress-RC-1` (#699, 08-11) preceded it. Post-tag: #716 (tdk-common 0.6.8) fixed `force_refresh` so a proactive auth refresh actually refreshes, ending a reconnect storm seen by OpenVTC.
+
+### Reliable messaging delivery layer ("D1 Phase 2") — 2026-07-16 → 07-26
+
+**Why.** The SDK's websocket `send_message` returned `Ok` the moment a frame was *enqueued* — even mid-reconnect with no socket — so frames were silently dropped while callers recorded "delivered". Inbound, the live listener acked (deleted) a message at the mediator *before* dispatching it, so a crash in between lost it forever. Raw-TSP delivery had the same at-most-once shape. The D1 work makes the stack truthful, then builds at-least-once, evidence-confirmed delivery on top — the root fix behind the "join sits Pending while the community's outbox says Sent" class of bug that OpenVTC v0.3.0 chased.
+
+- **Wire contract** in `affinidi-messaging-core` 0.1.3–0.1.5 (#603, #604, #612): `ConnState` watch channel and the `MessageTransport` trait (truthful `send` → `SendReceipt` = hop-acceptance only; `inbound()` + `ack()` after durable handoff; `outbox_message_ids()`).
+- **Truthful websocket send** (SDK 0.18.52/53, #605; deadlock fix #618) and **ack-after-handoff** in didcomm-service 0.3.19 (#606); the last hole — acking when no subscriber received the message — closed in delivery 0.1.14 (#710, 08-16).
+- **`DidCommTransport`** (#607, #620–#622, #627): the first `MessageTransport` over ATM; `sender` is the DID whose key actually authcrypted (spoofed/anonymous → `None`); surfaces inbound TSP frames on the multiplexed socket.
+- **New crate `affinidi-messaging-delivery`** 0.1.0 → 0.1.12 in ten days (#608–#626, #661): `OutboxEntry` state machine + `OutboxStore`; `MessagingService` front-end with `BestEffort`/`Guaranteed` send, thread-correlated `request`, single inbound dispatcher; confirmation state machine; the **evidence trio** — outbox-drain (hop-id = `sha256(packed)`), layer-receipt, protocol-reply; `ExpiryEscalator` (→ `Rebound`/`Failed`/`Unconfirmed`, never silent success); serde on outbox types; a feature-gated **conformance suite** asserting seven guarantees over any wire; **multi-transport** (`add/remove/promote`, `request_via`) so a VTA can migrate mediators live; **multi-identity** (`send_via`, per-transport `ConnState`).
+- Related: opt-in `tsp-ack` delete-to-ack for raw TSP (#651); mediator 0.18.16 delivers already-queued messages when a socket enables live delivery (#707).
+
+Note: the wiki previously said ADR 0005's `AffinidiMessageService` was "likely to supersede `DIDCommService`". What actually landed is `MessagingService` in `affinidi-messaging-delivery` — a different crate and name, and broader (multi-transport, multi-identity).
+
+### Agent names — 2026-07-19 → 07-23
+
+An **agent name** is a URL whose path starts with `/@`: `example.com/@alice`, `firstperson.network/@drummond/h2hsummit`, or the **community form** `example.com/@` (the VTC owning the domain). Resolution is three-stage: the name URL redirects to a DID (≤5 hops); the DID resolves normally; **the DID document must claim the name back in `alsoKnownAs`** — mandatory, since anyone can publish a redirect to someone else's DID. Canonical form `https://host/@local` (host lowercased, local case preserved). Landed as: `affinidi-did-common` **0.4.0** typed `also_known_as` (#629; 17 dependents patch-bumped, publish runbook); new **`agent-names`** crate 0.1.0 → 0.1.3 (#631, SSRF hardening #633, community form #652); cache-sdk `resolve_any()` (#632), single-flight (#640), WebSocket resolution (#642), `display_name()`/`DidShortcut` that only ever shows a *verified* name (#645); cache-server `resolve-name` endpoint, **off by default** and returning the DID only — "a cache, never a trust anchor" (#634), bounded outbound fetches (#636), per-IP rate limiting via the new **`affinidi-rate-limit`** crate extracted from the mediator (#637/#638). A Layer-2 "agent name credential" is anticipated but not implemented. The consumer side is in [[openvtc]] (display on every DID surface) and [[affinidi-webvh-service|did-hosting-service]] (`/@name` redirects + registry).
+
+### Security-by-default breaks — late July → August 2026
+
+- **authcrypt enforced by default** — messaging-sdk **0.19.0** (#671, 07-29): `unpack` accepts only `authcrypt(plaintext)`, `authcrypt(sign(plaintext))`, `anoncrypt(authcrypt(plaintext))` and enforces `from == skid`, closing a forged-sender bypass; layered unpacking, multi-signature verification, unprocessable-message channel. Reaches facade consumers as `affinidi-tdk` 0.8.5 (a *patch*, with a loud rollout table).
+- **`explicit_allow` gates authentication** — mediator **0.18.0** (#669): unknown DIDs rejected at `/authenticate/challenge`; previously the mode never gated auth. Preceded by a **mediator ACL audit** (#662, 0.17.11): a non-admin could grant itself `blocked/local/self_manage_*` bits (escalation, fixed); `RECEIVE_MESSAGES` was never enforced (now is); shipped default flipped to `explicit_deny`; new `docs/acls.md`.
+- JWS signer `kid` SSRF (#676/#677): a pre-auth `kid` naming `did:web:<host>` was resolved; now refused unless it matches the signed `from`. SSRF hardening in `HttpRedirectResolver` (#633); legacy `rustls 0.21` dropped from the AWS path (#673).
+- **curve25519-dalek 5** across the workspace (#672; X25519 keys zeroized); **elliptic-curve 0.14** with `did:ethr`/`did:pkh` behind off-by-default features, removing `ssi-*` from default builds (#674, = RC-0); `vta-sdk` optional behind a default-on `vta` feature in the mediator (#703); pins tightened to vta-sdk 0.25 (#715).
+
+### DIDComm v1 — Aries/Credo interop — 2026-08-08/09
+
+Credo and essentially every Aries-lineage wallet speak DIDComm v1 only, and the TDK had no way to reach them. New crate **`affinidi-messaging-didcomm-v1`** (#687, ~6k lines): pack/unpack, `~thread`, `Protocol::DIDCommV1` in core 0.1.6, verified against Credo 0.6.3 fixtures. Mediator 0.18.8 adds RFC 0019 forward ingress behind a `didcomm-v1` feature (#689); 0.18.9 adds coordinate-mediation 1.0 + message-pickup 2.0 with return-route and `did:key` account identity (#690); both-direction Credo tests (#691). Positioned as the base for a Trust Tasks `bindings/didcomm-v1/0.1`.
+
+### Other — July–August 2026
+
+- **Trust-task family 19 → 9** (#668, mediator 0.17.13, SDK 0.18.65 breaking): `account/update`, `access-list/update`, generic `audit/list`, `config/show`; retired URIs answer `unsupported`. trust-tasks-rs consumed 0.2.46 → 0.4.0 (#692) → 0.6.1 (#709) → **0.9.0** (#714, `PayloadPolicy` on `consume_inbound`).
+- Mediator ops: S3-backed did:webvh `did.jsonl` (#600); read-only secret-backend probe at boot and `/readyz` (#589/#591); ~256 MB RSS memory bounds, two state-leak fixes, O(n) audit inserts removed, jemalloc (#598); GHCR/ECR multi-arch image CI with SLSA provenance (#594); secp256k1 ES256K (#619); DID-named next-hop forwarding (#705).
+- Credentials: mdoc CBOR codecs for `IssuerSigned` (#711) and `DeviceResponse` (#712, mdoc 0.2.7); **`ecdsa-jcs-2019`** cryptosuite (#713, data-integrity 0.7.10) so P-256 / mdoc device keys can sign Data Integrity proofs — consumed by the VTA's mdoc-over-OID4VP work.
+- Version movement in the window: mediator **0.16.41 → 0.18.19**; messaging-sdk 0.18.49 → **0.19.8**; didcomm-service 0.3.17 → 0.3.26; tdk-common 0.6.5 → 0.6.8; `affinidi-tdk` 0.8.3 → 0.8.5; did-auth 0.3.9 → 0.3.11; cache-server 0.9.2 → 0.9.10; cache-sdk 0.8.12 → 0.8.22; affinidi-tsp 0.1.12 → 0.1.14; mediator-setup 0.1.20 → 0.1.28; vta-sdk consumed 0.18 → 0.25.
+
+The June–July cycle below (193 commits, ~44,600 insertions) was the TDK's largest yet, and its headline was unambiguous: **[[trust-spanning-protocol|TSP]] became a first-class, supported transport** — interoperable with the ToIP reference implementation, federated across mediators, advertised in DID documents, and *preferred over DIDComm* when both ends support it. Around it: a unified dual-protocol client architecture (ADR 0005), a document-based **Trust Tasks** replacement for the legacy mediator admin protocol, and three coordinated quality waves (semver/API hardening, test infrastructure, mediator internals).
 
 ### TSP goes first-class — 2026-06-22 → 07-04 (~60 commits)
 
@@ -70,7 +116,7 @@ A sustained push took `affinidi-tsp` (0.1.1 → 0.1.12) from nascent library to 
 
 ### `AffinidiMessageService` — unified DIDComm+TSP client (ADR 0005) — late June 2026
 
-Because the mediator enforces one websocket per DID, a node speaking both protocols needs one multiplexed socket. ADR 0005 (#548) proposes `AffinidiMessageService`; staged implementation landed (`live_stream_next_frame` multiplexed receive, a `TspHandler` trait, inbound TSP frame routing on the shared websocket, symmetric TSP replies — #549–#556, #568). This evolves `affinidi-messaging-didcomm-service` into a dual-protocol service layer likely to supersede `DIDCommService` as the public client surface.
+Because the mediator enforces one websocket per DID, a node speaking both protocols needs one multiplexed socket. ADR 0005 (#548) proposes `AffinidiMessageService`; staged implementation landed (`live_stream_next_frame` multiplexed receive, a `TspHandler` trait, inbound TSP frame routing on the shared websocket, symmetric TSP replies — #549–#556, #568). At the time this looked likely to supersede `DIDCommService` as the public client surface; in practice the July delivery layer's `MessagingService` (above) became that surface.
 
 ### Trust Tasks migration — 2026-06-23/24 (T1–T18)
 

@@ -2,7 +2,7 @@
 title: "Personhood Credential (PHC)"
 type: concept
 tags: [credentials, dtg, personhood, sybil, governance]
-date-updated: 2026-04-30
+date-updated: 2026-08-19
 sources: [dtg-credential-spec, dtg-credentials, openvtc]
 ---
 
@@ -17,7 +17,7 @@ That's it. A PHC is structurally identical to any other VMC. There are no additi
 
 ## The Key Design Choice
 
-The DTG specification (v0.3) is emphatic about this: PHC status is "determined by governance and trust registries, not by credential structure." Issuers may optionally add `"PersonhoodCredential"` to the W3C type array as a **non-authoritative hint**, but this is not what makes it a PHC. The trust registry is the authoritative source.
+The DTG specification (v1.0 WD01 — and v0.3 before it) is emphatic about this: PHC status is "determined by governance and trust registries, not by credential structure." Issuers may optionally add `"PersonhoodCredential"` to the W3C type array as a **non-authoritative hint**, but this is not what makes it a PHC. The trust registry is the authoritative source.
 
 This means the same credential format works across communities with very different personhood verification standards. One community might require in-person verification; another might accept video calls; a third might use web-of-trust thresholds. The credential structure is the same — the governance differs.
 

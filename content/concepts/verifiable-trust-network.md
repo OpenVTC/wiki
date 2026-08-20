@@ -2,7 +2,7 @@
 title: "Verifiable Trust Networks (VTNs)"
 type: concept
 tags: [vtn, network, community, hierarchy, trust]
-date-updated: 2026-04-30
+date-updated: 2026-08-19
 sources: [dtg-credential-spec]
 ---
 
@@ -42,4 +42,8 @@ For [[invitation-credential|Invitation Credentials (VICs)]], VTNs can authorize 
 
 VTNs enable trust to scale beyond individual communities. If two people belong to different VTCs within the same VTN, trust paths can traverse the network structure — the VTN's governance provides a shared trust anchor. This is particularly relevant for large ecosystems like the [[first-person-network|First Person Network]], where many independent communities need to interoperate.
 
-See also: [[verifiable-trust-community]], [[membership-credential]], [[decentralized-trust-graph]]
+## Vocabulary (WD01)
+
+Working Draft 01 of the [[dtg-credential-spec|spec]] gives the VTN its own glossary entries: a **VTN trust anchor** is a VTC that anchors a VTN; **VTN members** are VTCs; the **VTN invitation credential** is the [[invitation-credential|VIC]]'s second functional variant, issued to a prospective member VTC's C-DID; and [[trust-registries|trust registries]] are where VTN anchors are discovered. The First Person Network is the canonical example of a VTN.
+
+See also: [[verifiable-trust-community]], [[membership-credential]], [[decentralized-trust-graph]], [[invitation-credential]]

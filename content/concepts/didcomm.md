@@ -2,7 +2,7 @@
 title: "DIDComm — DID-based Secure Messaging"
 type: concept
 tags: [didcomm, messaging, encryption, communication]
-date-updated: 2026-04-09
+date-updated: 2026-08-19
 sources: [affinidi-tdk, verifiable-trust-infrastructure, openvtc]
 ---
 
@@ -42,6 +42,8 @@ The [[openvtc|OpenVTC service]] runs a background daemon that polls a mediator f
 A mediator is a relay service that holds encrypted messages for recipients who aren't always online. The [[affinidi-tdk|Affinidi TDK]] provides a mediator implementation with production features like circuit breakers, rate limiting, and graceful shutdown.
 
 Mediators see message metadata (who is sending to whom, when, message size) but cannot read message content. For stronger privacy, future versions may support onion routing or mix networks.
+
+Two things changed about how the ecosystem *uses* mediators in mid-2026. First, **reliability became explicit**: the TDK's `affinidi-messaging-delivery` layer gives senders a durable outbox with delivery evidence and receivers an ack-only-after-durable-handoff rule, fixing a class of silently lost messages (a send that returned `Ok` with no socket; a message deleted at the mediator before the handler ran). A mediator live-streams only to a recipient connected *at that instant* and otherwise stores the message — so clients now also **collect stored mail on every connect** (message-pickup 3.0) rather than waiting to be pushed; OpenVTC v0.3.0 is the visible result. Second, **authentication tightened**: the TDK's SDK now rejects unauthenticated (anoncrypt-only) envelopes by default and the mediator's `explicit_allow` ACL mode gates authentication itself. The mediator also learned **DIDComm v1** (forward, coordinate-mediation, pickup) in August 2026 for interop with Aries/Credo-lineage wallets.
 
 ## DIDComm Authentication in VTI
 

@@ -2,8 +2,8 @@
 title: "Trust Registries"
 type: concept
 tags: [trust-registry, governance, roles, policy]
-date-updated: 2026-04-09
-sources: [dtg-credential-spec]
+date-updated: 2026-08-19
+sources: [dtg-credential-spec, verifiable-git-infrastructure, verifiable-trust-infrastructure]
 ---
 
 # Trust Registries
@@ -34,6 +34,6 @@ The DTG credential system is deliberately governance-agnostic at the credential 
 
 ## Current Status
 
-The DTG specification (v0.3) references trust registries as a core concept but explicitly marks their schema and APIs as out of scope. The exact implementation is left to individual communities and networks.
+The DTG specification (v1.0 WD01) references trust registries as a core concept but explicitly marks their schema and APIs as out of scope; its glossary now also names the community roles a registry records — *initiator*, *community trust anchor (CTA)*, VTC/VTN trust anchors, and *identity verification providers* — and notes that a Verifiable Trust Service Provider may operate registries on a community's behalf. In practice the ecosystem queries registries with **TRQP** (ToIP Trust Registry Query Protocol) — e.g. [[verifiable-git-infrastructure|VGI]]'s CI check asks `(entity, authority, action = git.commit.sign, resource = repo)` — reaching the registry by DID over TSP or DIDComm. The exact implementation is left to individual communities and networks.
 
 See also: [[personhood-credential]], [[verifiable-trust-community]], [[verifiable-trust-network]]
