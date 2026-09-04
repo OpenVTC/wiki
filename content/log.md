@@ -1,12 +1,28 @@
 ---
 title: "Wiki Log"
 type: log
-date-updated: 2026-08-19
+date-updated: 2026-09-04
 ---
 
 # Wiki Log
 
 A record of major wiki updates: new sources ingested, significant concept and entity additions, and meaningful structural changes.
+
+---
+
+## [2026-09-04] Dogwood refresh — data rooms, TEE fixes, TSP Rev 3, and a respin
+
+**Dogwood is out, and it already needed a respin.** `VTI-Dogwood` tagged 2026-08-30; a TSP multi-hop mediator relay bug (a blind-relay hop misread as a session mismatch, a malformed forwarding-abandonment problem report, a next-hop lookup that didn't follow a hop named by DID) was found and fixed across [[verifiable-trust-infrastructure|VTI]], [[openvtc|OpenVTC]] and the [[affinidi-tdk|TDK]] within two days, and re-tagged `VTI-Dogwood-R1` on 2026-09-01. [[coordinated-releases]] now documents both tags and a per-repo "What Dogwood Snapshots" table (vta-service 0.23.4, OpenVTC 0.3.1, dtg-credentials 0.5.0, TDK mediator 0.20.6, VGI 0.4.7); did-hosting-service's crates stayed byte-identical to Cypress despite 12 commits landing since.
+
+**Data rooms, end to end.** A new concept page, **[[data-rooms]]**, covers the biggest single feature of the cycle (VTI [#1237](https://github.com/OpenVTC/verifiable-trust-infrastructure/pull/1237)–[#1248](https://github.com/OpenVTC/verifiable-trust-infrastructure/pull/1248)): shared spaces authorized purely by credentials the room itself issues, with no member roster held by whoever stores the ciphertext (invariant I5). MLS (RFC 9420) provides group custody with post-compromise security and O(log n) membership change; a VTA-hosted presentation oracle mints agents a scoped, four-hour, audience-bound credential instead of handing over standing keys; audit on private rooms records `Member` rather than a DID, so the trail can't leak what the room exists to hide; and a lifecycle (`Live → Lapsed → Dormant → Reclaimable`) is computed from timestamps rather than a host's judgment call. A new `room-host` binary and `vti-rooms`/`vti-rooms-dtg` crates carry it.
+
+**VTA: backup spec debt, and the TEE fixes behind Dogwood-R1.** Specing `vta/backup/*` and `reload-services` for conformance (VTI #1239) surfaced three operations that had been succeeding with no audit trail at all — including a `reload-services` restart whose `audit!` call had never actually reached the sink. Separately, `vta-tee` 0.2.2 and a rebuilt `vta-enclave-proxy` v0.1.1 fix an intermittent vsock `ENOTCONN` on enclave boot and a Mode B carve-out returning the wrong status code (VTI #1003); the golden EIF is now pinned to `VTI-Dogwood-R1`. Both are covered on [[verifiable-trust-agent]] and [[verifiable-trust-infrastructure]].
+
+**Client-side: a management console, a relationship-privacy default, and an auth unification.** [[vta-browser-plugin]] gained a full VTA management console in the wallet — contexts, keys, ACL, policy, credentials — gated by a proof-of-presence WebAuthn check on its two irreversible controls. [[openvtc]] made pairwise relationship DIDs the default (and says explicitly what that default doesn't yet buy) and moved the Relationship Credential itself onto the relationship DID rather than the persona — both breaking changes — alongside a sweep ("r14") that pulled every blocking network call off the TUI's single UI thread. [[affinidi-webvh-service]] unified authentication onto one Trust-Task code path across HTTPS, DIDComm and TSP, retiring a legacy Type URI whose silent divergence had been quietly breaking VTA-wallet login on one binding.
+
+**TSP Rev 3.** The upstream protocol picked up a wire-breaking revision: a new CESR envelope format, messages that are now all-confidential or all-signed-only (never mixed), HPKE-Base as the default cipher (Rev 2's HPKE-Auth is dropped) with a post-quantum X25519MLKEM768 option, thread IDs as self-referencing digests, and routed relationship *forming* — letting two parties establish a relationship through an intermediary for the first time. Covered on [[trust-spanning-protocol]].
+
+[[index]] gained the [[data-rooms]] entry and now reads Dogwood as the current release.
 
 ---
 

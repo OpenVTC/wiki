@@ -25,6 +25,7 @@ date-updated: 2026-08-19
 - [[credential-categories]] — The three functional categories: Edge, Invitation, Annotation (VDS moved to a companion spec)
 - [[zero-knowledge-proofs]] — Why DTG defaults to ZKP presentation; pairwise vs community-anchored constructions
 - [[trust-task-context-binding]] — `taskContext`: binding a credential to the exchange that produced it, without making it proof of the outcome
+- [[data-rooms]] — Shared spaces authorized by room-issued credential chains, not a host-held roster; group custody, presentation oracle, audit-without-learning-who
 
 ### Individual Credential Types
 - [[membership-credential]] — Community membership and personhood attestation (VMC); two VMCs = one complete edge
@@ -48,7 +49,7 @@ date-updated: 2026-08-19
 - [[vta-topology]] — The spec's VTA vocabulary: personal / community, local / cloud, VTA networks, PNM, PNV, VTSP
 
 ### Releases
-- [[coordinated-releases]] — The tree-named coordinated releases (Aspen → Banyan → **Cypress**, 2026-08-17): what they are and which versions go together
+- [[coordinated-releases]] — The tree-named coordinated releases (Aspen → Banyan → Cypress → **Dogwood**, 2026-09-01): what they are and which versions go together
 
 ## Entities
 

@@ -2,7 +2,7 @@
 title: "Verifiable Trust Agent (VTA)"
 type: entity
 tags: [vta, vti, key-management, signing-oracle, infrastructure, primary, mobile, tsp, mdoc]
-date-updated: 2026-08-19
+date-updated: 2026-09-04
 ---
 
 # Verifiable Trust Agent (VTA)
@@ -89,6 +89,14 @@ The SDK handles authentication, token refresh, secret caching, and offline fallb
 ## Recent Development
 
 Per-release detail lives on the workspace entity — see [[verifiable-trust-infrastructure#Recent Development]] for the full activity log. VTA-relevant highlights, reverse chronological:
+
+### Data rooms, backup audit, and TEE fixes — September 2026
+
+The [[verifiable-trust-infrastructure|VTI workspace]] shipped [[data-rooms|data rooms]] end to end (#1237–#1248, 2026-09-03/04) — MLS-backed shared spaces authorized purely by credentials the room itself issues, with no member roster held by whoever stores the ciphertext. See [[verifiable-trust-infrastructure#Recent Development]] for the storage/dispatch/lifecycle/curation/audit layers, which live in `vtc-service` and the new `room-host` binary, not the VTA. The VTA-relevant piece is two new oracles rather than a credential hand-off: **`rooms/keys/present/0.1`** mints a member's agent a presentation one link longer than the member holds — read-only, four-hour, bound to one host — so an agent asks and the VTA mints, instead of the member handing over its own credentials; gated on a new `Capability::RoomPresent`, deliberately not on `Sign`, so an agent trusted to ask for a scoped presentation isn't thereby trusted to sign anything with its principal's key. Its counterpart, `rooms/keys/open`, has no dispatched task yet — #1248 landed only the group-custody layer it depends on (`GroupSnapshot`/`IdentitySnapshot`, so a key-holder that restarts hasn't lost the group), reviewed on its own ahead of the handlers that will consume it. Both depend on the new **`vti-rooms`** crate, moved out of `vtc-client` in #1241 specifically because a VTA must not depend on a VTC client. The `vta-mcp` guard now lists room-presentation minting beside `vta/credentials/issue` under "authority, moved" — an MCP host's blanket `vta_call` approval does not silently cover minting a presentation over its principal's standing.
+
+**Backup spec debt discharged (#1239, #1240, 2026-09-02).** `vta/backup/*` and `vta/management/reload-services` gained upstream specs and conformance witnesses, and making them visible to the audit census surfaced three operations that had been succeeding silently: `initiate-export` (mints a fetchable copy of the entire agent), `initiate-import` (opens a writable endpoint into it), and `reload-services` (drops every open session on restart, and had an `audit!` call that only ever emitted a `tracing` event — never reached the `AuditSink`). Fixed by writing the sink entry before the restart tears down the runtime it would otherwise run in.
+
+**TEE: `vta-tee` 0.2.2, and the golden EIF pinned to `VTI-Dogwood-R1`.** The enclave-proxy image was rebuilt as v0.1.1 against `vta-tee` 0.2.2 / `vta-service` 0.23.4 to pick up VTI #1003 ("fix(tee): bootstrap 410 and vsock enotconn"): an intermittent `ENOTCONN` on the vsock config-overlay read during enclave boot, and a consumed Mode B carve-out that returned 403 instead of the contracted 410. The golden EIF's build config moved to a `versions:` list so the commit pin's history is retained rather than overwritten on the next roll. A new, generic `did-resolver-cache-server` image also joined the same CI pipeline — an upstream DID resolver, not part of the VTA binary, decoupled from the enclave proxy.
 
 ### Cypress + convergence — July–August 2026
 

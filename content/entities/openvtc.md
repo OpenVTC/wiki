@@ -2,7 +2,7 @@
 title: "OpenVTC — The Trust Community CLI"
 type: entity
 tags: [openvtc, cli, tui, user-experience, primary, multi-community, agent-names, tsp, cypress]
-date-updated: 2026-08-19
+date-updated: 2026-09-04
 repo: https://github.com/OpenVTC/openvtc
 ---
 
@@ -79,6 +79,23 @@ Multiple profiles are supported via the `OPENVTC_CONFIG_PROFILE` environment var
 ## Recent Development
 
 The focus has moved from security correctness (v0.1.x), through feature completeness (v0.2.0), through the multi-community pivot (`Banyan`, June 2026), to **making the multi-community client reliable and humane**: the July–August cycle (83 commits, PRs #152–#237) shipped **v0.3.0** — the join ceremony's asynchronous half — plus **agent names**, TSP as a live transport, a per-community Capabilities panel, the reliable delivery layer underneath, and the extraction of did-git-sign into VGI; it ends in the coordinated **`Cypress`** release ([[coordinated-releases]]).
+
+### Relationship model rework + responsiveness (r14) — 2026-08-17/31 (#229–#274)
+
+Post-Cypress cycle (44 commits, PRs #229–#274), two threads running in parallel: a breaking rework of what a relationship and its credentials expose, and a sweep ("r14") that pulls every blocking network call off the TUI's single state-handler thread.
+
+**Relationship privacy, made the default and made to matter.** A [[relationship-credential|Relationship Credential (VRC)]] issued under the persona DID was worse than the handshake it followed — the durable copy either side may publish to a [[decentralized-trust-graph|Trust Graph]] correlates every relationship a persona holds for as long as anyone keeps it, while the handshake DIDs are seen once, by the mediator. Two commits fix it in sequence:
+
+- **Pairwise R-DID is now the default** for a new relationship request or accept (#254), flipping the inbox's unshifted `a` to the private outcome (Shift+A still works for muscle memory; the persona-DID accept moves to `p`). The commit is explicit about what the default doesn't buy: the three handshake messages (request/accept/finalise) still route persona-to-persona, because the mediator has to route them before a pairwise channel exists, and full pairwise operation is tracked as upstream protocol work (verifiable-trust-infrastructure#1054), not something this client can close alone.
+- **The VRC itself now issues under the relationship DID, not the persona** (#255) — breaking on the wire, with no compatibility window since nothing was published yet. `vet_vrc_issued`'s gate 2 now requires the issuer to match the DID the sender actually uses *in that relationship*, tighter than the persona-DID check it replaces. This only became possible once the VTC side stopped pinning a published VRC's issuer to the authenticated session DID (verifiable-trust-infrastructure#1061).
+
+Related credential-hygiene fixes in the same window: an ingested [[invitation-credential|invitation]] must now carry the DTG common structure (`@context` + `type`) or is refused at ingest, breaking since nothing previously checked it (#256); OpenVTC can now assert personhood to a community over Trust Tasks, with a spoken "match code" derived from the challenge id so a human in the room can confirm the ceremony (#257); the reciprocal [[membership-credential|membership credential]] and the VRC each gained their own stable `id` — both had shipped with none, so every reciprocal VMC was silently rejected by a community keying on it (#260, #265); a join now closes when the reciprocal VMC is sent, instead of sitting `Approved` indefinitely (#266); and a membership grant is now acknowledged by digest, with the credential we sent kept on the record instead of dropped (#272).
+
+**Account rebuild (D8/D18).** Setup used to write a fresh set of personas into whatever Trust Context it was pointed at without checking what was already there, silently doubling an account on a mistyped or reused context id (#247). The fix adds a probe, then a full rebuild path: reconstruct an account — personas, keys, and verified memberships — from what the [[verifiable-trust-agent|VTA]] holds (#248), turn a verified plan into an account (#249), and offer recovery from the setup wizard when an occupied context is detected (#250). The key move: a membership isn't looked up and then checked against a credential, it's read *out of* the credential, since the community's signed VMC names both issuer and subject — which is what makes rebuild resistant to a hostile VTA inventing memberships. #251 fixed the rebuild against a live VTA (VMCs weren't being stored at the vault at all, and the vault's deliberately non-enumerable query contract was being misread as "zero credentials").
+
+**Responsiveness (the "r14" sweep).** OpenVTC runs one state-handler loop that also services inbound DIDComm, listener lifecycle, and every keystroke, so any network action awaited inline on that thread freezes the whole TUI, not just its own overlay — worth calling out for a terminal client, where a frozen screen looks indistinguishable from a crash. The sweep first made the loop's `Action` match exhaustive so the main and degraded loops can't silently drift apart again (#236, closing a gap where agent-name verbs and the whole settings surface were dead keys in the second loop), then moved one blocking class after another off it: the VIC list and startup listeners, so Enter is no longer ignored while listeners come up (#230, #233), agent-name verbs — the worst offender at up to two minutes per mutation (#237), VIC vault mutations (#239), capability documents (#242), community-leave and VMC issuance (#243), and the last two, VRC requests and persona minting (#244). #245 then lifted the whole ~900-line match out of `main_loop` into a tested module — the seam that would have caught #236's own exhaustiveness fix shipping broken under `--no-default-features`.
+
+Smaller fixes in the same run: the mediator DID field in Settings is now read-only and stops reporting a save that never happened (#274); a cross-mediator join now builds its TSP hop list starting at our own mediator instead of the peer's, fixing federated joins (#273); OpenVTC now recognises its own device binding by the DID it authenticates as, rather than a first-launch-only id, fixing a false "also open on this machine" warning (#261); dependency floors moved to vta-sdk 0.32, trust-tasks 0.17, and a TDK auth fix (tdk-common 0.6.8 / did-auth 0.3.11).
 
 ### v0.3.0 — 2026-08-15 — the join ceremony's asynchronous half; `Cypress` — 2026-08-17
 
