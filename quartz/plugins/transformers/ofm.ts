@@ -11,6 +11,8 @@ import {
 import { Element, Literal, Root as HtmlRoot } from "hast"
 import { ReplaceFunction, findAndReplace as mdastFindReplace } from "mdast-util-find-and-replace"
 import rehypeRaw from "rehype-raw"
+import rehypeSanitize from "rehype-sanitize"
+import { sanitizeSchema } from "../../util/sanitize"
 import { SKIP, visit } from "unist-util-visit"
 import path from "path"
 import { splitAnchor } from "../../util/path"
@@ -541,7 +543,10 @@ export const ObsidianFlavoredMarkdown: QuartzTransformerPlugin<Partial<Options>>
       return plugins
     },
     htmlPlugins() {
-      const plugins: PluggableList = [rehypeRaw]
+      // rehypeRaw parses the raw HTML that remarkRehype passed through verbatim, so everything
+      // an author (or the LLM that maintains the content) wrote becomes real markup here.
+      // Sanitize it immediately afterwards: every later plugin only ever sees vetted markup.
+      const plugins: PluggableList = [rehypeRaw, [rehypeSanitize, sanitizeSchema]]
 
       if (opts.parseBlockReferences) {
         plugins.push(() => {

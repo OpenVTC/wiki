@@ -1,3 +1,5 @@
 public
 node_modules
 .quartz-cache
+# Deliberately malformed markup that must reach the parser exactly as written.
+quartz/util/fixtures
