@@ -1,0 +1,13 @@
+# Review owners. See https://docs.github.com/articles/about-code-owners
+# Teams are the ones granted access to this repository in OpenVTC/governance.
+
+* @OpenVTC/openvtc-maintainers
+
+# Wiki pages are drafted and refreshed by an LLM agent from upstream sources
+# (README, "How This Wiki Is Maintained"), so a page is untrusted input: raw
+# HTML written into it is parsed and published to the live site. Content
+# changes need a human on them.
+/content/ @OpenVTC/openvtc-maintainers @OpenVTC/openvtc-admins
+
+# Build, deploy and repository automation.
+/.github/ @OpenVTC/openvtc-admins
