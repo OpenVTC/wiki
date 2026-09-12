@@ -20,6 +20,7 @@ This will start a local web server to run your Quartz on your computer. Open a w
 > - `-o` or `--output`: the output folder. This is normally just `public`
 > - `--serve`: run a local hot-reloading server to preview your Quartz
 > - `--port`: what port to run the local preview server on
+> - `--host`: what address the local preview server listens on. This is `127.0.0.1` by default, so only your computer can reach it; use `0.0.0.0` to allow other machines on your network
 > - `--concurrency`: how many threads to use to parse notes
 
 > [!warning] Not to be used for production

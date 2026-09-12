@@ -7,6 +7,8 @@ updates:
         update-types: ["version-update:semver-major"]
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       production-dependencies:
         applies-to: "version-updates"
@@ -16,6 +18,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       ci-dependencies:
         applies-to: "version-updates"
