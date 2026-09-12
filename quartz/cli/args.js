@@ -81,6 +81,12 @@ export const BuildArgv = {
     default: "",
     describe: "base path to serve your local server on",
   },
+  host: {
+    string: true,
+    default: "127.0.0.1",
+    describe:
+      "address for the local server and hot-reload WebSocket to listen on (use 0.0.0.0 to allow other machines to connect)",
+  },
   port: {
     number: true,
     default: 8080,

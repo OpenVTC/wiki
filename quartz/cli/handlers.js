@@ -43,6 +43,19 @@ function resolveContentPath(contentPath) {
 }
 
 /**
+ * Whether a bound socket address is reachable only from this machine
+ * @param {string} address address reported by `server.address()`
+ */
+function isLoopbackAddress(address) {
+  return (
+    address === "::1" ||
+    address.startsWith("127.") ||
+    address.startsWith("::ffff:127.") ||
+    address === "localhost"
+  )
+}
+
+/**
  * Handles `npx quartz create`
  * @param {*} argv arguments for `create`
  */
@@ -413,6 +426,25 @@ export async function handleBuild(argv) {
 
       let fp = req.url?.split("?")[0] ?? "/"
 
+      // The existence checks below join `fp` onto argv.output, and path.posix.join collapses
+      // `..` segments, so an un-normalized request path can aim them outside the output
+      // directory -- turning the 200/302/404 answer into an existence oracle for files that are
+      // not part of the site. Normalize and reject anything that escapes before any existsSync
+      // call; serveHandler does its own confinement for what actually gets served.
+      const outputRoot = path.resolve(argv.output)
+      const normalizedFp = path.posix.normalize(fp)
+      const resolvedFp = path.resolve(outputRoot, "." + normalizedFp)
+      if (
+        fp.includes("\0") ||
+        (resolvedFp !== outputRoot && !resolvedFp.startsWith(outputRoot + path.sep))
+      ) {
+        console.log(styleText("red", `[400] ${argv.baseDir}${fp}`))
+        res.writeHead(400)
+        res.end()
+        return
+      }
+      fp = normalizedFp
+
       // handle redirects
       if (fp.endsWith("/")) {
         // /trailing/
@@ -453,15 +485,27 @@ export async function handleBuild(argv) {
       return serve()
     })
 
-    server.listen(argv.port)
-    const wss = new WebSocketServer({ port: argv.wsPort })
+    const wss = new WebSocketServer({ host: argv.host, port: argv.wsPort })
     wss.on("connection", (ws) => connections.push(ws))
-    console.log(
-      styleText(
-        "cyan",
-        `Started a Quartz server listening at http://localhost:${argv.port}${argv.baseDir}`,
-      ),
-    )
+    server.listen(argv.port, argv.host, () => {
+      // report the address the socket is actually bound to
+      const { address, port } = server.address()
+      const host = address.includes(":") ? `[${address}]` : address
+      console.log(
+        styleText(
+          "cyan",
+          `Started a Quartz server listening at http://${host}:${port}${argv.baseDir}`,
+        ),
+      )
+      if (!isLoopbackAddress(address)) {
+        console.log(
+          styleText(
+            "yellow",
+            `Warning: the server is reachable from other machines on your network (--host ${argv.host})`,
+          ),
+        )
+      }
+    })
   } else {
     await build(clientRefresh)
     ctx.dispose()
