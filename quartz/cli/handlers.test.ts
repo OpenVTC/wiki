@@ -13,17 +13,21 @@ import { fileURLToPath } from "node:url"
 // server issues: the listener bound every interface while the banner claimed localhost, and the
 // redirect probes ran `fs.existsSync` on the un-normalized request path, which answered whether a
 // file outside the output directory existed.
+//
+// Every address this test connects to is an address of the machine it runs on -- loopback, or one
+// reported by os.networkInterfaces(). Nothing here reaches the network, with the fix in place or
+// without it.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const fixtureDir = path.join(repoRoot, "quartz", "cli", "fixtures", "serve")
-const cacheDir = path.join(repoRoot, "quartz", ".quartz-cache")
-const outputDir = path.join(cacheDir, "serve-test-output")
 
-// Siblings of the output directory, so `/../<name>/` aims an existence probe at them from the
-// web root. One exists and one does not: before the fix that difference was visible in the
-// response, which is the oracle.
-const presentOutside = path.join(cacheDir, "serve-test-present.html")
-const absentName = "serve-test-absent"
+// A scratch root holding the served directory plus two siblings of it, so `/../<name>/` aims an
+// existence probe out of the web root. One sibling exists and one never does: before the fix that
+// difference was visible in the response, and that difference is the oracle.
+const scratchRoot = fs.mkdtempSync(path.join(os.tmpdir(), "quartz-serve-test-"))
+const outputDir = path.join(scratchRoot, "site")
+const presentName = "outside-present"
+const absentName = "outside-absent"
 
 const ansi = /\x1b\[[\d;]*m/g
 
@@ -54,7 +58,10 @@ function connects(host: string, port: number): Promise<boolean> {
   })
 }
 
-// Sends the request target verbatim and returns the whole response.
+// Sends the request target verbatim and returns the whole response. Writes without ending the
+// socket: a half-close makes Node's server tear the connection down before it replies, so
+// `socket.end(request)` would read back an empty response for every target and the status
+// assertions below would all compare NaN. `Connection: close` is what ends the exchange.
 function request(port: number, target: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const socket = net.connect({ host: "127.0.0.1", port })
@@ -62,7 +69,7 @@ function request(port: number, target: string): Promise<string> {
     socket.setTimeout(20_000)
     socket.on("timeout", () => socket.destroy(new Error(`timed out requesting ${target}`)))
     socket.on("connect", () => {
-      socket.end(`GET ${target} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nConnection: close\r\n\r\n`)
+      socket.write(`GET ${target} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nConnection: close\r\n\r\n`)
     })
     socket.on("data", (chunk) => (response += chunk))
     socket.on("error", reject)
@@ -110,14 +117,15 @@ describe("preview server", () => {
   let banner = ""
 
   before(async () => {
-    fs.rmSync(outputDir, { recursive: true, force: true })
-    fs.mkdirSync(cacheDir, { recursive: true })
-    fs.writeFileSync(presentOutside, "<p>not part of the site</p>")
-    fs.rmSync(path.join(cacheDir, `${absentName}.html`), { force: true })
+    fs.mkdirSync(scratchRoot, { recursive: true })
+    fs.writeFileSync(path.join(scratchRoot, `${presentName}.html`), "<p>not part of the site</p>")
+    fs.rmSync(path.join(scratchRoot, `${absentName}.html`), { force: true })
 
     port = await freePort()
     wsPort = await freePort()
 
+    // No --host: the point is what the default does.
+    //
     // Its own process group, so teardown takes the build workers with it rather than leaving
     // them holding the ports.
     server = spawn(
@@ -171,18 +179,26 @@ describe("preview server", () => {
         server.kill("SIGKILL")
       }
     }
-    fs.rmSync(outputDir, { recursive: true, force: true })
-    fs.rmSync(presentOutside, { force: true })
+    fs.rmSync(scratchRoot, { recursive: true, force: true })
   })
 
   test("serves the fixture site", async () => {
     assert.strictEqual(status(await request(port, "/")), 200)
-    assert.strictEqual(status(await request(port, "/index")), 200)
+    // serve-handler redirects an explicit /index to /
+    assert.strictEqual(status(await request(port, "/index")), 301)
     assert.strictEqual(status(await request(port, "/nested/page")), 200)
     assert.strictEqual(status(await request(port, "/no-such-page")), 404)
+
+    // `/../` normalizes back to the site root, so it is served rather than refused. Asserted
+    // because it is the difference between normalizing the request path and rejecting every
+    // path that merely contains `..`: a blanket reject would pass the traversal tests below
+    // while breaking this.
+    assert.strictEqual(status(await request(port, "/../")), 200)
   })
 
   test("the banner reports the address the socket is bound to", () => {
+    // Was a hardcoded `http://localhost:PORT` printed before listen() resolved, which said
+    // loopback while the socket was on every interface.
     assert.strictEqual(banner, `http://127.0.0.1:${port}`)
   })
 
@@ -200,6 +216,18 @@ describe("preview server", () => {
       "no address left to probe, so this cannot tell a loopback bind from a wildcard one",
     )
 
+    // Keeps the probes on this machine even if the list above is ever edited.
+    const ownAddresses = new Set([
+      ...Object.values(os.networkInterfaces())
+        .flat()
+        .map((iface) => iface?.address),
+      "127.0.0.1",
+      "::1",
+    ])
+    for (const address of offLimits) {
+      assert.ok(ownAddresses.has(address), `${address} is not an address of this machine`)
+    }
+
     for (const address of offLimits) {
       assert.strictEqual(
         await connects(address, port),
@@ -214,23 +242,26 @@ describe("preview server", () => {
     }
   })
 
-  test("request paths that leave the output directory are refused", async () => {
-    const targets = [
-      `/../${absentName}/`,
-      "/../serve-test-present/",
-      "/../serve-test-present",
-      "/nested/../../serve-test-present/",
-      "/../../../../../../etc/passwd",
-    ]
-    for (const target of targets) {
+  // The targets below are the ones the guard alone can refuse. `path.posix.join(fp, "index.html")`
+  // drops a leading `..` from an absolute path, but `path.posix.join(argv.output, base)` does not,
+  // so it is the `/trailing/` branch's `base` probe that escapes -- and when the file it lands on
+  // exists, the un-normalized server answered 302. Without the guard these return 302; with it,
+  // 400.
+  //
+  // Deliberately not asserted: `/../outside-absent/`, `/../outside-present`, `/../outside-absent`
+  // and `/../../../../../../etc/passwd`. serve-handler refuses all four with a 400 of its own, so
+  // asserting 400 on them pins serve-handler and not this guard -- they pass with the guard
+  // removed. Measured, not assumed.
+  test("request paths that escape the output directory are refused", async () => {
+    for (const target of [`/../${presentName}/`, `/nested/../../${presentName}/`]) {
       assert.strictEqual(status(await request(port, target)), 400, `${target} was not refused`)
     }
   })
 
-  test("a refused path does not reveal whether the file outside the root exists", async () => {
-    // Before the fix these two differed: 302 when the out-of-root file existed and 404 when it
-    // did not, which is the whole oracle.
-    const present = await request(port, "/../serve-test-present/")
+  test("a refused path does not reveal whether a file outside the root exists", async () => {
+    // This is the oracle: without the guard the existing sibling answered 302 and the missing one
+    // 400, so the status told the caller which files outside the site were there.
+    const present = await request(port, `/../${presentName}/`)
     const absent = await request(port, `/../${absentName}/`)
     assert.strictEqual(statusLine(present), statusLine(absent))
     assert.doesNotMatch(present, /not part of the site/)
