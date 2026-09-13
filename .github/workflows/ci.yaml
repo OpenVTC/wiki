@@ -21,8 +21,13 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm ci
-      # Includes quartz/util/sanitize.test.ts, which builds the fixture pages in
-      # quartz/util/fixtures/sanitize and fails if any of their payloads reach the
-      # emitted HTML.
+      # Includes the two security regression tests:
+      #   quartz/util/sanitize.test.ts builds the fixture pages in
+      #     quartz/util/fixtures/sanitize and fails if any of their payloads reach
+      #     the emitted HTML.
+      #   quartz/cli/handlers.test.ts runs the preview server against the fixture
+      #     site in quartz/cli/fixtures/serve and fails if it binds anything other
+      #     than loopback, or if a request path that escapes the output directory is
+      #     answered instead of refused.
       - name: Run tests
         run: npm test
