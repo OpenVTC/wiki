@@ -2,8 +2,8 @@
 title: "VTA Topology — personal, community, local, cloud"
 type: concept
 tags: [vta, dtg, topology, pnm, spec, architecture]
-date-updated: 2026-08-19
-sources: [dtg-credential-spec, verifiable-trust-infrastructure, vta-browser-plugin, vti-setup]
+date-updated: 2026-09-18
+sources: [dtg-credential-spec, verifiable-trust-infrastructure, vta-browser-plugin, vti-setup, vtafarm, vtafarm-api, vtafarm-k8s]
 ---
 
 # VTA Topology — personal, community, local, cloud
@@ -42,11 +42,12 @@ A **Verifiable Trust Service Provider (VTSP)** provisions local VTAs, hosts clou
 
 | Spec term | In the ecosystem today |
 |-----------|------------------------|
-| Cloud personal VTA | `vta-service` ([[verifiable-trust-infrastructure]]) — self-hosted per [[vti-setup]], or managed on the **VTA Farm** (vtafarm.firstperson.dev, open signup since July 2026; Kubernetes deployment docs coming) |
-| Local personal VTA / PNM | the `pnm` CLI; the Authenticator + PNM mobile apps on `vta-mobile-core` (e.g. the iOS `vta-mobile-agent`); the [[vta-browser-plugin|VTA Wallet browser plugin]] (`@openvtc/pnm-core`) |
+| Cloud personal VTA | `vta-service` ([[verifiable-trust-infrastructure]]) — self-hosted per [[vti-setup]], or managed on the **[[vtafarm|VTA Farm]]** (vtafarm.firstperson.dev, open signup since July 2026). Since August 2026 the Farm itself is open source: the portal ([[vtafarm]]), the Go/Kubernetes provisioning backend ([[vtafarm-api]]) and the OpenTofu cluster build ([[vtafarm-k8s]]) — one Kubernetes namespace per user, every master seed sealed in HashiCorp Vault, and the admin key generated on the user's own machine so the operator holds the agent but never controls it |
+| Local personal VTA / PNM | the `pnm` CLI (also shipped as a keyring-free `pnm-server` build for headless hosts); the Authenticator + PNM mobile apps on `vta-mobile-core` (e.g. the iOS `vta-mobile-agent`); the [[vta-browser-plugin|VTA Wallet browser plugin]] (`@openvtc/pnm-core`) — which since September 2026 also carries a management console, so one surface is both a PNM and an operator console |
 | Personal Network Vault | the VTA's credential vault (`vta-vault`) and key store (`vta-keys`), presented through the PNM surfaces |
 | Community VTA / CNM | `vtc-service` + the `cnm` CLI and admin UI; [[openvtc]] acts as the member-side client |
-| VTSP | the project's own hosted stack (VTA Farm, mediator, DID hosting) — and, by design, any operator who stands up [[vti-setup]]'s sysop stream |
+| A node that is neither a person nor a community | a **[[data-rooms|data room]]** — its own DID, its own credentials, hosted by `vtc-service` or the standalone `room-host` (which can itself be enrolled with and governed by a VTA, like a mediator or DID host) |
+| VTSP | the project's own hosted stack (VTA Farm, mediator, DID hosting) — and, by design, any operator who stands up [[vti-setup]]'s explore stream or builds their own Farm from [[vtafarm-k8s]] |
 | VTA network endpoint | the `#tsp` / `#didcomm` / `#rest` services in the DID document (capability discovery is DID-document-driven; TSP preferred) |
 
 ## Why the Vocabulary Matters

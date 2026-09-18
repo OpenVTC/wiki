@@ -1,9 +1,9 @@
 ---
 title: "BIP-32 Key Derivation"
 type: concept
-tags: [cryptography, keys, bip32, bip39]
-date-updated: 2026-08-19
-sources: [verifiable-trust-infrastructure, openvtc]
+tags: [cryptography, keys, bip32, bip39, post-quantum]
+date-updated: 2026-09-18
+sources: [verifiable-trust-infrastructure, verifiable-trust-agent, openvtc]
 ---
 
 # BIP-32 Key Derivation
@@ -36,11 +36,14 @@ m/26'                          ← Root for First Person Network
 
 ## Key Types
 
-The ecosystem derives three types of keys from this tree:
+The ecosystem derives four kinds of key from this tree:
 
 - **Ed25519** — for signing credentials, DID operations, and authentication
-- **X25519** — for key agreement (DIDComm encryption)
+- **X25519** — for key agreement (DIDComm and TSP encryption)
 - **P-256 (ECDSA)** — for compatibility with systems requiring NIST curves
+- **ML-DSA-44 / ML-DSA-65** — [[post-quantum-cryptography|post-quantum]] signing keys, since September 2026 (VTI #1505). FIPS 204 key generation takes a 32-byte seed, so the chain can produce one — but the obvious implementation (hand the SLIP-0010 output straight to the key constructor, as Ed25519 does) would make the ML-DSA seed *equal* the Ed25519 private key at the same path, so compromising either yields the other. The derivation therefore follows P-256's construction: HMAC-SHA512 over the derived key and chain code under a **per-parameter-set label**, so ML-DSA-44 and ML-DSA-65 at the same path are independent of each other and of the classical key. The `-priv-seed` multicodecs are what let such a key be written down and re-derived. Every key record now carries the algorithm it was minted with (#1532).
+
+DID templates declare which algorithm each key slot uses, and since the **did-templates 3.0** task family a template may name a **third slot** — a post-quantum signing key beside the classical signing / key-agreement pair — which is the shape a hybrid-credential issuer needs (#1530, #1538, #1554).
 
 ## How OpenVTC Uses Derivation Paths
 
@@ -72,8 +75,10 @@ The seed is the crown jewel. In the OpenVTC ecosystem, it can be stored in:
 
 The [[verifiable-trust-agent|VTA]] adds another layer: it acts as a signing oracle, so applications never see the keys at all — they submit payloads and get signatures back.
 
-## The Exceptions (August 2026)
+## The Exceptions (August–September 2026)
 
-Derivation from one seed is the rule, but the [[verifiable-trust-agent|VTA]] now deliberately holds two kinds of key *outside* the tree: **non-extractable internal signing keys** — generated from a CSPRNG with no derivation path, stored in their own keyspace that is excluded from backup, never exportable (admin is not a bypass), and forbidden as did:webvh update keys — for cases where "this key can never leave this VTA" matters more than "this key can be recovered from the mnemonic"; and **imported** Ed25519 keys, for a deterministic did:key that must match a key created elsewhere. The derivation code itself also moved in-tree (SLIP-0010, dropping the `ed25519-dalek-bip32` dependency) when the workspace moved to curve25519-dalek 5.
+Derivation from one seed is the rule, but the [[verifiable-trust-agent|VTA]] now deliberately holds two kinds of key *outside* the tree: **non-extractable internal signing keys** — generated from a CSPRNG with no derivation path, stored in their own keyspace that is excluded from backup, never exportable (admin is not a bypass), and forbidden as did:webvh update keys — for cases where "this key can never leave this VTA" matters more than "this key can be recovered from the mnemonic"; and **imported** Ed25519 keys, for a deterministic did:key that must match a key created elsewhere. The derivation code itself also moved in-tree (SLIP-0010, dropping the `ed25519-dalek-bip32` dependency) when the workspace moved to curve25519-dalek 5. Post-quantum *internal* keys are refused for now: whether a VTA should hold an unrecoverable ML-DSA key is a decision not yet taken.
 
-See also: [[verifiable-trust-agent]], [[decentralized-identifiers]]
+A third note cuts the other way: "recoverable from the mnemonic" is not the same as "exportable". Since September 2026 any key can be marked **`exportable: false`** so it can only ever be *used* through the signing oracle, never read out (#1401, #1407), and the misnamed, unspecced, global-admin-gated `seeds/export-mnemonic` was retired in favour of **`keys/export-secret`**, which exports one named key and respects that flag (#1404). The seed still backs everything up; an operator simply no longer has a blanket way to pull key material out of a running VTA.
+
+See also: [[verifiable-trust-agent]], [[decentralized-identifiers]], [[post-quantum-cryptography]]

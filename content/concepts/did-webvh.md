@@ -2,8 +2,8 @@
 title: "did:webvh — Web DIDs with Verifiable History"
 type: concept
 tags: [did, did-webvh, identity, dif]
-date-updated: 2026-04-09
-sources: [didwebvh-rs, affinidi-webvh-service, openvtc]
+date-updated: 2026-09-18
+sources: [didwebvh-rs, affinidi-webvh-service, openvtc, dtg-credential-spec]
 ---
 
 # did:webvh — Web DIDs with Verifiable History
@@ -71,6 +71,10 @@ When someone resolves the DID:
 1. The resolver fetches the `did.jsonl` file
 2. It validates every log entry in the chain — checking signatures, hash links, timestamps, and witness proofs
 3. It returns the current DID document, with confidence in the complete history
+
+## What the DTG Spec Says About It (WD02)
+
+Working Draft 02 of the [[dtg-credential-spec|DTG Core Credentials spec]] switched its examples from `did:web` to `did:webvh` for **durable** identifiers — a community's, a witnessing VTA's — because plain `did:web` has no verifiable history and no successor-key commitment, so a verifier cannot tell a legitimate rotation from an attacker's substitution, nor establish which key was authoritative when a credential was signed. Its informative *DID Method Considerations* adds two cautions worth knowing. First, **portability is decided at inception**: a `did:webvh` log can be relocated only if `portable` was set in the *first* log entry; it defaults to off and a later entry cannot enable it, so an identifier expected to outlive its hosting arrangement must be created with it on. Second, **the resolution layer is a correlation channel**: several of a person's narrow-scope ([[correlation-scope|`pairwise` / `directed`]]) identifiers resolving through one web origin, one registry or one set of DID-log witnesses can be linked — and their use observed — by that infrastructure regardless of what the credentials disclose, which is why the spec steers such identifiers toward `did:peer` / `did:key` and expects deployments to mix methods. (The spec also disambiguates *DID log witness* — countersigning DID document versions — from the *witness* of a [[witness-credential|VWC]], which attests to an edge.) See [[decentralized-identifiers]].
 
 ## Implementation
 
