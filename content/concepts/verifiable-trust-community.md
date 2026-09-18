@@ -2,7 +2,7 @@
 title: "Verifiable Trust Communities (VTCs)"
 type: concept
 tags: [vtc, community, trust, membership]
-date-updated: 2026-08-19
+date-updated: 2026-09-18
 sources: [verifiable-trust-infrastructure, openvtc, dtg-credential-spec]
 ---
 
@@ -16,7 +16,9 @@ VTCs create denser clusters of trust within the broader [[decentralized-trust-gr
 
 ## How They Work
 
-A VTC is identified by its own [[did-types|C-DID]] (Community DID) and has a community-level service — the **VTC Service** — that coordinates community operations. Members hold [[membership-credential|Membership Credentials]] issued by the community. When a VTC's governance enforces personhood guarantees, these VMCs qualify as [[personhood-credential|Personhood Credentials]] — determined by the community's [[trust-registries|trust registry]].
+A VTC is identified by its own DID — since Working Draft 02 of the spec no longer called a "C-DID" ([[did-types]] is retired), but simply the community's identifier, which can only truthfully be declared with a **`public`** [[correlation-scope]]: a community that cannot be found cannot be joined. It has a community-level service — the **VTC Service** — that coordinates community operations. Members hold [[membership-credential|Membership Credentials]]: a grant from the community and an acknowledgement back from the member, under an identifier and scope *the member* chooses for that membership. When a VTC's governance enforces personhood guarantees, the grants qualify as [[personhood-credential|Personhood Credentials]] — determined by the community's [[trust-registries|trust registry]].
+
+WD02 also puts one normative duty on every VTC that issues VMCs: it **MUST publish**, in its governance framework or trust registry, whether member identifiers are disclosed beyond the VTA and to whom — because a member's `pairwise` declaration only stays truthful if the community keeps it so, and a verifier MUST NOT assume it does. A VTA SHOULD show the community's answer to a prospect before they choose a scope for joining.
 
 VTCs can belong to [[verifiable-trust-network|Verifiable Trust Networks (VTNs)]] — higher-level federations that enable trust paths to cross community boundaries.
 
@@ -47,7 +49,9 @@ The [[verifiable-trust-infrastructure|VTI]] workspace includes a **VTC Service**
 - **PNM CLI** (Personal Network Manager) — for individual participation in communities
 - the **[[openvtc|OpenVTC TUI]]** — the member-side client: join by DID or agent name, present a VIC, see which capabilities a community has enabled, hold many memberships under distinct personas
 
-Since mid-2026 a community **chooses and publishes the transports it offers** (TSP, DIDComm, REST) and which trust registry is authoritative for it, and its admin console (`/admin`, passkey-protected) approves joins, issues the member's VMC + role VEC, and manages the ACL. The spec's Working Draft 01 names the bootstrap roles: an **initiator** generates the C-DID, instantiates the community VTA and invites **community trust anchors (CTAs)**, who are automatically issued VMCs; a **Policy Enforcement Point (PEP)** enforces the community's issuance/revocation policies. See [[vta-topology]] for how a community is served by a *network* of its members' agents.
+Since mid-2026 a community **chooses and publishes the transports it offers** (TSP, DIDComm, REST) and which trust registry is authoritative for it, and its admin console (`/admin`, passkey-protected) approves joins, issues the member's VMC + role VEC, and manages the ACL. The spec names the bootstrap roles: an **initiator** generates the community's identifier, instantiates the community VTA and invites **community trust anchors (CTAs)**, who are issued VMCs (and, since WD02, acknowledge them like any other member); a **Policy Enforcement Point (PEP)** enforces the community's issuance/revocation policies. See [[vta-topology]] for how a community is served by a *network* of its members' agents.
+
+**Peer identity vetting.** Since Dogwood, [[openvtc|OpenVTC]] carries a V0 of community-run identity vetting (openvtc #292–#343, design DRAFT v3): the community names **vetters** by issuing them a revocable `CommunityRole` [[endorsement-credential|VEC]], publishes a vetter directory, and hands out QR tickets that a prospect brings to a vetter; the vetter's attestation becomes evidence for the community's personhood decision. See [[peer-identity-vetting]]. This is the pattern the spec's `main` branch formalises as [[statement-credential|statement credentials]] weighed by governance — and, for what a vetter *may do*, an [[authority-credential|authority credential]] rather than an endorsement.
 
 ## Trust Policies
 

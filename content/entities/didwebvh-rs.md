@@ -2,7 +2,7 @@
 title: "didwebvh-rs — did:webvh Rust Implementation"
 type: entity
 tags: [didwebvh, did, library, dif, secondary]
-date-updated: 2026-08-19
+date-updated: 2026-09-18
 repo: https://github.com/decentralized-identity/didwebvh-rs
 ---
 
@@ -10,7 +10,7 @@ repo: https://github.com/decentralized-identity/didwebvh-rs
 
 *Repo: [github.com/decentralized-identity/didwebvh-rs](https://github.com/decentralized-identity/didwebvh-rs)*
 
-A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version 0.6.0 (July 2026).
+A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version **0.7.0** (September 2026), which made resolution *public-hosts-only by default* — a breaking change for local stacks.
 
 ## What It Provides
 
@@ -28,7 +28,8 @@ The full DID lifecycle for did:webvh:
 
 Key design features:
 - **Pluggable signing** — a `Signer` trait lets callers provide their own signing backend (HSM, KMS, cloud) so private keys never enter the library
-- **WASM-friendly** — resolution-only builds work in WebAssembly environments
+- **Host policy on resolution** (0.7.0) — because the DID itself names the host to fetch from, `resolve()` refuses non-public hosts by default (`HostPolicy::PublicOnly`): special-use names (`localhost`, `*.local`, `*.internal`, `home.arpa`, single-label) are blocked before any request, and on native targets the default client refuses any name whose DNS answers include a loopback/private/link-local/CGNAT/metadata address, pins the connection to the checked addresses, follows no redirects and ignores system proxies. `HostPolicy::AllowPrivate` opts back in for local testing; `ResolveOptions::with_http_client()` lets a caller supply its own client (and take over the connect-time checks)
+- **WASM-friendly** — resolution-only builds work in WebAssembly environments (only the name checks of the host policy apply there — DNS is not observable in a browser)
 - **Feature flags** — TLS backend selection (`rustls`, `native-tls`), optional `ssi` crate integration, CLI flows
 - **Embeddable CLI** — interactive terminal flows for third-party applications to integrate did:webvh operations
 
@@ -38,7 +39,23 @@ This is a foundational building block. The [[affinidi-tdk|Affinidi TDK]] uses it
 
 ## Recent Development
 
-The library is in maintenance-and-hardening mode: after the security-audit and spec-compliance releases of May–June and the June fuzzing infrastructure, July 2026 brought a parse-time spec fix (0.5.7) and a pre-release audit sweep that was promoted to **0.6.0** because it carries small breaking API changes. Activity is low (two PRs since July 6) — the crate is stable, and its downstream consumers (the [[affinidi-tdk|TDK]], [[affinidi-webvh-service|did-hosting-service]], the [[verifiable-trust-agent|VTA]], [[openvtc]]) all moved onto 0.6 within days.
+The library is in maintenance-and-hardening mode: after the security-audit and spec-compliance releases of May–June and the June fuzzing infrastructure, July 2026 brought a parse-time spec fix (0.5.7) and a pre-release audit sweep promoted to **0.6.0** for its small breaking API changes. The August–September 2026 window (four PRs, #51–#54) added a spec-conformance fix (**0.6.1**) and one genuinely breaking security release (**0.7.0**, host policy) — the latter driven by the ecosystem-wide SSRF review (SEC-4045) that also produced the TDK's `affinidi-net-guard` crate and ADR 0006, whose stated design constraint is that the guard must be consumable *by this crate* (hence no `affinidi-*` dependencies). Consumers on 0.7 as of 2026-09-18: the [[affinidi-tdk|TDK]] resolver (`cache-sdk` 0.8.37, `cache-server` 0.9.13, `did-scid` 0.2.7 — #789, 09-12) and `vta-sdk` ≥ 0.38; [[affinidi-webvh-service|did-hosting-service]] still declares `didwebvh-rs = "0.6"` directly (its lockfile carries both 0.6.1 and 0.7.0 via the VTA SDK) — its edge servers deliberately re-verify synced logs only structurally because "an edge re-running it would reject logs an older didwebvh-rs accepted".
+
+Tag housekeeping worth knowing: the `v0.6.0` git tag was only pushed on 2026-08-28 (the commit is from 07-19), and `v0.6.1` / `v0.7.0` were both tagged on 09-11.
+
+### v0.7.0 — 2026-09-11 — resolution host policy + injectable HTTP client (#53, #54)
+
+**Why.** A did:webvh DID chooses the host its log is fetched from, so a resolver that fetches "whatever the name resolves to" is an SSRF primitive: `did:webvh:{SCID}:localhost%3A<port>` was fetched over plain `http://`, and any other name from any address it resolved to — including cloud-metadata and RFC 1918 space. 0.5.3 had already blocked IP *literals* and redirects; 0.7.0 closes the *name* half.
+
+- **Breaking**: `DIDWebVHState::resolve()` contacts public hosts only by default (`HostPolicy::PublicOnly`, new `DIDWebVHError::BlockedHost`); the default native client ignores `HTTP(S)_PROXY` (a proxy resolves the name itself, outside the resolver's checks); `ResolveOptions` gains public fields `host_policy` and `http_client` (struct literals need `..Default::default()`). The `ssi`-feature resolver is public-only too.
+- **Added**: `host_policy::HostPolicy { PublicOnly, AllowPrivate }`; `guarded_dns_resolver()` / `guarded_dns_resolver_with(inner)` for installing the DNS guard on a caller-built client; `WebVHURL::get_fetch_url(file, policy)` — the policy-checked URL, host canonicalised (percent-decoding, IDNA, case, trailing dot) before checking; `examples/resolve.rs --allow-private-hosts`. Every fetch (`did.jsonl`, `did-witness.json`, eager and deferred) goes through `get_fetch_url()`; under `AllowPrivate` only `localhost` / `*.localhost` use `http://`.
+- **Unchanged, now documented as such**: `get_http_url()` / `get_http_whois_url()` / `get_http_files_url()` render URLs for display and the implicit `#files` / `#whois` services and apply no policy.
+- **Migration**: local dev/tests → `ResolveOptions::default().with_host_policy(HostPolicy::AllowPrivate)`; trusted private deployments → `AllowPrivate`; proxied environments → pass an `http_client` built with the proxy (name checks still apply). #54 bumped a yanked `wnaf` 0.14.0 → 0.14.1.
+- **Downstream effect**: the TDK's `cache-sdk` 0.8.37 exposes one `DIDCacheConfigBuilder::with_host_policy` covering did:web *and* did:webvh; `cache-server` 0.9.13 notes that a deployment reaching did:webvh hosts only through a proxy can no longer resolve them.
+
+### v0.6.1 — 2026-08-29 — the log entry that *activates* pre-rotation may set `updateKeys` (#52)
+
+`Parameters::validate()` gated the "every `updateKeys` key must hash into the previous entry's `nextKeyHashes`" rule on the *current* entry's `pre_rotation_active` — which the entry's own new `nextKeyHashes` had just flipped on — rather than the previous entry's. Since a not-yet-pre-rotating predecessor commits no hashes, the activating entry was unsatisfiable, blocking the ordinary operator flow of turning pre-rotation on as part of a document edit that also rotates `updateKeys`. didwebvh 1.0 defines the trigger as the *previous* entry's commitment (verification step 7; update step 7; "in any DID log entry"), and `verify_log_entry()` / `check_signing_key()` already keyed on the previous entry — so a chain written this way would *resolve* but this crate could not *produce* one. Steady-state and deactivation rules unchanged. #51 refreshed the lockfile onto the published TDK line (data-integrity 0.7.10, crypto 0.2.8, did-common 0.4.2, secrets-resolver 0.5.10) and added an audit ignore for RUSTSEC-2026-0235 (`rkyv` via `rust_decimal`, unreachable).
 
 ### v0.6.0 — 2026-07-19 — `affinidi-did-common` 0.4 + pre-release audit fixes (#50)
 

@@ -1,12 +1,28 @@
 ---
 title: "Wiki Log"
 type: log
-date-updated: 2026-08-19
+date-updated: 2026-09-18
 ---
 
 # Wiki Log
 
 A record of major wiki updates: new sources ingested, significant concept and entity additions, and meaningful structural changes.
+
+---
+
+## [2026-09-18] August–September refresh — the silent Dogwood release, the VTA Farm goes open source, spec Working Draft 02, data rooms
+
+The ecosystem shipped **`Dogwood`** on 2026-08-30 — its fourth coordinated release and the first to go out *silently*: tag-only, no GitHub Release, no announcement. Reading the month between Cypress and Dogwood explains why. Almost nothing in it is user-visible: a Trust-Task conformance sweep that drove the VTC's schema drift to zero and then enforced the framework at the VTA's dispatch spine (every client identified and signing, replay and freshness checked), the member-side half of the membership edge finally landing in software, OpenVTC secrets no longer vanishing on reboot, retries made idempotent, and dependencies moving a long way (trust-tasks 0.9 → 0.17, vta-sdk 0.25 → 0.32). Two days of production findings produced a `Dogwood-R1` re-cut — federated mediator relay, a wallet-wide inbox that silently lost consent prompts, cross-mediator TSP routing — recorded repo by repo on [[coordinated-releases]]. The first **`Eucalyptus`** release candidate was tagged on 2026-09-17.
+
+**The Kubernetes promise is kept.** For months this wiki said the sysop *deploy* stream — Kubernetes, HashiCorp Vault, the VTA Farm — was "coming soon". It shipped in August as three open-source repos under the `ic3software` org, now Secondary sources with their own entity pages: [[vtafarm]] (the portal), [[vtafarm-api]] (the Go/Kubernetes provisioning backend) and [[vtafarm-k8s]] (the OpenTofu cluster build on Hetzner). The security model is the story: one Kubernetes namespace per user, every VTA's master seed sealed in Vault under a role only that namespace can assume, an operator whose own Vault policy cannot read a seed, and an admin key generated on the user's machine and imported — the Farm hosts your agent but never controls it. [[vta-topology]], [[vti-setup]], [[verifiable-trust-agent]] and the [[overview]] were updated accordingly.
+
+**The spec moved — twice.** The [[dtg-credential-spec|DTG Core Credentials spec]] tagged **Working Draft 02** (2026-09-07): the four DID types are retired in favour of holder-declared [[correlation-scope]] (pairwise / directed / public); the membership pair is fully specified as a grant plus a consent-carrying acknowledgement; cross-credential digests become `digestMultibase`; and two new credential types arrive — the [[delegation-credential|Verifiable Delegation Credential]] (a third edge type) and the [[authority-credential|Verifiable Authority Credential]] (attenuable permission chains). The spec's main branch is already further, folding endorsement and witness into a single [[statement-credential|Statement Credential]] with predicate profiles. [[dtg-credentials]] went through eight breaking releases in a month (0.2.0 → 0.9.1) to track it, closing the digest-encoding divergence flagged last cycle. Eighteen concept pages were revised; [[did-types]] is now a history page.
+
+**A third kind of node.** [[data-rooms|Data rooms]] — credential-governed, MLS-encrypted shared spaces with their own DIDs, portable between hosts because there is deliberately no member list, aimed at shared memory for AI agents — landed in the VTI in the fortnight after Dogwood, with four new crates, a standalone `room-host`, a browser member in WebAssembly and a rooms console in the [[vta-browser-plugin|VTA Wallet]].
+
+**Also this cycle:** [[trust-spanning-protocol|TSP Rev 3]] adopted as a flag day across every Rust component, with a new cross-implementation conformance suite covering five implementations (including new Go and Dart ports); [[post-quantum-cryptography|post-quantum ML-DSA keys]] in the VTA and hybrid multi-proof credentials from the VTC; the beginnings of [[peer-identity-vetting]]; a cross-repo security sweep (public-hosts-only DID resolution, egress guards, a hash-chained VTA audit log, SHA-pinned CI); VGI's `Signed-by-DID:` commit trailer; the browser wallet's management console and persona map; and every vti-setup download now verified.
+
+New pages: 3 entities, 7 concepts. Updated: 13 entities, 25 concepts, overview, index, sources.
 
 ---
 

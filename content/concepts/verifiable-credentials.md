@@ -1,9 +1,9 @@
 ---
 title: "Verifiable Credentials (VCs)"
 type: concept
-tags: [credentials, w3c, standards, trust]
-date-updated: 2026-08-19
-sources: [dtg-credentials, verifiable-trust-infrastructure, openvtc]
+tags: [credentials, w3c, standards, trust, post-quantum]
+date-updated: 2026-09-18
+sources: [dtg-credentials, verifiable-trust-infrastructure, openvtc, affinidi-tdk]
 ---
 
 # Verifiable Credentials (VCs)
@@ -49,4 +49,6 @@ The [[affinidi-tdk|Affinidi TDK]] also supports **Selective Disclosure JWTs (SD-
 
 The [[verifiable-trust-agent|VTA]]'s vault is format-plural: W3C Data Integrity proofs (EdDSA JCS/RDFC 2022, BBS-2023, and since August 2026 `ecdsa-jcs-2019` for P-256 keys), SD-JWT, and — as of the `Cypress` release — **ISO 18013-5 mdoc**, received and verified against configured IACA trust anchors and presented over OpenID4VP with an ISO 18013-7 session transcript. DTG credentials themselves are W3C VCs (v2.0 primary, v1.1 legacy) signed with Data Integrity.
 
-See also: [[dtg-credentials-overview]], [[decentralized-identifiers]], [[decentralized-trust-graph]]
+**Hybrid, multi-proof credentials (September 2026).** A Data Integrity `proof` may be an *array*, and the ecosystem now uses that for the [[post-quantum-cryptography|post-quantum]] transition: a VTC signs a credential **with every key it holds**, one proof per key, each under the cryptosuite that key's type selects — an Ed25519 `eddsa-jcs-2022` proof beside an ML-DSA-44 **`mldsa44-jcs-2024`** (or `mldsa44-rdfc-2024`) proof from the W3C Quantum-Resistant Cryptosuites draft. A verifier that understands only classical suites accepts the credential on the Ed25519 proof; one that requires post-quantum can reject that proof and accept the ML-DSA one. Every VTC verification path reads a proof *set*, and a single-key VTC still emits a bare proof object, so nothing downstream changed until a second key existed. The suites live in the TDK's `affinidi-data-integrity` behind its `ml-dsa` feature (which VTI pins on); only ML-DSA-44 has a Data Integrity suite because that is the parameter set the W3C draft specifies.
+
+See also: [[dtg-credentials-overview]], [[decentralized-identifiers]], [[decentralized-trust-graph]], [[post-quantum-cryptography]]

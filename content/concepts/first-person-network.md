@@ -2,8 +2,8 @@
 title: "The First Person Network"
 type: concept
 tags: [first-person, vision, protocol, identity]
-date-updated: 2026-08-19
-sources: [openvtc, verifiable-trust-infrastructure, dtg-credentials, verifiable-git-infrastructure]
+date-updated: 2026-09-18
+sources: [openvtc, verifiable-trust-infrastructure, dtg-credentials, verifiable-git-infrastructure, vtafarm]
 ---
 
 # The First Person Network
@@ -15,7 +15,7 @@ The First Person Network is the overarching vision that the OpenVTC ecosystem im
 The name is deliberate:
 - **First person** — "I am" rather than "they say I am"
 - You create your own identity ([[decentralized-identifiers|DID]])
-- You host it on the domain of your choice
+- You host it on the domain of your choice — or on a hosted [[vtafarm|VTA Farm]] that holds your agent but never your admin key
 - You build trust through real relationships, not institutional endorsements
 - No organization can revoke your identity or gatekeep your participation
 
@@ -35,7 +35,7 @@ The key distinction from general self-sovereign identity (SSI) is the emphasis o
 The First Person Protocol defines how participants:
 
 1. Create and host their Persona DID (using [[did-webvh]])
-2. Establish private communication channels ([[didcomm]])
+2. Establish private communication channels ([[trust-spanning-protocol|TSP]], with [[didcomm]] for interop)
 3. Exchange [[personhood-credential|Personhood Credentials]] and [[relationship-credential|Relationship Credentials]]
 4. Build and traverse the [[decentralized-trust-graph|Decentralized Trust Graph]]
 5. Form [[verifiable-trust-community|Verifiable Trust Communities]]
@@ -48,6 +48,6 @@ This challenge has intensified with the rise of AI agents. An AI can now convinc
 
 The First Person Network answers this by letting developers build verifiable trust graphs through their real professional relationships. Instead of trusting a GitHub account, you can verify a chain of peer attestations, endorsements, and witness proofs — all anchored in communities that have verified their members' personhood.
 
-Since July 2026 this has a concrete, shippable form: [[verifiable-git-infrastructure|Verifiable Git Infrastructure (VGI)]]. A developer signs commits with a key held in their [[verifiable-trust-agent|VTA]] (`did-git-sign`), the commit names its signer by DID, and a project's CI (`verify-trust`) asks the community's [[trust-registries|Trust Registry]] whether that DID is authorised to sign for this repository *right now* — failing closed. "VGI verifies, the VTC decides": remove a contributor from the registry and their next commit fails everywhere at once. The human side of the same story is **agent names** — `example.com/@alice` instead of a DID string — so a reviewer sees a name that is cryptographically claimed by the DID document, not a display name anyone could type.
+Since July 2026 this has a concrete, shippable form: [[verifiable-git-infrastructure|Verifiable Git Infrastructure (VGI)]]. A developer signs commits with a key held in their [[verifiable-trust-agent|VTA]] (`did-git-sign`), the commit names its signer by DID — since the Dogwood release (VGI 0.4.7) as a `Signed-by-DID:` trailer written by a commit hook, so `user.email` stays an ordinary address and forges still attribute the commit — and a project's CI (`verify-trust`) asks the community's [[trust-registries|Trust Registry]] whether that DID is authorised to sign for this repository *right now* — failing closed. "VGI verifies, the VTC decides": remove a contributor from the registry and their next commit fails everywhere at once. The human side of the same story is **agent names** — `example.com/@alice` instead of a DID string — so a reviewer sees a name that is cryptographically claimed by the DID document, not a display name anyone could type. And since September 2026 the human root of all of this — the moment a community checks that a new member is a real person — is being made explicit as [[peer-identity-vetting]].
 
 See also: [[decentralized-trust-graph]], [[verifiable-trust-community]], [[openvtc]]

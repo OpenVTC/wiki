@@ -2,13 +2,13 @@
 title: "Witnessed VRC Exchange Protocol"
 type: concept
 tags: [protocol, witness, vrc, flow, didcomm]
-date-updated: 2026-08-19
+date-updated: 2026-09-18
 sources: [dtg-credential-spec, dtg-credentials]
 ---
 
 # Witnessed VRC Exchange Protocol
 
-The Witnessed Session-Based VRC Exchange (v0.2, kept as supporting material in the DTG task-force repo; its per-direction VWC pattern became normative in the [[dtg-credential-spec|spec]]'s Working Draft 01) is a five-phase protocol for creating [[relationship-credential|Relationship Credentials (VRCs)]] with third-party [[witness-credential|Witness]] attestation. It ensures that both the relationship and the witness proof are cryptographically bound to a specific session.
+The Witnessed Session-Based VRC Exchange (v0.2, kept as supporting material in the DTG task-force repo; its per-direction VWC pattern became normative in the [[dtg-credential-spec|spec]]'s Working Draft 01, and Working Draft 02 extended it to witnessed VMC pairs as well) is a five-phase protocol for creating [[relationship-credential|Relationship Credentials (VRCs)]] with third-party [[witness-credential|Witness]] attestation. It ensures that both the relationship and the witness proof are cryptographically bound to a specific session.
 
 ## Why Witnessed Exchange?
 
@@ -39,7 +39,7 @@ The Witness performs three checks on each submission:
 ### Phase 4: Credential Distribution
 
 1. The Witness mints two [[witness-credential|Witness Credentials (VWCs)]] — one for each observed VRC
-2. Each VWC carries a `taskContext` naming this session's trust-task thread and (since WD01, REQUIRED) a `digest` of the witnessed VRC — SHA-256 over its JCS canonical form, encoded `sha256:<hex>` — with `credentialSubject.id` set to the issuer of that VRC; see [[witness-credential]] and [[trust-task-context-binding]]
+2. Each VWC carries a `taskContext` naming this session's trust-task thread and a REQUIRED `digestMultibase` of the witnessed VRC — SHA-256 over its JCS canonical form *excluding `proof`*, as a base58btc multihash (WD02; WD01 used `digest` = `sha256:<hex>`) — with `credentialSubject.id` set to the *issuer* of that VRC; see [[witness-credential]] and [[trust-task-context-binding]]. On the spec's `main` branch the VWC is the `dtg:witnessed` profile of a [[statement-credential|Statement Credential]] and the digest sits under `object.digestMultibase`; the direction rule becomes unconditional
 3. Distribution is cross-wise: Alice receives the VWC witnessing Bob's VRC, and Bob receives the VWC witnessing Alice's VRC
 
 ### Phase 5: Verification
@@ -48,7 +48,7 @@ At the end, each party holds:
 - Their counterparty's VRC (the trust attestation)
 - A VWC from the Witness attesting that the VRC was created during the specific session
 
-Anyone verifying the relationship later can check both the VRC (peer attestation) and the VWC (third-party attestation of the exchange).
+Anyone verifying the relationship later can check both the VRC (peer attestation) and the VWC (third-party attestation of the exchange) — provided the VRC is to hand, since a digest without its referenced credential is an opaque hash. The witness's identifier must be `directed` at minimum ([[correlation-scope]]): it has to be recognisable to both parties and to the community whose witnessing policy applies.
 
 ## Trust Implications
 
