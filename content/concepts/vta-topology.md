@@ -2,8 +2,8 @@
 title: "VTA Topology — personal, community, local, cloud"
 type: concept
 tags: [vta, dtg, topology, pnm, spec, architecture]
-date-updated: 2026-09-18
-sources: [dtg-credential-spec, verifiable-trust-infrastructure, vta-browser-plugin, vti-setup, vtafarm, vtafarm-api, vtafarm-k8s]
+date-updated: 2026-10-07
+sources: [dtg-credential-spec, verifiable-trust-infrastructure, vta-browser-plugin, vti-setup, vtafarm, vtafarm-api, vtafarm-k8s, keyring-wallet]
 ---
 
 # VTA Topology — personal, community, local, cloud
@@ -30,7 +30,7 @@ One node is often served by several agents acting together — a **VTA network**
 
 ## The Personal Trio: PNM, PNV, Personal Trust Network
 
-- **Personal Network Manager (PNM)** — the user agent that serves as a person's VTA for managing their trust relationships and trust tasks across communities and networks. May be local or cloud. "Also sometimes called a *VTA client*"; a VTA client may also serve as a **Community Network Manager (CNM)**.
+- **Personal Network Manager (PNM)** — the user agent that serves as a person's VTA for managing their trust relationships and trust tasks across communities and networks. May be local or cloud. "Also sometimes called a *VTA client*"; a VTA client may also serve as a **Community Network Manager (CNM)**. In practice one person now often has *several* PNMs over the same cloud VTA — a laptop TUI, a browser wallet, a phone — and since Eucalyptus the Keyring phone can hold several agents at once, one current, each with its own identities per community.
 - **Personal Network Vault (PNV)** — the person's digital vault/wallet for DTG credentials and signing keys, under their exclusive control, possibly delegated to a VTA.
 - **Personal trust network** — the set of a person's DTG edges, managed through their PNM.
 
@@ -42,11 +42,11 @@ A **Verifiable Trust Service Provider (VTSP)** provisions local VTAs, hosts clou
 
 | Spec term | In the ecosystem today |
 |-----------|------------------------|
-| Cloud personal VTA | `vta-service` ([[verifiable-trust-infrastructure]]) — self-hosted per [[vti-setup]], or managed on the **[[vtafarm|VTA Farm]]** (vtafarm.firstperson.dev, open signup since July 2026). Since August 2026 the Farm itself is open source: the portal ([[vtafarm]]), the Go/Kubernetes provisioning backend ([[vtafarm-api]]) and the OpenTofu cluster build ([[vtafarm-k8s]]) — one Kubernetes namespace per user, every master seed sealed in HashiCorp Vault, and the admin key generated on the user's own machine so the operator holds the agent but never controls it |
-| Local personal VTA / PNM | the `pnm` CLI (also shipped as a keyring-free `pnm-server` build for headless hosts); the Authenticator + PNM mobile apps on `vta-mobile-core` (e.g. the iOS `vta-mobile-agent`); the [[vta-browser-plugin|VTA Wallet browser plugin]] (`@openvtc/pnm-core`) — which since September 2026 also carries a management console, so one surface is both a PNM and an operator console |
+| Cloud personal VTA | `vta-service` ([[verifiable-trust-infrastructure]]) — self-hosted per [[vti-setup]], or managed on the **[[vtafarm\|VTA Farm]]** (vtafarm.firstperson.dev, open signup since July 2026). Since August 2026 the Farm itself is open source: the portal ([[vtafarm]]), the Go/Kubernetes provisioning backend ([[vtafarm-api]]) and the OpenTofu cluster build ([[vtafarm-k8s]]) — one Kubernetes namespace per user, every master seed sealed in HashiCorp Vault, and the admin key generated on the user's own machine so the operator holds the agent but never controls it |
+| Local personal VTA / PNM | the `pnm` CLI (also shipped as a keyring-free `pnm-server` build for headless hosts); the Authenticator + PNM mobile apps on `vta-mobile-core` (e.g. the iOS `vta-mobile-agent`); the [[vta-browser-plugin\|VTA Wallet browser plugin]] (`@openvtc/pnm-core`) — which since September 2026 also carries a management console, so one surface is both a PNM and an operator console; and, from outside the OpenVTC org, the [[keyring-wallet\|Keyring phone wallet]] (Harvard Berkman Klein Center), which links to one or several cloud VTAs over Trust Tasks and is the first PNM on which a person can be vetted into a community, or vet someone, from a phone |
 | Personal Network Vault | the VTA's credential vault (`vta-vault`) and key store (`vta-keys`), presented through the PNM surfaces |
-| Community VTA / CNM | `vtc-service` + the `cnm` CLI and admin UI; [[openvtc]] acts as the member-side client |
-| A node that is neither a person nor a community | a **[[data-rooms|data room]]** — its own DID, its own credentials, hosted by `vtc-service` or the standalone `room-host` (which can itself be enrolled with and governed by a VTA, like a mediator or DID host) |
+| Community VTA / CNM | `vtc-service` + the `cnm` CLI (the *Community Network Manager*: authentication, keys, access control, vetter grants and the PGP web-of-trust bootstrap, since Eucalyptus with role-based administration where consequential actions wait for a second approver) and the embedded admin console; [[openvtc]] acts as the member-side client, and since Eucalyptus the Keyring phone can too |
+| A node that is neither a person nor a community | a **[[data-rooms\|data room]]** — its own DID, its own credentials, hosted by `vtc-service` or the standalone `room-host` (which can itself be enrolled with and governed by a VTA, like a mediator or DID host) |
 | VTSP | the project's own hosted stack (VTA Farm, mediator, DID hosting) — and, by design, any operator who stands up [[vti-setup]]'s explore stream or builds their own Farm from [[vtafarm-k8s]] |
 | VTA network endpoint | the `#tsp` / `#didcomm` / `#rest` services in the DID document (capability discovery is DID-document-driven; TSP preferred) |
 
@@ -54,4 +54,4 @@ A **Verifiable Trust Service Provider (VTSP)** provisions local VTAs, hosts clou
 
 The split clarifies several design choices that otherwise look arbitrary: why the VTA is an *always-on* service rather than a wallet app (a cloud VTA has to be reachable when the phone isn't); why the mobile apps and the browser plugin are *thin* (they are PNMs over a VTA, not VTAs themselves); why a community's keys are held by people's agents acting together rather than by one server (a community VTA network); and why a **witness** in a [[witness-credential|VWC]] can be "a VTA acting according to VTC policy" rather than only a person.
 
-See also: [[verifiable-trust-agent]], [[verifiable-trust-community]], [[decentralized-trust-graph]], [[did-types]], [[first-person-network]]
+See also: [[verifiable-trust-agent]], [[verifiable-trust-community]], [[decentralized-trust-graph]], [[did-types]], [[first-person-network]], [[keyring-wallet]], [[trust-tasks]]

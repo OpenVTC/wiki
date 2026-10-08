@@ -2,7 +2,7 @@
 title: "The Decentralized Trust Graph (DTG)"
 type: concept
 tags: [trust-graph, dtg, trust-over-ip, credentials]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 sources: [dtg-credential-spec, dtg-credentials, openvtc, verifiable-trust-infrastructure]
 ---
 
@@ -18,7 +18,7 @@ The graph is built from two primitives:
 - **Nodes** — entities in the world: people, devices, AI agents, communities, networks, and (since Working Draft 02 of the spec) **services** — an operated endpoint with its own identifier, such as a message mediator, a DID host or a trust registry, as distinct from the provider that runs it. The list is illustrative, not closed: what makes something a node is that it holds a [[decentralized-identifiers|verifiable identifier]] and forms edges. Each identifier carries a holder-declared [[correlation-scope]].
 - **Edges** — created by [[credential-categories|Edge Credentials]]: [[membership-credential|Membership Credentials (VMCs)]] connect entities to communities, [[relationship-credential|Relationship Credentials (VRCs)]] connect entities to other entities, and [[delegation-credential|Delegation Credentials (VDCs)]] connect a principal to a party appointed to act in its name. **Every edge is bidirectional**: a complete edge requires a pair of credentials, one from each side — and the second half is the counterparty's *consent*.
 
-[[credential-categories|Annotation Credentials]] ([[endorsement-credential|endorsements]], [[witness-credential|witnesses]], [[persona-credential|personas]]) attach data to existing structure. Two credentials stand apart from the graph structure: the [[invitation-credential|VIC]] bootstraps a node into a community, and the [[authority-credential|VAC]] confers permission to act within a scope a node governs.
+Every other credential is complete on its issuer's signature alone — the only grouping the spec makes is the edge class ([[credential-categories]]). The [[statement-credential|Statement Credential]] attaches a signed statement to a node under a governed predicate ([[endorsement-credential|endorsements]], [[witness-credential|witness statements]], vetting statements); the [[persona-credential|VPC]] links a persona to a relationship; the [[invitation-credential|VIC]] bootstraps a node into a community; and the [[authority-credential|VAC]] confers permission to act within a scope a node governs — including, since Eucalyptus, a member's role in a community.
 
 Anyone can traverse the graph to discover trust paths between two entities. The credentials are cryptographically signed, so every edge is verifiable. The graph is decentralized — no single authority controls it, and no single point of failure can break it.
 
@@ -43,13 +43,16 @@ Joining unlocks two things pure peer-to-peer VRCs cannot provide:
 
 WD02 gives the graph a vocabulary for the AI-agent case. A person who wants an agent to act **as itself**, with strictly less than the person holds, attenuates an [[authority-credential|Authority Credential]] to it — four hours of read-only access to one room, verified by walking the chain back to the room. A person who wants an agent's acts **attributed to them** issues a [[delegation-credential|Delegation Credential]], which the agent accepts; the verifier then asks whether *the person* may do the act. Which of the two a community admits for agents is governance; that a verifier can always tell which it was shown is what keeping them separate buys.
 
-### Annotate with Endorsements and Witnesses
+### Annotate with Statements
 
-- **[[endorsement-credential|Endorsements (VEC)]]** — "I endorse this person's skills in X"
-- **[[witness-credential|Witnesses (VWC)]]** — "I witnessed this edge being formed" (especially powerful via the [[witnessed-vrc-exchange|Witnessed VRC Exchange Protocol]])
-- **[[persona-credential|Personas (VPC)]]** — selectively linking a persona to a relationship
+A [[statement-credential|Statement Credential]] is a signed statement by one node about another under a predicate from a governed vocabulary, which verifiers accept fail-closed. The registry's four core predicates:
 
-On the spec's `main` branch endorsements and witness attestations become profiles of one [[statement-credential|Statement Credential]] — a signed statement by one node about another, under a governed predicate.
+- **[[endorsement-credential|`endorses/1` (VEC)]]** — "I endorse this person's skills in X"
+- **[[witness-credential|`witnessed/1` (VWC)]]** — "I witnessed this edge being formed, in this exchange" (especially powerful via the [[witnessed-vrc-exchange|Witnessed VRC Exchange Protocol]])
+- **`vetted/1`** — "I checked this person's claimed identity in a vetting session" — the statement [[peer-identity-vetting]] counts, from a vetter or from the community itself
+- **`presented/1`** — "I witnessed this party present this credential"
+
+And the **[[persona-credential|Persona Credential (VPC)]]** selectively links a persona to a relationship. A statement is evidence a community weighs; it never establishes membership, authority or personhood by itself.
 
 ### Scale Through Networks
 
@@ -62,14 +65,14 @@ Imagine you're evaluating a contributor to an open-source project:
 1. They present an identifier they have chosen to make `directed` or `public` for this purpose
 2. You look up their credentials in the graph
 3. You find they have VRCs with three people you already trust
-4. Those people have endorsement credentials attesting to their coding skills
-5. Two of those endorsements have witness credentials from an in-person meetup
+4. Those people have `endorses/1` statements attesting to their coding skills
+5. Two of those relationships carry `witnessed/1` statements from an in-person meetup
 
 You've now established a multi-path, multi-evidence trust assessment — all without a central authority, all cryptographically verifiable. Where the parties share a community, the holder can additionally construct a community-anchored ZKP. The [[verifiable-trust-infrastructure|VTI]] draws this graph, distinguishing half-edges from complete edges (#1073, #1213).
 
 ## The DTG Specification
 
-The credential types that populate the DTG are defined by the **Trust Over IP Foundation's DTG Working Group Credentials Task Force** in the [[dtg-credential-spec|DTG Core Credentials specification]] — a formal ToIP deliverable at **v1.0 Working Draft 02** (tagged 2026-09-07), with `main` heading for Working Draft 0.4.0. It gives *node* and *edge* their glossary definitions: a **DTG node** is an entity identified by at least one DTG verifiable identifier and reachable via a [[vta-topology|VTA]]; a **DTG edge** is a cryptographically verifiable trust relationship between two nodes, formed by a pair of edge credentials. One boundary the spec draws explicitly: a VMC binds a member to a node that *has members* — a person is not a collective, and "membership in a person" is a VRC or a VDC, never a VMC. The [[dtg-credentials|dtg-credentials]] library provides the Rust implementation. See [[dtg-credentials-overview]] for the complete taxonomy and [[credential-categories]] for the functional classification.
+The credential types that populate the DTG are defined by the **Trust Over IP Foundation's DTG Working Group Credentials Task Force** in the [[dtg-credential-spec|DTG Credentials Core Specification]] — a formal ToIP deliverable at **Version 1.0, Working Draft 0.6.0** (2026-09-28; tags `v0.4.0`, `v0.5.0`), whose v1 context, `issuerScope` and registry predicates every Eucalyptus implementation now speaks ([[dtg-credentials-overview]]). It gives *node* and *edge* their glossary definitions: a **DTG node** is an entity identified by at least one DTG verifiable identifier and reachable via a [[vta-topology|VTA]]; a **DTG edge** is a cryptographically verifiable trust relationship between two nodes, formed by a pair of edge credentials. One boundary the spec draws explicitly: a VMC binds a member to a node that *has members* — a person is not a collective, and "membership in a person" is a VRC or a VDC, never a VMC. The [[dtg-credentials|dtg-credentials]] library provides the Rust implementation. See [[dtg-credentials-overview]] for the complete taxonomy and [[credential-categories]] for the functional classification.
 
 ## Why Decentralized?
 

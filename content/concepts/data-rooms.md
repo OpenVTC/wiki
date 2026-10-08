@@ -2,13 +2,13 @@
 title: "Data Rooms"
 type: concept
 tags: [rooms, data-rooms, mls, shared-memory, agents, dtg-credentials, vac, portability, host-neutral, browser]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 sources: [verifiable-trust-infrastructure, dtg-credentials, dtg-credential-spec, vta-browser-plugin]
 ---
 
 # Data Rooms
 
-A **data room** is a shared, credential-governed, end-to-end-encryptable space — a set of records readable and writable by exactly the parties the *room itself* admits. It is the first construct in the ecosystem that is neither a person nor a community: a room has its own DID, issues its own [[dtg-credentials-overview|DTG credentials]], and can move from one host to another without a single credential being reissued. Rooms landed in the [[verifiable-trust-infrastructure|VTI]] between 2026-09-03 and 2026-09-17 and are the headline of the `Eucalyptus` release candidate ([[coordinated-releases]]).
+A **data room** is a shared, credential-governed, end-to-end-encryptable space — a set of records readable and writable by exactly the parties the *room itself* admits. It is the first construct in the ecosystem that is neither a person nor a community: a room has its own DID, issues its own [[dtg-credentials-overview|DTG credentials]], and can move from one host to another without a single credential being reissued. Rooms landed in the [[verifiable-trust-infrastructure|VTI]] between 2026-09-03 and 2026-09-17, were the headline of the `Eucalyptus` release candidate, and shipped in the `VTI-Eucalyptus` release of 2026-10-07 ([[coordinated-releases]]).
 
 ## Why rooms exist
 
@@ -35,3 +35,5 @@ The second motivation is the one that shaped the architecture: **the host must n
 ## Where it stands
 
 Crates: `vti-rooms` (storage, wire types, authorization — depends only on `vti-common`), `vti-rooms-dtg` (the DTG chain verifier, kept separate so a host can reuse storage without a credential library), `room-host` (binary), `vti-rooms-wasm` (npm-bound, unpublished). The design went through three revisions and two security reviews before the first code merged on 2026-09-03 (#1237); by 2026-09-17 there had been roughly fifty PRs and vti-rooms was at 0.2.9. The `pnm rooms {create,list,get,put,curate,renew}` CLI is the member surface. Still open: the `private` tier's ZK profile, a pull-shaped join for members with no inbox, cryptographic deletion as a verb, and the remaining leg of the epoch chain into an agent's VTA. The crate READMEs say it plainly: *early; the API will change.*
+
+**As of Eucalyptus (2026-10-07).** Rooms were the one headline of the release candidate that then stood still while the rest of the stack moved: between 2026-09-18 and the tag, `vti-rooms` went from 0.2.22 to 0.11.0 and `vti-rooms-dtg` to 0.13.0, but the changelog entries are empty — these are version bumps carried by the workspace's dependency churn (DTG Credentials v1, data-integrity 0.8, trust-tasks-rs 0.22 → 0.27), not room features. The substantive changes are small and all on the host side: `room-host` acknowledges a frame it refuses rather than leaving the sender to time out (#1569), records duplicate executions (#1571), and warns on unknown configuration keys (#1678). The browser wallet's rooms console (`packages/core/src/rooms/`) was not touched in the window, and `private` rooms are still stored but refused pending the same-subject ZK profile. Everything above describes the shipped state.

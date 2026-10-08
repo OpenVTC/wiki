@@ -2,17 +2,17 @@
 title: "Delegation Credential (VDC)"
 type: concept
 tags: [credentials, dtg, delegation, agents, edge, spec]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 sources: [dtg-credential-spec, dtg-credentials]
 ---
 
 # Delegation Credential (VDC)
 
-The Verifiable Delegation Credential attests that one entity (the **delegator**) has appointed another (the **delegate**) to act **in the delegator's name**, for a bounded set of acts, for a limited period, revocably. It is the third [[credential-categories|Edge Credential]], added in Working Draft 02 of the [[dtg-credential-spec|spec]] (PR #19, 2026-09-06), and the credential that lets the graph say "this agent may act for this person — within these bounds."
+The Verifiable Delegation Credential attests that one entity (the **delegator**) has appointed another (the **delegate**) to act **in the delegator's name**, for a bounded set of acts, for a limited period, revocably. It is the third [[credential-categories|Edge Credential]], added in Working Draft 02 of the [[dtg-credential-spec|spec]] (PR #19, 2026-09-06) and unchanged in substance through Working Draft 0.6.0, and the credential that lets the graph say "this agent may act for this person — within these bounds."
 
 ## Why it exists
 
-The spec's glossary had assumed delegation for months — a persona is controlled by "the person it identifies (or their delegate)" — and AI agents are first-class DTG nodes. But every WD01 credential *attests* that something is true; none *establishes* that one party may stand in for another. Establishing representation needs verification steps that evaluating a claim does not: scope containment, chain resolution, invocation binding, timely revocation. A distinct type string forces a verifier onto that path.
+The spec's glossary had assumed delegation for months — a persona is controlled by "the person it identifies (or their delegate)" — and AI agents are first-class DTG nodes. But every WD01 credential *attests* that something is true; none *establishes* that one party may stand in for another. Establishing representation needs verification steps that evaluating a claim does not: scope containment, chain resolution, invocation binding, timely revocation. A distinct type string forces a verifier onto that path — the same statement-versus-establishment test the [[statement-credential|VSC]] later generalized.
 
 ## Delegation is not authority
 
@@ -20,7 +20,7 @@ The line the spec draws hardest, and the one that decides which credential to re
 
 | Question | Credential | The act is attributed to |
 |---|---|---|
-| May this party do this thing, *as itself*? | [[authority-credential|VAC]] | the party itself |
+| May this party do this thing, *as itself*? | [[authority-credential\|VAC]] | the party itself |
 | May this party act *in another's name*? | **VDC** | the entity it stands in for |
 
 Neither implies the other. A service with access to a mailbox may read it as itself; it has not been appointed to send mail in the owner's name. A delegate appointed to correspond in someone's name holds that appointment whether or not it has a mailbox — and without one, gets nowhere. Guardianship, succession and similar mandates are *not* expressed by a VDC.
@@ -30,9 +30,10 @@ Neither implies the other. A service with access to a mailbox may read it as its
 ## What it contains
 
 - `type` includes `DelegationCredential`; `issuer` is the delegator (a person, device, agent, a VTC delegating to a service, or a persona identifier); `credentialSubject.id` is the delegate
+- `issuerScope` — REQUIRED ([[correlation-scope]]). A VDC is presented to every verifier the delegate acts toward, each of whom sees the delegator's identifier, so a grant's issuer can seldom truthfully declare `pairwise`; **`directed` is the ordinary declaration**
 - `delegation.scope` — the acts, as opaque strings from the governing VTC/VTN vocabulary, compared by exact equality; REQUIRED and non-empty on a grant
 - `delegation.parent` — digest of the VDC this one derives from; absent means a **root delegation**
-- `delegation.maxDepth` — further re-delegations permitted; absent or `0` prohibits it. **Single-hop is the default**; a value above `0` is the delegator's only way to authorise re-delegation
+- `delegation.maxDepth` — further re-delegations permitted; absent or `0` prohibits it. **Single-hop is the default**; a value above `0` is the delegator's only way to authorize re-delegation
 - `delegation.accepts` — on the acceptance only: digest of the grant being accepted
 - `validUntil` REQUIRED; `credentialStatus` CONDITIONAL
 
@@ -46,7 +47,7 @@ The grant is a credential; the **invocation** — "the delegate is acting in the
 
 Where a VDC carries `parent`, the verifier evaluates the whole chain: every link valid on its own; each `scope` a subset of its parent's; no `validUntil` later than the parent's; depth bounded by every ancestor's `maxDepth`; a root issued by the principal the verifier intends to deal with. Presenting a derived VDC discloses the whole ancestry, principal included — one more reason single-hop is the default and chain validity is a candidate [[zero-knowledge-proofs|ZK predicate]].
 
-**Invocation Binding: a VDC is not a bearer token.** A verifier MUST NOT accept a party as acting in the delegator's name unless it demonstrates control of `credentialSubject.id` at the time of the request; how that is carried belongs to the Trust Task Protocols spec.
+**Invocation Binding: a VDC is not a bearer token.** A verifier MUST NOT accept a party as acting in the delegator's name unless it demonstrates control of `credentialSubject.id` at the time of the request; a VDC presented without that demonstration is evidence that a delegation exists, not that the presenter is the delegate. How the demonstration is carried belongs to the Trust Task Protocols spec. The [[authority-credential|VAC]] adopted the same rule, and lost its `audience` field to it.
 
 **Revocation prefers expiry.** A verifier must establish that an appointment is in force *without contacting the delegator*: either a `validUntil` short enough that expiry bounds exposure, with withdrawal by declining to re-issue, or a `credentialStatus` it can check. Status is REQUIRED only where validity exceeds the governing freshness window, because a status lookup is a live correlation surface — whoever hosts the list learns which verifier checked which credential, and when.
 
@@ -56,6 +57,6 @@ A [[personhood-credential|PHC]] says its holder is one real person. Because a de
 
 ## Implementation status
 
-[[dtg-credentials]] 0.6.0 shipped `new_vdc` as little more than a type string. 0.7.0 (WD02) made it real: `DelegationGrant`, `new_delegate_vdc` (the acceptance, from the grant's wire form), `accepts()`, opt-in `redelegate`, and `delegation::verify_chain`, which returns the principal and appointed acts — deliberately not whether the act is permitted. 0.9.1 added Invocation Binding (the leaf must appoint the *presenter*); 0.10.0 (on `main`) replaced `new_delegate_vdc` with `new_delegate_vdc_for`, which refuses a grant that does not name the party answering it. `credentialStatus` is settable but never resolved. In the [[data-rooms|data-room]] example a member appoints a service by VDC alongside an agent equipped by attenuated VAC — "the same member, two credentials, and a verifier that can always tell which it was shown."
+[[dtg-credentials]] 0.6.0 shipped `new_vdc` as little more than a type string. 0.7.0 (WD02) made it real: `DelegationGrant`, the acceptance constructor, `accepts()`, opt-in `redelegate`, and `delegation::verify_chain`, which returns the principal and appointed acts — deliberately not whether the act is permitted. 0.9.1 added Invocation Binding (the leaf must appoint the *presenter*); 0.10.0 replaced `new_delegate_vdc` with `new_delegate_vdc_for`, which refuses a grant that does not name the party answering it; **0.12.0** (2026-09-30) removed the deprecated constructor, moved the VDC to the v1 context and added `issuer_scope` to `new_vdc`, `new_delegate_vdc_for` and `redelegate`. `credentialStatus` is settable but never resolved. No VTI or OpenVTC flow issues VDCs yet; the [[data-rooms|data-room]] design has a member appoint a service by VDC alongside an agent equipped by attenuated VAC — "the same member, two credentials, and a verifier that can always tell which it was shown."
 
 See also: [[authority-credential]], [[credential-categories]], [[dtg-credentials-overview]], [[personhood-credential]], [[trust-task-context-binding]]

@@ -2,7 +2,7 @@
 title: "Verifiable Trust Networks (VTNs)"
 type: concept
 tags: [vtn, network, community, hierarchy, trust]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 sources: [dtg-credential-spec]
 ---
 
@@ -35,8 +35,8 @@ This means the [[decentralized-trust-graph|Decentralized Trust Graph]] supports 
 ## Invitations
 
 For [[invitation-credential|Invitation Credentials (VICs)]], VTNs can authorize onboarding at multiple levels:
-- A VTN's C-DID can invite a VTC to join the network
-- A member VTC's C-DID can invite another VTC on behalf of the network
+- The VTN's own identifier (declared `public`) can invite a VTC to join the network
+- A member VTC's identifier can invite another VTC on behalf of the network (per the VTN's policy)
 
 ## Why VTNs Matter
 
@@ -44,7 +44,7 @@ VTNs enable trust to scale beyond individual communities. If two people belong t
 
 ## Edge Verifiability: the VTN as one anchor set among many (WD02)
 
-Working Draft 01's glossary said a VRC was "only verifiable as a DTG edge in the context of a specific VTN" if both peers used M-DIDs, both had signed the VRC, and their VTCs were VTN trust anchors. Two implementations reported that this contradicted the body and that one condition — both peers signing one credential — could not be satisfied by any credential. WD02 (spec PR #26) replaced it with a normative **Edge Verifiability** section that defines the property **relative to a verifier**: an edge credential is verifiable as a DTG edge *by a given verifier* when its proof verifies and the verifier can establish that its issuer's membership in a VTC **in the anchor set that verifier accepts** is complete — by disclosure of the VMC pair or by a community-anchored [[zero-knowledge-proofs|ZKP]]. A VTN is the *common* case of such an anchor set, but no VTN need exist, and an edge whose halves trace to VTCs in different VTNs (or none) is still an edge to any verifier whose anchor set includes both. The same credential may be an edge to one verifier and not another, and neither is wrong. This is the per-verifier phrasing the ZKP task force's reference circuits already use.
+Working Draft 01's glossary said a VRC was "only verifiable as a DTG edge in the context of a specific VTN" if both peers used M-DIDs, both had signed the VRC, and their VTCs were VTN trust anchors. Two implementations reported that this contradicted the body and that one condition — both peers signing one credential — could not be satisfied by any credential. WD02 (spec PR #26) replaced it with a normative **Edge Verifiability** section that defines the property **relative to a verifier**: an edge credential is verifiable as a DTG edge *by a given verifier* when its proof verifies and the verifier can establish that its issuer's membership in a VTC **in the anchor set that verifier accepts** is complete — by disclosure of the VMC pair or by a community-anchored [[zero-knowledge-proofs|ZKP]]. A VTN is the *common* case of such an anchor set, but no VTN need exist, and an edge whose halves trace to VTCs in different VTNs (or none) is still an edge to any verifier whose anchor set includes both. The same credential may be an edge to one verifier and not another, and neither is wrong. This is the per-verifier phrasing the ZKP task force's reference circuits already use, and Working Draft 0.5.0 (#55) kept *edge credential* as the spec's one normative class precisely because Edge Verifiability depends on it.
 
 ## Vocabulary
 

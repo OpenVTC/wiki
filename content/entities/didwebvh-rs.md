@@ -2,7 +2,7 @@
 title: "didwebvh-rs — did:webvh Rust Implementation"
 type: entity
 tags: [didwebvh, did, library, dif, secondary]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 repo: https://github.com/decentralized-identity/didwebvh-rs
 ---
 
@@ -10,7 +10,14 @@ repo: https://github.com/decentralized-identity/didwebvh-rs
 
 *Repo: [github.com/decentralized-identity/didwebvh-rs](https://github.com/decentralized-identity/didwebvh-rs)*
 
-A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version **0.7.0** (September 2026), which made resolution *public-hosts-only by default* — a breaking change for local stacks.
+A Rust library providing the reference implementation of the [[did-webvh|did:webvh]] DID method, conforming to the v1.0 specification from the Decentralized Identity Foundation (DIF). Currently at version **0.8.0** (2026-10-01), a no-behavior-change release whose only purpose is to carry `affinidi-data-integrity` 0.8 (and so `affinidi-bbs` 0.4) through this crate's public API. The last behavioral release is **0.7.0** (September 2026), which made resolution *public-hosts-only by default* — a breaking change for local stacks.
+
+| Coordinated release ([[coordinated-releases]]) | Cypress (08-17) | VTI-Dogwood / R1 (08-30 / 09-01) | VTI-Eucalyptus-RC-0 (09-17) | VTI-Eucalyptus (10-07) |
+|---|---|---|---|---|
+| didwebvh-rs consumed by the [[affinidi-tdk\|TDK]] resolver | 0.6 (0.6.0) | 0.6 (0.6.1) | 0.7 (0.7.0) | **0.8 (0.8.0)** |
+| didwebvh-rs declared by [[affinidi-webvh-service\|did-hosting-service]] | 0.6 | 0.6 | 0.6 (lockfile also 0.7 via vta-sdk) | 0.7 |
+
+This repository carries no coordinated tags of its own; the row above is read off the consumers' manifests at each tag.
 
 ## What It Provides
 
@@ -32,16 +39,28 @@ Key design features:
 - **WASM-friendly** — resolution-only builds work in WebAssembly environments (only the name checks of the host policy apply there — DNS is not observable in a browser)
 - **Feature flags** — TLS backend selection (`rustls`, `native-tls`), optional `ssi` crate integration, CLI flows
 - **Embeddable CLI** — interactive terminal flows for third-party applications to integrate did:webvh operations
+- **Public dependency on `affinidi-data-integrity`** — the `Signer` trait, `DataIntegrityProof` and `CryptoSuite` types appear throughout the API (`create_log_entry`, `update_document`, `rotate_keys`, `deactivate`, `LogEntry1_0`, `WitnessProof`, `WitnessVerifyOptions`), so a data-integrity major-line move is a breaking release here too — the reason 0.8.0 exists
+- **Deactivation is reported, not refused** — a log that ends in a clean deactivation still resolves `Ok` with the final document, and the deactivation is flagged only in `MetaData::deactivated`. Consumers that want a retired DID to stop authenticating must read that flag; both the [[affinidi-tdk|TDK]] resolver (#907) and [[affinidi-webvh-service|did-hosting-service]] (#252) learned this the hard way in late September 2026
 
 ## Role in the Ecosystem
 
 This is a foundational building block. The [[affinidi-tdk|Affinidi TDK]] uses it for DID resolution, the [[affinidi-webvh-service]] builds hosting infrastructure on top of it, and the [[verifiable-trust-agent|VTA]] uses it for DID management. Any component that creates, resolves, or verifies a did:webvh identifier depends on this library.
 
+Where consumers stand at the `VTI-Eucalyptus` tag (2026-10-07): the TDK's `affinidi-did-resolver-cache-sdk` 0.8.41, `cache-server` 0.9.15 and `did-scid` 0.3.0 are on **0.8** (TDK #917, "step 3a of the 0.8 wave"), as is `vta-sdk` ≥ 0.61; did-hosting-service declares **0.7** (its #251 moved `didwebvh-rs` 0.6 → 0.7 together with the rest of its VTA / Trust Tasks / messaging set) and reads the signer's own log through it for its deactivation check; the trust-tasks-rs 0.26+ line (`trust-tasks-proof`, dtgwg-trust-tasks-tf) is on data-integrity 0.8 and therefore compatible with 0.8 only. The two lines coexist in a lockfile without conflict, because this crate's types do not cross between them.
+
 ## Recent Development
 
-The library is in maintenance-and-hardening mode: after the security-audit and spec-compliance releases of May–June and the June fuzzing infrastructure, July 2026 brought a parse-time spec fix (0.5.7) and a pre-release audit sweep promoted to **0.6.0** for its small breaking API changes. The August–September 2026 window (four PRs, #51–#54) added a spec-conformance fix (**0.6.1**) and one genuinely breaking security release (**0.7.0**, host policy) — the latter driven by the ecosystem-wide SSRF review (SEC-4045) that also produced the TDK's `affinidi-net-guard` crate and ADR 0006, whose stated design constraint is that the guard must be consumable *by this crate* (hence no `affinidi-*` dependencies). Consumers on 0.7 as of 2026-09-18: the [[affinidi-tdk|TDK]] resolver (`cache-sdk` 0.8.37, `cache-server` 0.9.13, `did-scid` 0.2.7 — #789, 09-12) and `vta-sdk` ≥ 0.38; [[affinidi-webvh-service|did-hosting-service]] still declares `didwebvh-rs = "0.6"` directly (its lockfile carries both 0.6.1 and 0.7.0 via the VTA SDK) — its edge servers deliberately re-verify synced logs only structurally because "an edge re-running it would reject logs an older didwebvh-rs accepted".
+The library is in maintenance-and-hardening mode: after the security-audit and spec-compliance releases of May–June and the June fuzzing infrastructure, July 2026 brought a parse-time spec fix (0.5.7) and a pre-release audit sweep promoted to **0.6.0** for its small breaking API changes. The August–September 2026 window (four PRs, #51–#54) added a spec-conformance fix (**0.6.1**) and one genuinely breaking security release (**0.7.0**, host policy) — the latter driven by the ecosystem-wide SSRF review (SEC-4045) that also produced the TDK's `affinidi-net-guard` crate and ADR 0006, whose stated design constraint is that the guard must be consumable *by this crate* (hence no `affinidi-*` dependencies). The 2026-09-18 → 10-07 window was the quietest in months — a single PR (#55) — and that one is a dependency move rather than a feature: **0.8.0** exists because `affinidi-data-integrity` 0.8.0 exists, and that exists because the TDK had published 0.7.14 as a patch while changing a public type (see [[affinidi-tdk]]). There is no 0.7.x patch line: 0.7.0 is the only 0.7 release (#54's yanked-`wnaf` bump shipped inside it). Hosting-side, did-hosting-service's edge servers still re-verify synced logs only structurally, for the reason recorded in August — "an edge re-running it would reject logs an older didwebvh-rs accepted" — although since #213 the edge *does* verify each synced log's proof chain and strict extension of the held log.
 
-Tag housekeeping worth knowing: the `v0.6.0` git tag was only pushed on 2026-08-28 (the commit is from 07-19), and `v0.6.1` / `v0.7.0` were both tagged on 09-11.
+Tag housekeeping worth knowing: the `v0.6.0` git tag was only pushed on 2026-08-28 (the commit is from 07-19), `v0.6.1` / `v0.7.0` were both tagged on 09-11, and as of 2026-10-07 **there is no `v0.8.0` git tag** — the tag list ends at `v0.7.0` while `Cargo.toml` and the CHANGELOG say 0.8.0 and the TDK consumes it from crates.io.
+
+### v0.8.0 — 2026-10-01 — `affinidi-data-integrity` 0.8 (#55)
+
+**Why.** `affinidi-data-integrity` 0.7.14 had moved to `affinidi-bbs` 0.4 as a *patch*, on the claim that no BBS type was in its public API; the claim was wrong (fourteen functions take `affinidi_bbs::{PublicKey, SecretKey, Signature, Proof}`), and downstream code on `^0.7` with `affinidi-bbs` 0.3 stopped compiling. The TDK re-released the same code as **0.8.0** (its #916) and every crate that re-exports data-integrity types had to follow. This crate is one of them, so it moved a minor.
+
+- **Breaking**: requires `affinidi-data-integrity` 0.8 (and so `affinidi-bbs` 0.4). The `Signer` re-exported from `prelude`, the `&dyn Signer` taken by `create_log_entry` / `update_document` / `rotate_keys` / `deactivate`, the `DataIntegrityProof`s in `LogEntry1_0`, `LogEntry1_0Pre` and `WitnessProof`, and the `CryptoSuite`s in `WitnessVerifyOptions` are all now the 0.8 types; a signer or proof built against 0.7 is a different type. **No behavior change.**
+- **Maintenance**: test assertions rewritten (`assert_ne!(x, "")` for `assert!(!x.is_empty())`) for the `clippy::assert_is_empty` lint new in Rust 1.99, which was failing the `-D warnings` clippy job on `stable`.
+- **Downstream**: TDK `did-scid` 0.3.0 (its `DIDSCIDError` wraps this crate's error, so breaking) and `cache-sdk` 0.8.41 / `cache-server` 0.9.15 (patch — neither exposes the type) took it the same day (#917); the `affinidi-tdk` facade briefly pinned `did-scid` 0.2.8 from crates.io (0.21.1) so there would be "one breaking tdk release, not two", then moved in 0.22.0.
 
 ### v0.7.0 — 2026-09-11 — resolution host policy + injectable HTTP client (#53, #54)
 
@@ -84,14 +103,14 @@ Originally planned as 0.5.8, promoted to a minor because of breaking changes. MS
 ### v0.5.4 — 2026-06-07 — witness IDs as `did:key` + dep refresh
 
 - Closes [#42](https://github.com/decentralized-identity/didwebvh-rs/issues/42). Pre-existing logs from spec-compliant implementations continue to resolve unchanged; no public-API breakage.
-- **Witness `id` is now serialized as a `did:key`** per didwebvh 1.0 §"Witnesses". A `Witness` built from a bare multibase key (`z6Mk…`) used to serialize the raw key, producing non-spec logs (the test-suite `witness-threshold` / `witness-update` vectors showed `"id":"z6Mk…"` instead of `"id":"did:key:z6Mk…"`). `Witness` now canonicalises its `id` on both serialise and deserialise. Canonicalisation is a no-op on an already-`did:key` id, so spec-compliant logs round-trip byte-for-byte and their `entryHash` still verifies. `Witnesses::validate()` dedupes on the canonical form; a new `Witness::new()` constructor applies the same normalisation.
+- **Witness `id` is now serialized as a `did:key`** per didwebvh 1.0 §"Witnesses". A `Witness` built from a bare multibase key (`z6Mk…`) used to serialize the raw key, producing non-spec logs (the test-suite `witness-threshold` / `witness-update` vectors showed `"id":"z6Mk…"` instead of `"id":"did:key:z6Mk…"`). `Witness` now canonicalizes its `id` on both serialize and deserialize. Canonicalization is a no-op on an already-`did:key` id, so spec-compliant logs round-trip byte-for-byte and their `entryHash` still verifies. `Witnesses::validate()` dedupes on the canonical form; a new `Witness::new()` constructor applies the same normalisation.
 - `affinidi-data-integrity` 0.6 → 0.7; transitive trees pruned (`reqwest`, `hyper 0.14`, `rustls 0.21`, `bitflags 1.x`).
 
 ### v0.5.3 — 2026-05-24 — security: 15 patches from cross-implementation audit
 
 Closes [#39](https://github.com/decentralized-identity/didwebvh-rs/issues/39), a cross-implementation review across the four open-source `did:webvh` resolvers. No public-API breakage; consumers on `0.5.x` should upgrade. MSRV 1.94.0 → 1.95.0.
 
-- **Mismatched `did:key` body/fragment in log-entry proof authorization.** `check_signing_key_authorized()` only compared the proof `verificationMethod`'s *fragment* against `updateKeys`, while signature verification decoded the public key from the *body*. An attacker could set `verificationMethod = "did:key:<attacker-mb>#<authorized-mb>"` — fragment matched an authorised key so authorisation passed, signature verified against the attacker's key. Allowed anyone to forge arbitrary log entries for any `did:webvh` DID. Now requires exactly `did:key:{mb}#{mb}` where `{mb}` is an authorised multibase, so authorised key and verification key are guaranteed identical.
+- **Mismatched `did:key` body/fragment in log-entry proof authorization.** `check_signing_key_authorized()` only compared the proof `verificationMethod`'s *fragment* against `updateKeys`, while signature verification decoded the public key from the *body*. An attacker could set `verificationMethod = "did:key:<attacker-mb>#<authorized-mb>"` — fragment matched an authorized key so authorization passed, signature verified against the attacker's key. Allowed anyone to forge arbitrary log entries for any `did:webvh` DID. Now requires exactly `did:key:{mb}#{mb}` where `{mb}` is an authorized multibase, so authorized key and verification key are guaranteed identical.
 - **Disable HTTP redirects in DID resolution** (SSRF). `reqwest` followed up to 10 redirects by default. A malicious host serving a `did:webvh` DID could 302-redirect the `did.jsonl` / `did-witness.json` fetch to an internal address (cloud metadata endpoint, localhost, RFC1918), bypassing `WebVHURL::parse_did_url()`'s IP-address rejection. Native client now sets `redirect(Policy::none())`. WASM path unchanged (governed by browser fetch/CORS).
 - **Reject duplicate witness IDs** (threshold bypass). `Witnesses::validate()` checked count vs threshold but not duplicates; `WitnessProofCollection::validate_log_entry()` counts once per listed witness, so a controller could declare `threshold: 3, witnesses: [W1, W1, W1]` and meet threshold with one cooperating witness.
 - **Reject path-traversal segments in DID → HTTP URL conversion.** `did:webvh:<scid>:example.com:..:..:other` resolved to `https://example.com/../../other/did.jsonl`. `.`, `..`, empty segments, and segments containing `/` are now rejected.
@@ -122,4 +141,4 @@ Closes [#39](https://github.com/decentralized-identity/didwebvh-rs/issues/39), a
 
 - Removed yanked core2/multihash transitive dependency
 
-See also: [[did-webvh]], [[affinidi-webvh-service]], [[affinidi-tdk]]
+See also: [[did-webvh]], [[affinidi-webvh-service]], [[affinidi-tdk]], [[coordinated-releases]]

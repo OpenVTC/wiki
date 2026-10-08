@@ -2,7 +2,7 @@
 title: "Decentralized Identifiers (DIDs)"
 type: concept
 tags: [did, identity, w3c, standards]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 sources: [verifiable-trust-infrastructure, openvtc, didwebvh-rs, affinidi-tdk, affinidi-webvh-service, dtg-credential-spec]
 ---
 
@@ -77,6 +77,10 @@ Beyond the three methods above, the TDK resolves `did:web`, `did:jwk`, `did:scid
 ### Resolution is public-hosts-only by default (September 2026)
 
 A DID document is a list of places to connect to, and for web-hosted methods the DID itself names a host to fetch from. In the SEC-4045 hardening sweep of 2026-09-10 → 09-12 the whole stack adopted the same rule: a resolver, a mediator client or a browser DIDComm stack will only fetch a `did:web` / `did:webvh` log from, and only open a connection to, a **public** host. [[didwebvh-rs]] 0.7.0 made `HostPolicy::PublicOnly` the default (special-use names blocked, a guarded DNS resolver, no proxy); the TDK, the VTI, [[openvtc|OpenVTC]] and [[vti-didcomm-js]] each refuse private, loopback and link-local hosts unless explicitly allowed. The reason is server-side request forgery: a DID document that anyone can publish must not be able to steer a VTA, a mediator or a wallet into probing the network it runs on. Local development needs the private-hosts allowance switched on deliberately.
+
+### A deactivated DID resolves to nothing (October 2026)
+
+The `VTI-Eucalyptus` release (2026-10-07) closed a quieter gap in the same SEC-4045 series: a `did:webvh` (or `did:scid:vh`) whose log ends in deactivation had still *resolved* — to its last document — so a signature by a key that controller had deliberately retired could still verify. The TDK resolver (0.8.39, #907, 2026-09-29) no longer resolves a deactivated DID at all; VTI (#1881), [[openvtc|OpenVTC]] (#400) and the predicate-credential-system repository took the fix the same week, and the [[affinidi-webvh-service|did-hosting-service]] refuses a deactivated signer as final (#252). In the same pass `did:web` and `did:ebsi` refuse a document whose `id` does not match the DID that was asked for (#911). Resolution is no longer only *where* a document may be fetched from, but *whether the identifier is still alive*.
 
 ## The Relationship Between DIDs and Keys
 
