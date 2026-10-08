@@ -2,7 +2,7 @@
 title: "did:webvh — Web DIDs with Verifiable History"
 type: concept
 tags: [did, did-webvh, identity, dif]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 sources: [didwebvh-rs, affinidi-webvh-service, openvtc, dtg-credential-spec]
 ---
 
@@ -80,5 +80,7 @@ Working Draft 02 of the [[dtg-credential-spec|DTG Core Credentials spec]] switch
 
 - [[didwebvh-rs]] — the Rust library implementing the did:webvh specification (creation, resolution, update, validation, witness management)
 - [[affinidi-webvh-service]] — the production service infrastructure for hosting and resolving did:webvh identifiers at scale
+
+**As of Eucalyptus (2026-10-07).** The library itself was quiet: [[didwebvh-rs]] **0.8.0** (#55, 2026-10-01) moves to `affinidi-data-integrity` 0.8 and `affinidi-bbs` 0.4 with no behavior change, and the public-hosts-only `HostPolicy` default dates from 0.7.0 (2026-09-11), not this release. The changes that matter to a did:webvh holder landed around it. A **deactivated** did:webvh no longer resolves (TDK resolver #907; VTI #1881), and the [[affinidi-webvh-service|did-hosting-service]] refuses a deactivated signer as final (#252) — a retired identifier can no longer sign anything that verifies. The hosting service moved its control plane, edge and witness to Trust Tasks only and removed its REST management surfaces (#218–#238), requires a proof bound to the sender on every task (#213), and gained passkey enrollment and step-up as Trust Tasks (#236, #243, #250) — the same "signed, proof-bound, governed" shape the rest of the release took. On the VTA side, `versionTime` log updates are serialized so two concurrent updates cannot race the log (VTI #1599), webvh keys rotate in place (#1734), and `webvh/dids/create/1.1` reports `serverless` for a DID hosted without a service (#1886).
 
 See also: [[decentralized-identifiers]], [[didwebvh-rs]], [[affinidi-webvh-service]]

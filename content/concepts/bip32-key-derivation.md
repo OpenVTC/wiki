@@ -2,7 +2,7 @@
 title: "BIP-32 Key Derivation"
 type: concept
 tags: [cryptography, keys, bip32, bip39, post-quantum]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 sources: [verifiable-trust-infrastructure, verifiable-trust-agent, openvtc]
 ---
 
@@ -79,6 +79,8 @@ The [[verifiable-trust-agent|VTA]] adds another layer: it acts as a signing orac
 
 Derivation from one seed is the rule, but the [[verifiable-trust-agent|VTA]] now deliberately holds two kinds of key *outside* the tree: **non-extractable internal signing keys** — generated from a CSPRNG with no derivation path, stored in their own keyspace that is excluded from backup, never exportable (admin is not a bypass), and forbidden as did:webvh update keys — for cases where "this key can never leave this VTA" matters more than "this key can be recovered from the mnemonic"; and **imported** Ed25519 keys, for a deterministic did:key that must match a key created elsewhere. The derivation code itself also moved in-tree (SLIP-0010, dropping the `ed25519-dalek-bip32` dependency) when the workspace moved to curve25519-dalek 5. Post-quantum *internal* keys are refused for now: whether a VTA should hold an unrecoverable ML-DSA key is a decision not yet taken.
 
-A third note cuts the other way: "recoverable from the mnemonic" is not the same as "exportable". Since September 2026 any key can be marked **`exportable: false`** so it can only ever be *used* through the signing oracle, never read out (#1401, #1407), and the misnamed, unspecced, global-admin-gated `seeds/export-mnemonic` was retired in favour of **`keys/export-secret`**, which exports one named key and respects that flag (#1404). The seed still backs everything up; an operator simply no longer has a blanket way to pull key material out of a running VTA.
+A third note cuts the other way: "recoverable from the mnemonic" is not the same as "exportable". Since September 2026 any key can be marked **`exportable: false`** so it can only ever be *used* through the signing oracle, never read out (#1401, #1407), and the misnamed, unspecced, global-admin-gated `seeds/export-mnemonic` was retired in favor of **`keys/export-secret`**, which exports one named key and respects that flag (#1404). The seed still backs everything up; an operator simply no longer has a blanket way to pull key material out of a running VTA.
+
+As of the `VTI-Eucalyptus` release (2026-10-07) that rule has a worked example and a sharper edge. `key-export` is its own capability on an agent's ACL entry rather than a side effect of admin (VTI #1619, #1715; the [[vta-browser-plugin|browser wallet]] grants it per holder, #282–#285), and the first consumer that used to *need* it no longer does: `did-git-sign` had exported the Ed25519 seed on every commit, and now asks the VTA to sign the commit's digest in place through `keys/sign-sshsig/0.1` (#1957), with a credential narrowed to exactly that — see [[community-git-namespaces]]. The mnemonic layer itself moved to `bip39` 3.0 (#1826) with no change to derivation.
 
 See also: [[verifiable-trust-agent]], [[decentralized-identifiers]], [[post-quantum-cryptography]]

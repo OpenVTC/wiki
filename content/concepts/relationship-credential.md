@@ -2,7 +2,7 @@
 title: "Relationship Credential (VRC)"
 type: concept
 tags: [credentials, dtg, relationships, trust, edge, zkp]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 sources: [dtg-credential-spec, dtg-credentials, openvtc, verifiable-trust-infrastructure]
 ---
 
@@ -34,7 +34,7 @@ An identifier minted for one relationship and declared `pairwise` is, from its c
 
 ## What a VRC Contains
 
-- **Issuer** — the source party's identifier (`pairwise` RECOMMENDED)
+- **Issuer** — the source party's identifier (`pairwise` RECOMMENDED), with its declared scope in **`issuerScope`** (REQUIRED since Working Draft 0.6.0)
 - **Subject** — the target party's identifier *as used in this relationship*
 - **Type** — `["VerifiableCredential", "DTGCredential", "RelationshipCredential"]`
 - **Validity period**; optional **`taskContext`** ([[trust-task-context-binding]])
@@ -62,6 +62,6 @@ VRCs are the edges that make the trust graph traversable. When evaluating trust 
 
 ## Implementation Status
 
-In [[openvtc|OpenVTC]] since Dogwood (openvtc #254/#255, requiring VTI #1061) a pairwise relationship identifier is the default and the VRC is issued under it — in WD02 terms a `pairwise`-scope identifier per relationship. The [[verifiable-trust-infrastructure|VTI]] distinguishes half-edges (one VRC) from complete edges (both) on the graph (#1073).
+In [[openvtc|OpenVTC]] since Dogwood (openvtc #254/#255, requiring VTI #1061) a pairwise relationship identifier is the default and the VRC is issued under it. Since the DTG Credentials v1 upgrade (openvtc #397, Eucalyptus) every VRC also *says so*: it declares `issuerScope: pairwise` when issued from a per-relationship DID and `directed` when issued from the persona DID, under the v1 context, on [[dtg-credentials]] 0.12. The [[verifiable-trust-infrastructure|VTI]] community service refuses a VRC without `issuerScope` before policy runs, and refuses one that declares `pairwise` but is issued under the member's membership DID; its relationships policy receives `issuer_scope` and derives `identifier_form` (`pairwise`, or `attributed` for `directed`/`public`) from it. The VTI distinguishes half-edges (one VRC) from complete edges (both) on the graph (#1073). Pre-v1 VRCs are set aside on load and counted in the client's Credentials view.
 
 See also: [[zero-knowledge-proofs]], [[dtg-credentials-overview]], [[credential-categories]], [[witnessed-vrc-exchange]], [[correlation-scope]], [[verifiable-trust-network]]

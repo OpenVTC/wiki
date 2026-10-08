@@ -2,13 +2,13 @@
 title: "DID Types in the DTG (retired)"
 type: concept
 tags: [did, taxonomy, identity, dtg, history]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 sources: [dtg-credential-spec, dtg-credentials, openvtc]
 ---
 
 # DID Types in the DTG (retired)
 
-> **The four-way DID taxonomy — C-DID, M-DID, R-DID, P-DID — was retired in Working Draft 02 of the [[dtg-credential-spec|DTG Core Credentials spec]] (PR #30, 2026-09-05).** Its replacement is [[correlation-scope]]: a holder-declared `pairwise` | `directed` | `public` width, with the identifier's *role* read from the credentials it appears in. This page is kept so that older wiki pages, code comments and discussions that still say "M-DID" or "R-DID" can be understood; new writing should use the scope vocabulary.
+> **The four-way DID taxonomy — C-DID, M-DID, R-DID, P-DID — was retired in Working Draft 02 of the [[dtg-credential-spec|DTG Core Credentials spec]] (PR #30, 2026-09-05).** Its replacement is [[correlation-scope]]: a holder-declared `pairwise` | `directed` | `public` width, carried since Working Draft 0.6.0 as the REQUIRED `issuerScope` of every credential the identifier issues, with the identifier's *role* read from the credentials it appears in. This page is kept so that older wiki pages, code comments and discussions that still say "M-DID" or "R-DID" can be understood; new writing should use the scope vocabulary.
 
 ## Why it was retired
 
@@ -34,10 +34,11 @@ The privacy design the old separation encoded survives intact, just stated diffe
 | VMC (acknowledgement) | the member, from the same identifier the grant named | the VTC/VTN |
 | [[relationship-credential\|VRC]] | source party (`pairwise` RECOMMENDED; `directed` permitted) | target party as used in this relationship |
 | [[delegation-credential\|VDC]] | delegator (ideally a `directed` identifier scoped to the context) | delegate |
-| [[invitation-credential\|VIC]] | the VTC/VTN or an authorised member | the identifier the prospect proposes to use |
+| [[invitation-credential\|VIC]] | the VTC/VTN or an authorized member | the identifier the prospect proposes to use |
 | [[persona-credential\|VPC]] | the persona's identifier (`directed`) | the counterparty as used in the relationship |
-| [[endorsement-credential\|VEC]] | endorser | endorsed party |
-| [[witness-credential\|VWC]] | witness (`directed` at minimum) | the *issuer* of the witnessed edge credential |
+| [[statement-credential\|VSC]] — `endorses/1` ([[endorsement-credential\|VEC]]) | endorser | endorsed party |
+| VSC — `witnessed/1` ([[witness-credential\|VWC]]) | witness (`directed` at minimum) | the *issuer* of the witnessed edge credential |
+| VSC — `vetted/1` | an eligible vetter, or the community itself (`directed` at minimum) | the identifier the applicant will join with |
 | [[authority-credential\|VAC]] | the party governing the scope, or an attenuating holder | the party receiving authority |
 
 ## In the OpenVTC implementation
@@ -50,6 +51,6 @@ The privacy design the old separation encoded survives intact, just stated diffe
 | `m/2'/1'/` | WebVH management keys | did:webvh update keys |
 | `m/3'/1'/1'/N` | Relationship keys (one R-DID per relationship) | one `pairwise`-scope identifier per relationship (the default since Dogwood, openvtc #254/#255 on VTI #1061) |
 
-See [[bip32-key-derivation]]. The [[dtg-credentials]] crate dropped the retired names from its documentation in 0.7.0 and implements nothing further for scope, because the spec has not yet named the property that carries a declaration.
+See [[bip32-key-derivation]]. The [[dtg-credentials]] crate dropped the retired names from its documentation in 0.7.0; 0.12.0 implements the declaration itself as `IssuerScope`, and since openvtc #397 the client declares `directed` for the persona DID and `pairwise` for a relationship DID on every credential it issues.
 
 See also: [[correlation-scope]], [[decentralized-identifiers]], [[decentralized-trust-graph]], [[bip32-key-derivation]]

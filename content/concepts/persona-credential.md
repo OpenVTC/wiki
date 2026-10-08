@@ -2,7 +2,7 @@
 title: "Persona Credential (VPC)"
 type: concept
 tags: [credentials, dtg, persona, privacy, zkp]
-date-updated: 2026-09-18
+date-updated: 2026-10-07
 sources: [dtg-credential-spec, dtg-credentials, verifiable-trust-infrastructure]
 ---
 
@@ -16,7 +16,7 @@ The VPC is an [[credential-categories|Annotation Credential]] — it doesn't cre
 
 This means: "I am revealing to you that this persona belongs to the same person you already have a relationship with."
 
-Since Working Draft 02 of the [[dtg-credential-spec|spec]] a persona is no longer "a P-DID" ([[did-types]] is retired). A persona is simply an identifier its holder has declared with a **`directed`** [[correlation-scope]] — "a private persona", known to the set of counterparties the holder chooses and no one else — or `public` for a public persona. The spec puts it well: *a persona is what a `directed` declaration is for.* Membership in a community does not require one; a member who declares `pairwise` toward the community has no persona there, while a member who wants to be recognised as the same person by other members, or across communities, is asserting a persona and declares the identifier `directed` accordingly. Asserting a persona is how a person controls intentional correlation *deliberately*, rather than acquiring it as a side effect of reusing an identifier.
+Since Working Draft 02 of the [[dtg-credential-spec|spec]] a persona is no longer "a P-DID" ([[did-types]] is retired). A persona is simply an identifier its holder has declared with a **`directed`** [[correlation-scope]] — "a private persona", known to the set of counterparties the holder chooses and no one else — or `public` for a public persona. The spec puts it well: *a persona is what a `directed` declaration is for.* Membership in a community does not require one; a member who declares `pairwise` toward the community has no persona there, while a member who wants to be recognized as the same person by other members, or across communities, is asserting a persona and declares the identifier `directed` accordingly. Asserting a persona is how a person controls intentional correlation *deliberately*, rather than acquiring it as a side effect of reusing an identifier.
 
 ## The "Banksy Maneuver"
 
@@ -30,12 +30,12 @@ The Banksy Maneuver is one application of the **pairwise ZKP** the spec defines 
 
 Two WD02 privacy points bear on personas. Intentional correlation should occur *only* through a deliberate VPC or a deliberate `directed`/`public` declaration, never as a side effect of credential structure. And a persona's exposure is set by where it is used: the effective disclosure of any edge is the wider of its two halves, so a persona published under a `public` identifier by one party is correlated to that party even if the counterparty kept their own half `pairwise`.
 
-## On `main`
+## Why it stayed a type
 
-The spec's `main` branch (heading for Working Draft 0.4.0) keeps the VPC as a concrete type even though it is statement-shaped — because its issuer *is* the persona identifier and so carries correlation-scope semantics that a generic [[statement-credential|VSC]] predicate could not.
+Working Draft 0.4.0 and after keep the VPC as a concrete type even though it is statement-shaped — because its issuer *is* the persona identifier and so carries correlation-scope semantics that a generic [[statement-credential|VSC]] predicate could not. Since WD 0.6.0 that scope is on the wire: a VPC's `issuerScope` is ordinarily `directed`, "a persona exists to be recognized across a set of counterparties the holder chooses". With the categories dropped in WD 0.5.0 the VPC is no longer "an Annotation Credential" but one of the four credentials complete on the issuer's signature ([[credential-categories]]).
 
 ## Implementation Status
 
-VPC issuance shipped in the [[verifiable-trust-infrastructure|VTI]] (#1074). In [[openvtc|OpenVTC]] the persona identifier is the one a member joins communities with, derived at `m/1'/0'/` ([[bip32-key-derivation]]); relationships get their own `pairwise` identifiers by default (openvtc #254/#255).
+VPC issuance shipped in the [[verifiable-trust-infrastructure|VTI]] (#1074). In [[openvtc|OpenVTC]] the persona identifier is the one a member joins communities with, derived at `m/1'/0'/` ([[bip32-key-derivation]]); relationships get their own `pairwise` identifiers by default (openvtc #254/#255). Since the v1 upgrade (openvtc #397) the client names the scope explicitly: `PERSONA_ANNOTATION_SCOPE = directed` for a VPC, and `directed` for the persona DID wherever it issues — the member's VMC acknowledgement, a VRC issued from the persona rather than a relationship DID. [[dtg-credentials]] 0.12's `new_vpc` takes the scope as its second argument.
 
 See also: [[zero-knowledge-proofs]], [[correlation-scope]], [[did-types]], [[credential-categories]], [[dtg-credentials-overview]]

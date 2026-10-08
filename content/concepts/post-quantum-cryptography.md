@@ -2,8 +2,8 @@
 title: "Post-Quantum Cryptography in the Stack"
 type: concept
 tags: [cryptography, post-quantum, ml-dsa, ml-kem, keys, data-integrity, tsp, security]
-date-updated: 2026-09-18
-sources: [affinidi-tdk, verifiable-trust-infrastructure, verifiable-trust-agent, didwebvh-rs]
+date-updated: 2026-10-07
+sources: [affinidi-tdk, verifiable-trust-infrastructure, verifiable-trust-agent, didwebvh-rs, openvtc, keyring-wallet]
 ---
 
 # Post-Quantum Cryptography in the Stack
@@ -33,6 +33,10 @@ The most instructive September finding was not cryptographic. Three times, PQ co
 - `affinidi-data-integrity` was pinned by VTI **without its `ml-dsa` feature**, so the signer fell back to `EddsaJcs2022` and failed with "key type MlDsa44 is not compatible" — every capability built above it led to a key that could not sign: "built, tested, and unreachable" (#1553). VTI now pins the feature on.
 - ML-DSA secrets **could not be persisted** (TDK #797): the generator wrote an empty `privateKeyMultibase`, so a saved store lost the key on restart. Fixed via the `-priv-seed` codecs; SLH-DSA stays memory-only because FIPS 205 has no registered private-key multicodec.
 - The Data Integrity crate's **ML-DSA tests had never compiled** (TDK #821): `default = []`, so ten unit tests never ran and one passed for the wrong reason.
+
+## As of Eucalyptus
+
+Nothing cryptographic changed between the release candidate and the `VTI-Eucalyptus` tag (2026-10-07); what changed is that hybrid credentials became something a person can *see* and a second client can *read*. [[openvtc|OpenVTC]] #433 (2026-10-05) draws a **PQC-SIGNED** badge on every credential signed with a post-quantum key as well as a classical one — read per credential from its proof set, per community from the credentials it issued, or before joining from the `assertionMethod` keys in the community's DID document — and the join page's new "How it protects you" block says the absence in words ("classical-only signing"), next to the same treatment for [[peer-identity-vetting|hidden vetting]]. On the reading side, VTI #1868 fixed the findings the [[keyring-wallet|Keyring]] team filed against proof sets and #1889 made a DTG credential parse with a proof set in `dtg-credentials` 0.13; Keyring's own `documentProof` verifier walks a proof set, verifies `eddsa-jcs-2022` and skips `mldsa44-jcs-2024`, which it does not implement — exactly the behavior the hybrid design wants from a classical-only verifier. `affinidi-data-integrity` was re-released as 0.8.0 (TDK #916) and [[didwebvh-rs]] 0.8.0 moved onto it with no behavior change. No new PQ code landed in the TDK in this window; the TSP `pq` path is unchanged and the VID model still does not carry PQ keys. An `MLKEM768-X25519` package for the Dart TSP port was mentioned in the release summary but is not present in any clone this wiki tracks, so it is not described here.
 
 ## Status: On by Default, or Behind a Flag
 
