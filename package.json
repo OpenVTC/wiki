@@ -63,7 +63,7 @@
     "minimatch": "^10.2.6",
     "pixi.js": "^8.22.0",
     "preact": "^10.29.8",
-    "preact-render-to-string": "^6.8.0",
+    "preact-render-to-string": "^6.8.1",
     "pretty-bytes": "^7.2.0",
     "pretty-time": "^1.1.0",
     "reading-time": "^1.5.0",
@@ -84,7 +84,7 @@
     "remark-rehype": "^11.1.2",
     "remark-smartypants": "^3.0.3",
     "rfdc": "^1.4.1",
-    "satori": "^0.47.1",
+    "satori": "^0.62.0",
     "serve-handler": "^6.1.7",
     "sharp": "^0.35.5",
     "shiki": "^4.5.0",
@@ -108,7 +108,7 @@
     "@types/ws": "^8.18.2",
     "@types/yargs": "^17.0.35",
     "esbuild": "^0.28.2",
-    "prettier": "^3.9.9",
+    "prettier": "^3.9.10",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3"
   }
