@@ -510,7 +510,7 @@ export const ObsidianFlavoredMarkdown: QuartzTransformerPlugin<Partial<Options>>
                 node.data = {
                   hProperties: {
                     ...(node.data?.hProperties ?? {}),
-                    className: classNames.join(" "),
+                    className: classNames,
                     "data-callout": calloutType,
                     "data-callout-fold": collapse,
                     "data-callout-metadata": calloutMetaData,

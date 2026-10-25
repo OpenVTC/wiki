@@ -1,10 +1,9 @@
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
-import { classNames } from "../util/lang"
 
-const ArticleTitle: QuartzComponent = ({ fileData, displayClass }: QuartzComponentProps) => {
+const ArticleTitle: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
   const title = fileData.frontmatter?.title
   if (title) {
-    return <p></p> // <h1 class={classNames(displayClass, "article-title")}>{title}</h1>
+    return <p></p>
   } else {
     return null
   }

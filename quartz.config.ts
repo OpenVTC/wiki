@@ -12,9 +12,7 @@ const config: QuartzConfig = {
     pageTitleSuffix: "",
     enableSPA: true,
     enablePopovers: true,
-    analytics: {
-      provider: "null",
-    },
+    analytics: null,
     locale: "en-US",
     baseUrl: "OpenVTC.github.io/wiki",
     ignorePatterns: ["private", "templates", ".obsidian"],
