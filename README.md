@@ -18,8 +18,8 @@ Rather than delegating identity to centralized gatekeepers (Google, employers,
 governments), the OpenVTC ecosystem takes a **first-person** approach. Trust is
 built from the ground up through real relationships between real people,
 expressed as cryptographically verifiable credentials. The question becomes not
-just *"who are you?"* but *"can I verify you're a real person through a chain
-of real human relationships?"*
+just _"who are you?"_ but _"can I verify you're a real person through a chain
+of real human relationships?"_
 
 ## Audience
 
