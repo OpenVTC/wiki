@@ -1,9 +1,9 @@
 ---
 title: "Persona Credential (VPC)"
 type: concept
-tags: [credentials, dtg, persona, privacy, zkp]
-date-updated: 2026-10-07
-sources: [dtg-credential-spec, dtg-credentials, verifiable-trust-infrastructure]
+tags: [credentials, dtg, persona, privacy, zkp, did-scid, did-webs]
+date-updated: 2026-11-28
+sources: [dtg-credential-spec, dtg-credentials, verifiable-trust-infrastructure, openvtc]
 ---
 
 # Persona Credential (VPC)
@@ -37,5 +37,7 @@ Working Draft 0.4.0 and after keep the VPC as a concrete type even though it is 
 ## Implementation Status
 
 VPC issuance shipped in the [[verifiable-trust-infrastructure|VTI]] (#1074). In [[openvtc|OpenVTC]] the persona identifier is the one a member joins communities with, derived at `m/1'/0'/` ([[bip32-key-derivation]]); relationships get their own `pairwise` identifiers by default (openvtc #254/#255). Since the v1 upgrade (openvtc #397) the client names the scope explicitly: `PERSONA_ANNOTATION_SCOPE = directed` for a VPC, and `directed` for the persona DID wherever it issues — the member's VMC acknowledgement, a VRC issued from the persona rather than a relationship DID. [[dtg-credentials]] 0.12's `new_vpc` takes the scope as its second argument.
+
+**Fig widened what a persona identifier can be.** Until October every persona was a [[did-webvh|did:webvh]]. Since OpenVTC 0.7.0 (#503) a persona may be minted as a self-certifying `did:scid:vh:1`, whose log is found through a `?src=` locator the client records and sends so that a first-contact peer can resolve it; and since VTI #2563 a VTA can act *as a persona* under a `did:webs` identifier, updating, rotating and deleting it from its KERI key event log ([[decentralized-identifiers]]). The credential side kept pace: dtg-credentials 0.14 matches a did:scid issuer or subject by its DID rather than by the locator-bearing URL (#38), and since #36 a credential's proof must be made by a key of its issuer — for a VPC, a key of the persona identifier itself. Nothing in the VPC's shape changed; what changed is that the identifier behind "this persona" no longer has to live on one web host.
 
 See also: [[zero-knowledge-proofs]], [[correlation-scope]], [[did-types]], [[credential-categories]], [[dtg-credentials-overview]]

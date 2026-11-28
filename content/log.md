@@ -1,12 +1,32 @@
 ---
 title: "Wiki Log"
 type: log
-date-updated: 2026-10-07
+date-updated: 2026-11-28
 ---
 
 # Wiki Log
 
 A record of major wiki updates: new sources ingested, significant concept and entity additions, and meaningful structural changes.
+
+---
+
+## [2026-11-28] October–November refresh — Fig ships on its own release branch, the stack goes to the Park City SEDI Summit, communities federate into networks, TSP reaches 1.0 in four languages, communities learn to govern themselves
+
+**Fig is out.** On 2026-11-27 the ecosystem tagged **`VTI-Fig`**, its sixth coordinated release and again its largest: 49 days, twenty repositories, 2,218 commits in 2,061 pull requests by 23 authors, 328 of them breaking. Its own one-liner is *"one generation, four languages, a network of communities"*: every repository moved to the same dependency generation with exactly one copy of each shared crate, TSP reached 1.0 in the Rust, JavaScript, Go and Dart SDKs, did:webs became an identity a VTA, a community or a member can hold, and communities gained boards, elections, badges and rooms you can talk in. Fig is also the first release **cut from a green nightly onto its own branch** and supported there, with Eucalyptus still supported beside it and the next tree, **Ginkgo**, due around the turn of the year. [[coordinated-releases]] is rewritten around it, with the breaking changes an integrator will notice.
+
+**Park City.** A week before the tag, Verifiable Trust Infrastructure went to Utah's **Park City SEDI Summit** (2026-11-17 → 19), the gathering of state leaders around Utah's **State-Endorsed Digital Identity** (SEDI) model — the summit at which Governor Spencer Cox announced that Colorado, Delaware, Massachusetts, Oklahoma and Wyoming would join Utah in developing it. Glenn Gore (Affinidi), Richard Whitt (GliaNet Alliance), Hart Montgomery (LF Decentralized Trust), Brendan Miller (Harvard Applied Technology Lab, Keyring's product owner) and Drummond Reed (First Person Cooperative) appeared on the main stage in *The Future of Digital Trust: SEDI, Verifiable Trust Infrastructure, and Fiduciary AI* and, the next day, led the breakout *Digital Trust in Practice: Inside SEDI, Verifiable Trust Infrastructure, and Fiduciary AI* — a deeper look at what VTI is and how SEDI brings it into practice, "through technical demonstrations and interactive discussion" ([agenda](https://www.sedisummit.com/agenda)). Drummond also opened the summit's first morning with *Digital Identity 101*. Where Prague put the stack in front of the Linux kernel's maintainers, Park City put it in front of the states building government-endorsed identity. In the same weeks the [[keyring-wallet|Keyring phone wallet]] carried a SEDI demo lane — a state-issued guardian credential, a KERI/ACDC credential verified on the phone against a did:webs state root — since moved off its main branch; did:webs itself stays, as the way Keyring joins a community whose DID is a did:webs. No recordings or slides from the sessions have been published.
+
+**Networks of communities.** The [[verifiable-trust-network|Verifiable Trust Network]] went from a line in the spec to running software in three weeks: created on 2026-11-02 and tagged with Fig, it lists and admits communities and other networks, relays broadcasts one signed hop at a time without sharing rosters, offers a federated directory and a trust-graph view, and projects membership into a trust registry. Its operator CLI, `nnm`, completes the trio beside the person's `pnm` and the community's `cnm`. A new primary entity, **[[vtn-service]]**, covers the software; the concept page is rewritten around what was built.
+
+**Communities you live in.** A new concept page, **[[community-governance]]**, covers boards — members propose ideas, and each accepted idea becomes its own election — and elections with blind ballots, credential rolls and vote checks, from the member portal, OpenVTC or the Keyring phone. [[verifiable-trust-community]] gains member badges (Open Badges credentials, event claim codes, public Achievement documents, badge groups in the trust registry) and a richer member directory, and [[data-rooms]] became conversations, with replies, files, live updates and read markers the member's own agent keeps across devices.
+
+**One protocol, more identities.** [[trust-spanning-protocol|TSP]] reached 1.0 in all four SDKs, each refusing the earlier drafts. **did:webs**, backed by a KERI v2 key event log, and **did:scid**, a self-certifying identifier that survives a move between hosts, became full identities across the stack ([[decentralized-identifiers]]). The mediator left the TDK for its own repository and released fifteen lines there; the TDK page is now **Affinidi TDK and Messaging Mediator** ([[affinidi-tdk]]).
+
+**The spec and the credentials.** The [[dtg-credential-spec|DTG Credentials Core Specification]] reached Working Draft 0.7.0: every credential is salted so digest references cannot be enumerated, a community may choose a directed identifier bound to its published disclosure practice, an authority credential states the purposes its holder may use what it obtains for, and networks may contain networks. [[dtg-credentials]] 0.16.0 follows; the Trust Tasks registry grew to 45 families, including the Human Context Protocol carried as Trust Tasks.
+
+**Also this cycle:** OpenVTC 0.9.0 (elections, rooms, witnessing through the VTA, did:scid personas, joining with a credential from a government wallet such as swiyu or the EUDI wallet, account state shared across devices); hidden vetting moved onto the VTA, so no zero-knowledge key lives on the device ([[peer-identity-vetting]]); step-up approval now verifies the user; the Keyring phone gained private vetting, room chat, polls and a per-phone mailbox; VGI reached 0.37 with did:scid signers and FIDO SSH keys; and the VTA Farm shipped public sign-up, Keyring sign-in, an optional trust registry, workload placement and full observability. The [[vti-setup]] guides now track coordinated releases: every page was re-verified on Fig by automated runs, the explore stack gained a Trust Registry, and a new walkthrough puts a GitHub organization under a community.
+
+New pages: 1 entity, 1 concept. Updated: 18 entities, 30 concepts, overview, index, sources.
 
 ---
 

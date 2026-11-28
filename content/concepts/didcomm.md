@@ -1,9 +1,9 @@
 ---
 title: "DIDComm — DID-based Secure Messaging"
 type: concept
-tags: [didcomm, messaging, encryption, communication, mediators, federation, security]
-date-updated: 2026-10-07
-sources: [affinidi-tdk, verifiable-trust-infrastructure, openvtc, vti-didcomm-js, vta-browser-plugin, keyring-wallet]
+tags: [didcomm, messaging, encryption, communication, mediators, federation, security, did-scid, did-webs, fig]
+date-updated: 2026-11-28
+sources: [affinidi-tdk, verifiable-trust-infrastructure, openvtc, vti-didcomm-js, vta-browser-plugin, keyring-wallet, keyring-bifold]
 ---
 
 # DIDComm — DID-based Secure Messaging
@@ -39,7 +39,7 @@ The [[openvtc|OpenVTC]] TUI keeps one listener per persona on the TDK's reliable
 
 ## Mediators
 
-A mediator is a relay service that holds encrypted messages for recipients who aren't always online. The [[affinidi-tdk|Affinidi TDK]] provides a mediator implementation with production features like circuit breakers, per-IP and per-DID rate limiting, graceful shutdown and an `explicit_allow` ACL mode that gates authentication itself.
+A mediator is a relay service that holds encrypted messages for recipients who aren't always online. The ecosystem's mediator was built in the [[affinidi-tdk|Affinidi TDK]] and since 2026-10-14 lives in its own repository, `affinidi/affinidi-messaging-mediator` (the TDK keeps the client side). It is an implementation with production features like circuit breakers, per-IP and per-DID rate limiting, graceful shutdown and an `explicit_allow` ACL mode that gates authentication itself.
 
 Mediators see message metadata (who is sending to whom, when, message size) but cannot read message content. For stronger metadata privacy the ecosystem's answer is not a DIDComm feature but TSP's nested routing (see below).
 
@@ -94,4 +94,13 @@ The `VTI-Eucalyptus` release (2026-10-07) did not change what DIDComm is for, bu
 - **The mediator is a Trust-Task counterparty.** The TDK mediator now checks every Trust Task it receives, runs each once and *signs* its responses (#846–#849), and its operator functions — statistics, queue status, message list, get, delete and purge, config patch and reload, a per-account traffic monitor — are Trust Tasks (#850–#853 and later) driven by a new `mediator-console` TUI and a headless `mediator-admin`. Mediator 0.31.0 (#901, 2026-09-27) **removed the legacy administration**: the DIDComm `mediator/1.0` admin, account and ACL-management protocols, the REST `/admin/status`, `/purge/{folder}` and `/queue/status` routes, and the `security.legacy_admin_protocols` setting with them. vti-didcomm-js learned to treat the mediator as a Trust-Task counterparty in the same window (#26). At the tag the mediator is 0.37.0 and the messaging SDK 0.33.2.
 - **Keyring speaks both versions through Credo.** The [[keyring-wallet|Keyring]] phone wallet runs on a credo-ts 0.7.1 snapshot that carries the DIDComm v2 pull request, and selects a carriage per Trust Task: DIDComm v1 (binding `didcomm-v1/0.2`, the Aries-lineage path through its own mediator), DIDComm v2 (binding `didcomm/0.2`, behind a developer flag that also turns on out-of-band 2.0 on `did:peer:2`), or TSP. For the VTA/VTC leg it talks to an Affinidi mediator the way every other client does — challenge, JWT, WebSocket, pickup 3.0 and `routing/2.0` forward — with its own transport rather than bundling vti-didcomm-js, and every document it asks over either carrier is signed.
 
-See also: [[verifiable-trust-agent]], [[affinidi-tdk]], [[trust-spanning-protocol]], [[vti-didcomm-js]], [[vta-browser-plugin]]
+## As of Fig — New Identities on the Wire, One Socket for Many
+
+`VTI-Fig` (2026-11-27) again left DIDComm's job unchanged. What changed is *who* can speak it and how a mediator carries them:
+
+- **did:scid and did:webs parties.** A `did:scid:vh:1` identity sends and receives DIDComm *as itself*, under its bare DID rather than its did:webvh form (TDK #965). [[vti-didcomm-js]] 0.13.0 does the same in the browser. A **did:webs** persona sends and receives through its mediator wherever a did:webvh one does (VTI #2664, #2669). vti-didcomm-js 0.15.0 resolves did:webs and can authenticate and encrypt to a did:webs party (#38–#40), and 0.14.0 can resolve a did:webvh *as of* a past `versionTime` (#35). The mediator accepts did:scid accounts, runs under a did:scid identity of its own, and resolves did:webs (mediator #28, #62). See [[decentralized-identifiers]].
+- **DID multiplexing.** One authenticated mediator WebSocket can now carry many DIDs (`messaging/mux/*/0.1`, `didcomm-mux` subprotocol; mediator #63, #78). Each member DID signs a grant attaching it to a principal's connection, and the mediator queues fairly per member and audits revocations. A pickup-only member's principal is told when it has mail. This is the DIDComm-side answer to a VTA or a phone that speaks for many pairwise identities. It is off by default.
+- **The mediator is its own product.** Fifteen release lines (v0.42 → v0.56) came out of the new repository in six weeks. They brought one error-code scheme shared by DIDComm problem reports and Trust Task errors (#268), and a "silent ping" that succeeds empty instead of with a reply (#279). A sender can also ask the mediator to ring a recipient's device (`wake`, #276, with the SDK's side in TDK #1138). On the client side the SDK's receive path became truthful: a message is returned even when its auto-delete cannot be queued, writes are bounded, and frames are not dropped when the inbound channel is full (TDK #1149, #1167).
+- **Keyring moves its peer leg.** [[keyring-bifold|Keyring]] started carrying wallet-to-wallet DIDComm v2 through **one mailbox per phone** (#1163). After a send it asks the recipient's mediator to wake the recipient (#1170), and it began retiring Coordinate Mediation 2.0 (#1166). The carriage and invitation version are chosen per peer (#1162).
+
+See also: [[verifiable-trust-agent]], [[affinidi-tdk]], [[trust-spanning-protocol]], [[vti-didcomm-js]], [[vta-browser-plugin]], [[keyring-bifold]]

@@ -1,9 +1,9 @@
 ---
 title: "Witnessed VRC Exchange Protocol"
 type: concept
-tags: [protocol, witness, vrc, flow, didcomm]
-date-updated: 2026-09-18
-sources: [dtg-credential-spec, dtg-credentials]
+tags: [protocol, witness, vrc, flow, didcomm, trust-tasks, fig]
+date-updated: 2026-11-28
+sources: [dtg-credential-spec, dtg-credentials, openvtc, verifiable-trust-infrastructure, keyring-wallet]
 ---
 
 # Witnessed VRC Exchange Protocol
@@ -39,7 +39,7 @@ The Witness performs three checks on each submission:
 ### Phase 4: Credential Distribution
 
 1. The Witness mints two [[witness-credential|Witness Credentials (VWCs)]] — one for each observed VRC
-2. Each VWC carries a `taskContext` naming this session's trust-task thread and a REQUIRED `digestMultibase` of the witnessed VRC — SHA-256 over its JCS canonical form *excluding `proof`*, as a base58btc multihash (WD02; WD01 used `digest` = `sha256:<hex>`) — with `credentialSubject.id` set to the *issuer* of that VRC; see [[witness-credential]] and [[trust-task-context-binding]]. On the spec's `main` branch the VWC is the `dtg:witnessed` profile of a [[statement-credential|Statement Credential]] and the digest sits under `object.digestMultibase`; the direction rule becomes unconditional
+2. Each VWC is a [[statement-credential|Statement Credential]] under the `witnessed/1` predicate (since Working Draft 0.4.0, and in every implementation since Eucalyptus). It carries `taskContext`, the `id` of the document that opened this session (not a thread id, corrected in spec #56), with a REQUIRED `taskDigestMultibase` of that document. It also carries `object.digestMultibase`, the digest of the witnessed VRC: SHA-256 over its JCS canonical form *excluding `proof`*, as a base58btc multihash (WD01 used `digest` = `sha256:<hex>`). `credentialSubject.id` is unconditionally the *issuer* of that VRC. See [[witness-credential]] and [[trust-task-context-binding]]
 3. Distribution is cross-wise: Alice receives the VWC witnessing Bob's VRC, and Bob receives the VWC witnessing Alice's VRC
 
 ### Phase 5: Verification
@@ -48,7 +48,11 @@ At the end, each party holds:
 - Their counterparty's VRC (the trust attestation)
 - A VWC from the Witness attesting that the VRC was created during the specific session
 
-Anyone verifying the relationship later can check both the VRC (peer attestation) and the VWC (third-party attestation of the exchange) — provided the VRC is to hand, since a digest without its referenced credential is an opaque hash. The witness's identifier must be `directed` at minimum ([[correlation-scope]]): it has to be recognisable to both parties and to the community whose witnessing policy applies.
+Anyone verifying the relationship later can check both the VRC (peer attestation) and the VWC (third-party attestation of the exchange) — provided the VRC is to hand, since a digest without its referenced credential is an opaque hash. The witness's identifier must be `directed` at minimum ([[correlation-scope]]): it has to be recognizable to both parties and to the community whose witnessing policy applies.
+
+## As implemented (Fig)
+
+The five phases are now Trust Tasks rather than the DIDComm `request-presentation` messages of the task-force write-up. The session is **`witness/session`** and the submission **`witness/session/submit`**, both served **only at 0.2** since the Fig cycle, with the member's presentation (`memberPresentation`) a spec member rather than an `ext` carriage (VTI #2147, #2334). In [[openvtc|OpenVTC]] the member's **VTA is the witnessed party** (`vta/witness/{open,present,accept}`). It builds the presentation, verifies the witness's answer as the witness's own (so a forged refusal cannot end a session), and stores the resulting VWC. The client carries the documents to the witness over the relationship DID's own connection, choosing TSP over DIDComm and never REST (#494). Witnessings sync across a member's devices through the VTA's app state (#495). The outcome evidence a later personhood assertion needs travels as `outcomeEvidence` in `vtc/members/personhood/assert/0.2` (#496). The [[keyring-wallet|Keyring]] phone wallet runs its own witness server, which issues `witnessed/1` statements by default since release 242 and answers a TSP request in the TSP version it arrived in. It can also upgrade an existing relationship in place by adding a witness (keyring-bifold #471).
 
 ## Trust Implications
 

@@ -1,16 +1,19 @@
 ---
-title: "Affinidi Trust Development Kit (TDK)"
+title: "Affinidi TDK and Messaging Mediator"
 type: entity
-tags: [affinidi, tdk, library, messaging, did-resolution, bbs, openid4vc, agent-names, tsp, did-webs, post-quantum, secondary, cypress, dogwood, eucalyptus]
-date-updated: 2026-10-07
+tags: [affinidi, tdk, mediator, library, messaging, did-resolution, bbs, openid4vc, agent-names, tsp, did-webs, did-scid, keri, post-quantum, secondary, cypress, dogwood, eucalyptus, fig]
+date-updated: 2026-11-28
 repo: https://github.com/affinidi/affinidi-tdk-rs
+repos: [https://github.com/affinidi/affinidi-tdk-rs, https://github.com/affinidi/affinidi-messaging-mediator]
 ---
 
-# Affinidi Trust Development Kit (TDK)
+# Affinidi TDK and Messaging Mediator
 
-*Repo: [github.com/affinidi/affinidi-tdk-rs](https://github.com/affinidi/affinidi-tdk-rs)*
+*Repos: [github.com/affinidi/affinidi-tdk-rs](https://github.com/affinidi/affinidi-tdk-rs) (the toolkit) and, since 2026-10-14, [github.com/affinidi/affinidi-messaging-mediator](https://github.com/affinidi/affinidi-messaging-mediator) (the mediator)*
 
-The Affinidi TDK is a comprehensive Rust toolkit providing identity, messaging, and credential primitives for the OpenVTC ecosystem. It's the foundational library that higher-level projects depend on for DID resolution, secure communication, and cryptographic operations.
+The Affinidi Trust Development Kit (TDK) is a Rust toolkit of identity, messaging and credential primitives for the OpenVTC ecosystem. It is the foundation the higher-level projects build on for DID resolution, secure communication and cryptography. Its best-known *service*, the **messaging mediator** that relays [[didcomm|DIDComm]] and [[trust-spanning-protocol|TSP]] traffic for every VTA, VTC, browser wallet and phone in the stack, was built inside the same repository until October 2026, and this page covers both.
+
+> **Why this page has a new name: the mediator moved out.** On 2026-10-13/14 the mediator left `affinidi-tdk-rs` for its own repository, `affinidi/affinidi-messaging-mediator` (TDK #946, #947, #949). Its history came with it, so its log and early PR numbers still read as TDK ones. The reason was practical. The mediator is something operators *deploy*, while everything else in the TDK is a library that other projects *consume*. Inside one workspace, every Trust Tasks or `vta-sdk` bump forced a minor on both, and the mediator's need for `vta-sdk` left duplicate copies of the SDK in the TDK's lockfile (the "crossings" recorded below). Since the split the line is clean: the TDK holds the client side (the messaging SDK, DIDComm, TSP, DID resolution, credentials) and publishes it to crates.io; the mediator repo takes those crates *from* crates.io and holds the server, its admin engine, terminal console, setup wizard, processors and in-process test mediator. A small new shared crate, `affinidi-messaging-mediator-types` (0.1.0, TDK #946), carries the wire types both sides need. The mediator also gained its own release process. All its crates move in **lockstep** under one version, cut from a `nightly` branch onto `release/<major.minor>` branches, and each GA is published to crates.io with a container image on GHCR. It cut **fifteen release lines in six weeks**, v0.42.0 (2026-10-14) to **v0.56.0** (2026-11-24), the version in `VTI-Fig`. Two things carried over unchanged: DIDComm and TSP still share one mediator endpoint, and the TDK's own crates are still the client side of it.
 
 ## Key Components
 
@@ -18,6 +21,8 @@ The Affinidi TDK is a comprehensive Rust toolkit providing identity, messaging, 
 High-performance [[decentralized-identifiers|DID]] resolution with local and network caching:
 - 250k+ resolutions per second from cache
 - Pluggable DID method support: did:webvh (via [[didwebvh-rs]]), did:web, did:key, did:peer, did:jwk, did:scid (`vh:1` and, since August 2026, `ke:1`), **did:webs** (KERI-verified key state, new August 2026), did:ethr / did:pkh (re-implemented in-tree, off by default), did:ebsi. did:cheqd *parses* but is no longer resolved (retired September 2026 to clear eight advisories rooted in the abandoned `ssi-*` stack)
+- **did:scid is a DID in its own right** since #965 (2026-10-21). A `did:scid:vh:1` resolves to *its own* document, under the bare DID, with the `?src=` locator treated as a hint rather than part of the identifier. The resolver remembers the sources it has verified and keeps a per-DID **version floor** that survives a restart (#966), so a host cannot serve an older version or a forked log (#981). A did:scid identity can also send and receive DIDComm as itself.
+- **did:webs on KERI v2** (`affinidi-did-webs` 0.7 → **0.14**, November 2026, on [affinidi-keri-rs](https://github.com/affinidi/affinidi-keri-rs) 0.8). did:webs ties a web-hosted DID document to a **KERI** key event log (`keri.cesr`), so the document's keys are only as good as a verifiable chain of signed rotations. In Fig it went from "verified on read" to a method the stack can *create and act as*. It resolves as the did:webs specification requires (#984). Identifiers can be created whose keys the caller holds, with a recovery custodian (#996). Logs and designations are written in KERI 2.0, read and checked against keripy (#997, #999). Superseding recovery is supported (#1003), as are native CESR bodies and keripy's delegated-rotation, EO and DND rules (#1006). It also has a proposed **key role designation** extension, under which a document says which key does which job (#991). This is the piece that lets a VTA be a did:webs (see [[verifiable-trust-agent]]). affinidi-keri itself went 0.4 → **0.8.1** and carried its first coordinated tag at Fig: KERI v2 by default, ACDC 2.x registries, hex thresholds, and LMDB storage made optional so `did-webs` builds without it (#1007). VTI labels the whole did:webs integration **alpha**.
 - **Public-hosts-only by default** since September 2026: did:web and did:webvh resolution refuse loopback/private/link-local/metadata targets (one `with_host_policy(HostPolicy::AllowPrivate)` setting opts local stacks back in); a raw did:webvh log cache on the cache server stops hot DIDs hammering their host
 - **A deactivated did:webvh no longer resolves** (cache-sdk 0.8.39, did-scid 0.2.8, September 2026): [[didwebvh-rs]] returns a deactivated log `Ok` with the last document and flags deactivation only in metadata, which the resolver used to discard — so a retired DID kept authenticating with its last keys indefinitely. Now refused, matching did:web where deactivation is a 404. did:web and did:ebsi also refuse a fetched document whose `id` does not match the DID asked for (0.1.6)
 
@@ -25,8 +30,9 @@ High-performance [[decentralized-identifiers|DID]] resolution with local and net
 A leaf crate (no `affinidi-*` dependencies, so [[didwebvh-rs]] and external clients can use it) that vets attacker-influenceable URLs — a `did:web` host, a service endpoint, a redirect `Location` — against loopback, private, CGNAT, link-local and cloud-metadata space, *and* installs a DNS resolver that refuses any non-routable answer and pins the connection to the checked addresses (closing DNS rebinding). Documented in ADR 0006; now underneath the mediator's forwarding client.
 
 ### Messaging (`affinidi-messaging`)
-Secure messaging built on [[didcomm|DIDComm v2.1]] — and, since August 2026, DIDComm **v1** for interop with Aries/Credo-lineage wallets:
-- SDK, mediator/relay service, and terminal chat client
+Secure messaging built on [[didcomm|DIDComm v2.1]] — and, since August 2026, DIDComm **v1** for interop with Aries/Credo-lineage wallets. *The bullets below on routing, queues and administration describe the mediator; since 2026-10-14 that code lives in `affinidi-messaging-mediator` and the TDK keeps the client side:*
+- SDK (`affinidi-messaging-sdk`, the "ATM" client), the mediator/relay service (now its own repo), and a terminal chat client
+- **DID multiplexing** (November 2026, `messaging/mux/*/0.1`; SDK #992 and mediator #63 onward): one mediator WebSocket can carry many DIDs. Each member DID signs a grant attaching it to a principal's connection, under per-member fair queuing, send scopes, durable suspend and revoke notices, and grant changes spread across mediator instances. Both carriers have a subprotocol: `didcomm-mux` and `tsp-mux` for raw-TSP sockets. Administrators can list and revoke grants from the console. The point is a device or agent that speaks for many identities, such as a VTA holding a person's pairwise relationship DIDs, without one socket per DID. It is off by default (`[limits.mux]`).
 - Authcrypt and anoncrypt packing; since 0.19.0 (July 2026) **unpack accepts only authenticated envelopes by default** (`authcrypt`, `authcrypt(sign)`, `anoncrypt(authcrypt)`) and enforces `from == skid`
 - Message forwarding and routing; cross-mediator forwarding when the next hop is a DID — federation of independent mediators is documented in `docs/multi-mediator.md` (September 2026), and DIDComm v2 mediation is **DID-addressed with no keylist** (`docs/mediation-and-routing.md`; the keylist exists only for DIDComm v1)
 - Production features: circuit breakers, per-IP *and* per-DID rate limiting (429s that name the refusing service), graceful shutdown, `explicit_allow` ACL mode gating authentication; since 0.25 every refused delivery answers one uniform `delivery.refused` so an unauthenticated sender cannot probe which ACL rule turned it away
@@ -36,19 +42,20 @@ Secure messaging built on [[didcomm|DIDComm v2.1]] — and, since August 2026, D
 ### Reliable delivery (`affinidi-messaging-core`, `affinidi-messaging-delivery`) — *new July 2026*
 The transport-neutral contracts and the reliability layer above them. `affinidi-messaging-core` defines `MessagingProtocol` (packing) and the `MessageTransport` trait (truthful `send` → hop-acceptance receipt, re-falsifiable connection state, `inbound()` + `ack()` *after* durable handoff). `affinidi-messaging-delivery` adds a durable **outbox** (`Queued → Sent → Delivered | Unconfirmed | Failed`), a `MessagingService` front-end (`send(BestEffort|Guaranteed)`, thread-correlated `request`, `subscribe`), delivery evidence (outbox-drain, layer-receipt, protocol-reply), escalate-on-expiry, multi-transport and multi-identity operation, and a conformance suite. This is what the [[verifiable-trust-agent|VTA]], the VTC service, and [[openvtc]] now run their messaging on.
 
-### Mediator operations (`affinidi-messaging-mediator-admin`, `affinidi-messaging-mediator-tui`) — *new September 2026*
+### Mediator operations (`affinidi-messaging-mediator-admin`, `affinidi-messaging-mediator-tui`) — *new September 2026, in the mediator repo since October*
 The operator's view of a mediator, built entirely on the `messaging/*` Trust Tasks so it works over whichever transport the account has. **`mediator-admin`** is the headless engine (0.8.0 at Eucalyptus): `MediatorConsole::connect` as any DID — mode and capabilities come from the mediator's record of the account, so an administrator sees the whole mediator and anyone else sees their own queues — with admin views (stats, ranked queues, accounts with lifetime traffic counters and activity times, audit, live config), per-account operations (queue status by counterparty, message list / get / inspect — decrypted locally when the session holds the key — delete, purge via a `PurgePlan` that refuses if the queue changed since the preview), and a leased `MonitorFeed` over the mediator's **live traffic monitor** (metadata only — sender, recipient, size, protocol, stage from `received` through `stored`, `delivered`, `forwarded`, `deleted` or `expired` — never a body; every administrator subscription is audited). **`mediator-tui`** is the ratatui terminal console on top (`mediator-console` binary, 0.8.0): dashboard, queues with quota bars, account screens, audit, a scrolling monitor pane, and a config screen from which a rootAdmin can tighten limits at runtime (`config/patch` — tighten, never loosen) or re-read the file (`config/reload`). It replaces the retired `mediator-monitor` crate, and the VTA's `pnm` is the other intended embedder.
 
 ### Agent names (`agent-names`) — *new July 2026*
 Human-memorable handles for DIDs — `example.com/@alice`, or the community form `example.com/@` — implemented as a *shortcut layer*, not a DID method: the name URL redirects to a DID, the DID resolves normally, and the DID document **must claim the name back in `alsoKnownAs`** (typed in `affinidi-did-common` 0.4) before it is ever displayed. Exposed via `resolve_any()` in the resolver cache SDK, an opt-in `resolve-name` endpoint on the cache server (rate-limited by the new `affinidi-rate-limit` crate), and display-name shortcuts. See [[decentralized-identifiers]].
 
 ### Trust Spanning Protocol (`affinidi-tsp`)
-Implementation of the Trust over IP [[trust-spanning-protocol|TSP]] specification — since 0.2.0 (September 2026) **specification Rev 3**, which shares no frame with Rev 2 (no compatibility mode, no negotiation):
-- **HPKE-Base** encryption (RFC 9180 mode `0x00`; Rev 2 used HPKE-Auth) with sender authenticity carried by the ESSR signature alone; CESR binary encoding; version marker `YTSP-AAC`
+Implementation of the Trust over IP [[trust-spanning-protocol|TSP]] specification. Since 0.3.0 (#967, 2026-10-22) it implements the **released TSP 1.0** (`YTSP-BAA`, specification commit `ccda6b3`). 1.0 is Rev 3 with one rule changed: the sender's VID is mandatory in every confidential payload. Rev 3 (`YTSP-AAC`, 0.2.x) and Rev 2 frames are refused on the MAJOR version, although a mediator still *routes* between endpoints on a revision it has moved past. At `VTI-Fig` the crate is **0.5.0**:
+- **HPKE-Base** encryption (RFC 9180 mode `0x00`; Rev 2 used HPKE-Auth) with sender authenticity carried by the ESSR signature alone; CESR binary encoding
+- **One control path** (0.4.x, #1146, #1168, #1172). Relationship invites, accepts and cancellations are applied by one shared `inbound_control` module, used by both `TspAgent` and the messaging SDK. Referrals are verified, not applied, and a duplicate accept is idempotent. Opt-in `ReceivePolicy::require_confidential()` refuses signed-only messages before they can change relationship state. Hardening in the same window: HPKE refuses an all-zero X25519 secret and wipes derived secrets (#1110), frames are read within their declared count (#1075), and key state is confirmed before use after a silence (#1087).
 - Direct, Routed, and Nested message modes; mediator-integrated routing and federation
 - **Relationships are enforced, not just recorded** (§7.2.2): an application message from a VID with no relationship is dropped by default; invites/accepts/cancels, the invite-race tiebreak, `Reply_Path`, `Referral_Field`, padding (`XPAD`) and upper-layer control (`XCTL`) are all implemented, plus durable relationship stores and a recovery runtime
 - **Post-quantum** (ML-KEM-768 + X25519 hybrid KEM, ML-DSA-65 signatures) implemented behind a `pq` feature and verified against the spec's own vector — the VID model above it is not yet PQ-aware
-- **Graduated from experimental to supported in June 2026** and interoperable with the ToIP reference `tsp_sdk` (0.10.0 for Rev 3; 14/14 harness runs); the mediator serves TSP and DIDComm on the same endpoint and clients prefer TSP when both ends support it. The **DIDComm↔TSP bridge was removed** in Rev 3 — re-signing in the middle is exactly what ESSR forbids — so both ends of a conversation must be on one protocol
+- **Graduated from experimental to supported in June 2026**. It was interoperable with the ToIP reference `tsp_sdk` 0.10.0 for Rev 3; for 1.0 the reference is `tsp_sdk` **0.16.0**, the first reference release at 1.0, and the spec's eleven Appendix A vectors run in-repo. The mediator serves TSP and DIDComm on the same endpoint and clients prefer TSP when both ends support it. The **DIDComm↔TSP bridge was removed** in Rev 3 — re-signing in the middle is exactly what ESSR forbids — so both ends of a conversation must be on one protocol
 
 ### Cryptographic Primitives
 - Ed25519, P-256, secp256k1 key support; post-quantum ML-DSA-44/65/87 (persistable as `-priv-seed` multikeys since September 2026) and SLH-DSA (memory-only — no registered private-key multicodec)
@@ -57,24 +64,83 @@ Implementation of the Trust over IP [[trust-spanning-protocol|TSP]] specificatio
 - RDF canonicalization
 
 ### Credentials (`affinidi-vc`, `affinidi-sd-jwt`, `affinidi-bbs`, `affinidi-mdoc`, OpenID4VC crates)
-W3C VC data model + Data Integrity suites (EdDSA JCS/RDFC 2022, BBS-2023, and since August 2026 `ecdsa-jcs-2019` for P-256 device keys; ML-DSA suites behind a `ml-dsa` feature); Selective Disclosure JWT (RFC 9901); BBS signatures / blind BBS / pseudonyms; **ISO mdoc** (CBOR codecs for `IssuerSigned` and `DeviceResponse`, August 2026; on `coset` 0.4 since `affinidi-mdoc` 0.3.0) — the format the VTA now receives and presents over OID4VP; `affinidi-openid4vp` / `affinidi-openid4vci`; status lists and trust lists. `affinidi-data-integrity` is at **0.8.0** since 2026-10-01 — the same code as 0.7.14 under the version it needed, because `affinidi-bbs` 0.4 types are part of its public API — and it is the root of a dependency wave: [[didwebvh-rs]] 0.8, `did-scid` 0.3, `trust-tasks-*` 0.26, [[dtg-credentials]] 0.13 and `vta-sdk` 0.61 all exist to carry it.
+W3C VC data model + Data Integrity suites (EdDSA JCS/RDFC 2022, BBS-2023, and since August 2026 `ecdsa-jcs-2019` for P-256 device keys; ML-DSA suites behind a `ml-dsa` feature); Selective Disclosure JWT (RFC 9901); BBS signatures / blind BBS / pseudonyms; **ISO mdoc** (CBOR codecs for `IssuerSigned` and `DeviceResponse`, August 2026; on `coset` 0.4 since `affinidi-mdoc` 0.3.0) — the format the VTA now receives and presents over OID4VP; `affinidi-openid4vp` / `affinidi-openid4vci`; status lists and trust lists. `affinidi-data-integrity` reached 0.8.0 on 2026-10-01, the same code as 0.7.14 re-released under the version it needed (see the Eucalyptus cycle below). At `VTI-Fig` it is **0.9.2**, part of the November generation described under *Recent Development*. That generation tightened the credential crates as well. Proofs keep and check `expires`, `domain`, `challenge` and `previousProof` (#1091), and a signing threshold counts distinct signers (#994). SD-JWT key binding is checked under `cnf.jwk`, with `aud`, `nonce` and `iat` required (#1103). The **`sd-jwt-vc` crate is removed** and `openid4vci` is pinned to draft 13 (#1156). A separate OpenID4VCI 1.0 Final module was added beside it (#1163), along with an OpenID4VP 1.0 verifier core (#938) and the IETF Token Status List (#932).
 
 ### Meeting Place (`affinidi-meeting-place`)
 Discovery and connection service using DIDs.
 
 ## Role in the Ecosystem
 
-The TDK is the Swiss Army knife that everything else depends on:
+The TDK is the Swiss Army knife that everything else depends on, and the mediator is the post office in the middle of the topology:
+- **Every client of the stack reaches its peers through a mediator.** That includes the VTA, the VTC, [[openvtc]], the [[vta-browser-plugin|browser wallet]] and [[keyring-wallet|Keyring]]. The VTA Farm deploys one per tenant (see [[vtafarm-api]]).
 - The [[verifiable-trust-agent|VTA]] uses it for DID resolution and DIDComm
 - The [[affinidi-webvh-service]] uses it for DID operations and messaging
 - [[openvtc|OpenVTC]] uses it for messaging and credential operations
 - [[dtg-credentials|dtg-credentials]] uses its data integrity proofs for signing
-- The **Affinidi Trust Registry** (`affinidi-trust-registry-rs`, no wiki page yet; 0.14.0 → 0.23.0 in this cycle) rides the messaging SDK and mediator: since its 0.19/0.20 (#140) it sets its mediator access-list mode through the `messaging/account/*` Trust Tasks — "the only administration mediator 0.31.0 and later accepts" — authenticates, binds and audits registry writes, signs every reply with its operational key, and fails closed when a private registry's ACL mode is refused
-- The **Trust Tasks framework** (`dtgwg-trust-tasks-tf`, see [[trust-tasks]]; `trust-tasks-rs` 0.17.3 → 0.27.7 across 95 releases in this cycle, with Go and Dart bindings and spec families for rooms, persona, vetting and git-ns) is the TDK's most consequential upstream: generated Trust Task types cross the messaging SDK's public API, so every trust-tasks minor forces a minor on the SDK, the mediator, the facade and every consumer — the "dependency ladder" below
+- The **Affinidi Trust Registry** (`affinidi-trust-registry-rs`, no wiki page yet; 0.23.0 at Eucalyptus, **0.32.0** at Fig; see [[trust-registries]]) rides the messaging SDK and mediator: since its 0.19/0.20 (#140) it sets its mediator access-list mode through the `messaging/account/*` Trust Tasks — "the only administration mediator 0.31.0 and later accepts" — authenticates, binds and audits registry writes, signs every reply with its operational key, and fails closed when a private registry's ACL mode is refused
+- The **Trust Tasks framework** (`dtgwg-trust-tasks-tf`, see [[trust-tasks]]; `trust-tasks-rs` 0.27.7 at Eucalyptus, **0.41** at Fig; in the Eucalyptus cycle it went from 0.17.3 to 0.27.7 across 95 releases, with Go and Dart bindings and spec families for rooms, persona, vetting and git-ns) is the TDK's most consequential upstream: generated Trust Task types cross the messaging SDK's public API, so every trust-tasks minor forces a minor on the SDK, the mediator, the facade and every consumer — the "dependency ladder" below
 
 ## Recent Development
 
 The TDK is a multi-crate workspace; entries below name the affected crate. Direction is toward production readiness with stronger security guarantees and better modularity. Implementation is evolving quickly; treat low-level APIs as in flux.
+
+### The Fig cycle — 2026-10-07 → 11-27
+
+The window runs from `VTI-Eucalyptus` to the coordinated **`VTI-Fig`** release ([[coordinated-releases]]). `VTI-Fig-RC-0` and `VTI-Fig` sit on the TDK's #1189 (2026-11-24) plus one example rename (#1191). Across the window the TDK took 160 commits (PRs #928–#1191), and the new mediator repository 185 more after its split. The release-arc summary counts 39 breaking changes in the TDK and 22 in the mediator. Its one-line description of the TDK side is *"TSP 1.0, did:webs on KERI v2, the mediator moved out, a truthful messaging SDK receive path, data-integrity 0.9"*. Six threads ran through it.
+
+**1. The mediator moved out (2026-10-13/14).** First `affinidi-messaging-mediator-types` 0.1.0 (#946), then the SDK and mediator-common taking their types from it (#947), then the move itself (#949). In its first weeks the new repo did three things. It cleared a last set of duplicates (the tenth to twelfth `vta-sdk` "crossings", #937, #943, #945, were the last ones the TDK had to carry). It kept every mediator secret in one backend secret, with a verified, step-by-step migration (#928). And it adopted release branches cut from `nightly`. Release cuts now run from a workflow as the **release-bot** app (mediator #313), because the `release/*` rulesets refused a cut pushed from a laptop. Features in the mediator's Fig lines:
+- **New identities.** did:scid accounts and a did:scid mediator identity, with version floors that survive a restart (mediator #28, #29, VTI-KEY-162), did:webs resolution (#62), and TSP 1.0 (#30, 10-22).
+- **Trust Tasks.** The 0.2 tasks are served beside 0.1, with their types generated at build time (#40).
+- **DID multiplexing.** Stored mux grants, with fair queuing and audit (#63–#88, #205, #231, #241–#252); see *Messaging* above.
+- **A signed TSP login.** `/tsp/authenticate` now verifies an RFC 8785-canonical statement that names this mediator, the session and an expiry of at most 300 s (#244). The old bare-challenge form is refused unless an operator sets a dated `security.tsp_auth_accept_unbound_until`, which is logged on every use.
+- **One error-code scheme** for DIDComm problem reports and Trust Task errors (#268). Trust Task refusals carry the specification's codes as `trust-task-error` documents on every transport, numeric codes come from one registry, and `ERRORS.md` is checked by a test.
+- **A correctness and refactor wave on 11-14.** Delivery paths (#262), strict config validation (#263), a safe and headless setup wizard (#266), the store split into capability traits with atomic account updates (#277), and one record per recipient for a stored message (#238).
+- **Smaller additions.** Wake requests that ring an account's device (#276), Redis cluster mode (#59), mediator-specific fuzz targets (#293, #294), and jemalloc tuning that is actually applied (#295).
+
+**2. TSP 1.0 (2026-10-22, #967).** `affinidi-tsp` 0.3.0 follows the released specification and `tsp_sdk` 0.16.0. Messaging-sdk 0.39, didcomm-service 0.24 and the facade 0.31 took it the same day, with "no source change; TSP traffic is not interoperable with the previous releases in either direction". `docs/tsp/interop.md` was rewritten for 1.0. The 0.4 line that followed merged the SDK's and the agent's relationship-control code (#1146, #1168). See [[trust-spanning-protocol]] for the move in the other three languages.
+
+**3. did:scid as itself, did:webs on KERI v2.** Native did:scid:vh:1 resolution and DIDComm (#965, #966, #981) landed in October. The did:webs run of 2026-11-08 → 11-17 (#984–#1007, #1094, #1096, #1173) took `affinidi-did-webs` from 0.7 at Eucalyptus to 0.14.0 at the tag, on affinidi-keri 0.6 → 0.8, and the resolver cache server learned to resolve did:webs (#990). Both are described under *DID Resolution* above. Downstream, VTI built the did:webs VTA and VTC on it, and the did-hosting service hosts self-registered did:webs ([[affinidi-webvh-service]]).
+
+**4. One generation, and the ladder ends at 0.41.** `trust-tasks-rs` moved thirteen times in the window: 0.28 (#933), 0.30 (#940), 0.31 (#944), 0.32 (#956), 0.33 (#963), 0.34 (#972), 0.35 (#975), 0.36 (#978), 0.37 (#983), 0.38 (#1125), 0.39 (#1136), 0.40 (#1174) and **0.41** (#1189). Each was a breaking minor on the messaging crates. Two changes made the bumps cheaper. Since #976 the SDK's Trust Task types are **generated at build time** from the registry. Since #977 it speaks the 0.2 messaging tasks and falls back to 0.1 for older mediators. Then on 2026-11-15/17 the TDK took a **coordinated breaking release** of its foundation crates (#1162, #1174): `affinidi-crypto` 0.4, `did-common` 0.5, `did-resolver-traits` 0.2, `did-web` 0.2, `did-resolver-cache-sdk` 0.9 and `secrets-resolver` 0.6, plus a workspace lint and `unsafe` policy that patch-bumped all 45 publishable crates. [[didwebvh-rs]] 0.8.3 widened its ranges to accept either generation, so the resolver would not build two copies. The release-arc's headline for the whole release is that at `VTI-Fig-RC-0` **no lock file in any repo holds two versions of any affinidi, trust-tasks, vta or vti crate**. The facade went from 0.23.0 at Eucalyptus to **0.50.0**, and messaging-sdk from 0.33.2 to **0.51.0**.
+
+**5. A truthful receive path.** Eucalyptus ended on two production fixes for receive sides that stalled. Fig finished the job in four steps:
+- **#1149 (sdk 0.49.0).** A received message is returned even when its auto-delete cannot be queued. Every socket write is bounded, and a stalled write counts as a disconnect. The inbound channel is bounded, and when it is full, frames fall through to the caches instead of being dropped. A websocket connect reports its own error. `wait_for_response=false` means what it says.
+- **#1146 (core 0.1.13, delivery 0.3.0, sdk 0.48.0).** Guarded outbox transitions and idempotent sends, and relays forward to the final recipient.
+- **#1167 and #1172.** A bounded inbox keyed by content, with deduplication on the receiving side, dead-lettering for poison frames, and hand-off per subscriber away from the dispatcher.
+- **#1138.** Delivery receipts on request, and a `wake` set and request that the mediator's #276 answers.
+
+The REST paths got the same treatment: no panics on parse, and a timeout on every call (#1085).
+
+**6. A hardening sweep, 2026-11-12 → 11-15.** About thirty single-purpose fix PRs landed, most of them in two days; the follow-ups are labeled "AgenticSec" (#1170):
+- **Key material.** Wiped after use (#1112, #1113), key pairs zeroize on drop (`affinidi-crypto` 0.3, #1120), and keys are kept out of `Debug` output (#1098, #1109).
+- **Parsers bounded.** CESR pad bits (#1115), the JWS signature count (#1088), RDF canonicalization work limits and safe mode (#1079, #1114), and mdoc digests over the bytes received (#1082).
+- **DID method checks.** did:web and did:webs labels must decode to a host (#1093, #1094); deactivated did:webs and did:scid:ke identifiers do not resolve keys (#1096, #1097); the did:ebsi response is read under a size limit (#1095).
+- **Credential verification.** SD-JWT VCs are verified with the issuer's key (#1104), trust-list chain signatures are verified (#1080), SIOPv2 ID tokens are actually signed and verified (#1081), and mdoc uses ISO session keys (#1123).
+- **Supporting work.** cargo-fuzz targets for seven parsers (#1135), least-privilege CI tokens (#1122), and `url` 2.5.9 for RUSTSEC-2026-0592 (#1186).
+
+### Release snapshots — Eucalyptus → Fig
+
+| Crate | VTI-Eucalyptus (10-07, #927) | **VTI-Fig (11-27; TDK #1189, mediator v0.56.0)** |
+|---|---|---|
+| `affinidi-tdk` facade / tdk-common | 0.23.0 / 0.7.0 | **0.50.0** / 0.8.0 |
+| affinidi-messaging-sdk | 0.33.2 | **0.51.0** |
+| affinidi-messaging-didcomm-service | 0.18.0 | 0.39.0 |
+| affinidi-tsp | 0.2.2 (Rev 3) | **0.5.0 (TSP 1.0)** |
+| affinidi-messaging-core / -delivery | 0.1.11 / 0.1.20 | 0.1.15 / 0.3.4 |
+| affinidi-messaging-didcomm / -didcomm-v1 | 0.15.10 / 0.2.2 | 0.16.0 / 0.3.0 |
+| affinidi-messaging-mediator-types | — | 0.1.4 (new, #946) |
+| affinidi-messaging-mediator (and -common, -config, -admin, -tui, -processors, test-mediator, lockstep) | 0.37.0 (in the TDK) | **0.56.0** (own repo) |
+| did-resolver-cache-sdk / -server | 0.8.41 / 0.9.15 | 0.9.0 / 0.13.0 |
+| did-scid / did-webs / did-web | 0.3.0 / 0.7.0 / 0.1.6 | 0.5.0 / **0.14.0** / 0.2.0 |
+| affinidi-keri (separate repo) | 0.4.0 | **0.8.1** (first coordinated tag) |
+| affinidi-did-authentication / did-common | 0.3.13 / 0.4.3 | 0.4.0 / 0.5.0 |
+| affinidi-data-integrity / affinidi-bbs / affinidi-mdoc | 0.8.0 / 0.4.0 / 0.3.2 | **0.9.2** / 0.5.0 / 0.6.3 |
+| affinidi-secrets-resolver / crypto | 0.5.15 / 0.2.10 | 0.6.0 / 0.4.0 |
+| affinidi-net-guard / affinidi-rate-limit | 0.1.1 / 0.1.2 | 0.1.2 / 0.1.5 |
+| consumed: trust-tasks-rs / [[didwebvh-rs]] | 0.27 / 0.8 | **0.41** / 0.8 (0.8.3) |
+| consumed by the mediator: vta-sdk | 0.61 | 0.93 |
+
+After the tag, `affinidi-tdk` 0.51.0 and messaging-sdk 0.52.0 are already on `main`. The table's Eucalyptus column is carried over from the previous cycle's snapshot below.
 
 The 2026-09-18 → 10-07 cycle (100 commits, PRs #824–#927) ran from Eucalyptus-RC-0 to the coordinated **`VTI-Eucalyptus`** tag (2026-10-07, on #927 of 10-06; [[coordinated-releases]]). Its release-arc summary — *TSP Rev 3, signed Trust Tasks end to end, mediator operator tooling, legacy admin removed* — understates how much of it was the **mediator**: 0.26.3 → **0.37.0** in three weeks, through four distinct themes. First, **queues** (#824–#844): a sender was gated on its total across every recipient, so an unresponsive member silenced a community to everyone; the gate moved per relationship, then reached the direct-delivery and TSP paths that had had no depth limit at all. Second, **Trust Tasks became the only administration** (#845–#849, #870, #876, #901): every served task is checked before it runs, runs once, and is answered with a signed response; then the legacy DIDComm `mediator/1.0` protocols and REST admin routes were deleted in **0.31.0**. Third, **operator tooling** (#850–#882): queue, message, stats and config Trust Tasks from the mediator-operations specs, a live traffic monitor, and two new crates — a headless admin engine and a terminal console. Fourth, the **dependency ladder** became a wave: `trust-tasks-rs` 0.21 → **0.27** in six steps, `vta-sdk` 0.40 → **0.61** across nine "crossings", and a mis-versioned `affinidi-data-integrity` 0.7.14 re-released as **0.8.0** that pulled [[didwebvh-rs]] 0.8, `did-scid` 0.3, `trust-tasks-*` 0.26 and `vta-sdk` 0.61 behind it. The last two PRs before the tag (#926, #927) are production fixes from OpenVTC: a websocket that could hang forever after a laptop slept, and an inbox whose stalled receive side filled every *sender's* per-peer quota. Hardening continued under the `SEC-4045` review series — the authcrypt sender key bound to the key that decrypted (#894), deactivated did:webvh refused (#907), a role change reaching an already-open socket (#888). New crates: `affinidi-messaging-mediator-admin`, `affinidi-messaging-mediator-tui`; removed: `mediator-monitor`.
 
@@ -167,7 +233,7 @@ The August–September 2026 cycle (81 commits, PRs #716–#821; ~55k insertions,
 
 ### Security review campaign — SEC-3896–3899, SEC-4045 — September 2026
 
-- **`affinidi-net-guard`** (#788, ADR 0006): the `did:web` SSRF fix from #753 (block non-routable hosts, cap body at 1 MiB) generalised into a leaf crate — URL vetting *and* a guarded DNS resolver, because `reqwest` never consults a custom resolver for an IP-literal host and a proxy bypasses the resolver entirely. Applied to the mediator's forwarding HTTP/WS client (#819, mediator-common 0.16.1: fail-closed resolver, no redirects, no proxy, https/wss + globally-routable only), with a TLS-validation hard gate in release builds and a WS DNS-rebinding guard (#820, 0.16.2).
+- **`affinidi-net-guard`** (#788, ADR 0006): the `did:web` SSRF fix from #753 (block non-routable hosts, cap body at 1 MiB) generalized into a leaf crate — URL vetting *and* a guarded DNS resolver, because `reqwest` never consults a custom resolver for an IP-literal host and a proxy bypasses the resolver entirely. Applied to the mediator's forwarding HTTP/WS client (#819, mediator-common 0.16.1: fail-closed resolver, no redirects, no proxy, https/wss + globally-routable only), with a TLS-validation hard gate in release builds and a WS DNS-rebinding guard (#820, 0.16.2).
 - **Public-hosts-only DID resolution**: did:web in `affinidi-did-web` 0.1.4 / cache-sdk 0.8.35; did:webvh via [[didwebvh-rs]] **0.7** in cache-sdk 0.8.37 / cache-server 0.9.13 / did-scid 0.2.7 (#789). One `with_host_policy(HostPolicy::AllowPrivate)` opts local stacks back in.
 - **Mediator TSP authorization parity** (#756, #762, #765, #819): the TSP ingress trusted the envelope's *claimed* sender — an authenticated client could borrow any allow-listed VID (#754; 0.20.7 binds the outer sender to the session DID, the TSP twin of the 0.15.5 DIDComm fix); TSP direct delivery now honors `local_direct_delivery_allowed` (0.20.9, a behavior change); the peer-mediator allowlist applies to TSP relay hops, with a *stronger* guarantee than DIDComm because every TSP hop is authenticated by construction (0.20.10); TSP routed relay requires `SEND_FORWARDED` and `/readyz` no longer leaks backend detail (0.26.3).
 - **Rate limits that exist**: `did_rate_limit_per_second` was parsed, announced and never called — now charged once per authenticated request (#808, 0.26.2); a 429 names the mediator (`x-rate-limit-source`) and is typed all the way down — `HttpStatusError` in core 0.1.7, `ATMError::HttpStatus`, `NetworkFetchError` in the resolver (a rate-limited DID host no longer looks like an invalid DID, and N concurrent resolutions of a failing DID no longer make N fetches) (#801, #805, #807, #816).
@@ -267,7 +333,7 @@ Native **Kubernetes Secrets** backend (#558) and **HashiCorp Vault** Kubernetes/
 
 The mediator went 0.15.15 → **0.16.41** (~26 releases) and messaging-sdk 0.18.7 → 0.18.49; the `affinidi-tdk` facade hit **0.8.3**; `affinidi-vc` 0.2.1 (absorbing sd-jwt-vc); `affinidi-openid4vci` 0.2.1 (breaking: alg allowlist threading); did-resolver cache-server 0.7.5 → 0.9.2 (hardening wave). vta-sdk consumed at 0.18 by window end. Notable fixes: did:cheqd made opt-in so the resolver SDK no longer forces the rustls ring backend (#486); data-integrity 0.7.5 rejects forged undefined attributes in bbs-2023 safe mode (#382).
 
-The May–June cycle below (~50 commits) was dominated by the new **`affinidi-bbs` crate**, **JOSE centralisation**, and OpenID4VC family expansion.
+The May–June cycle below (~50 commits) was dominated by the new **`affinidi-bbs` crate**, **JOSE centralization**, and OpenID4VC family expansion.
 
 ### `affinidi-bbs` v0.1.0 → v0.3.0 — May–June 2026 — BBS signatures, blind BBS, per-verifier pseudonym
 
@@ -285,7 +351,7 @@ New crate. Pure-Rust BBS signatures per `draft-irtf-cfrg-bbs-signatures` over BL
 - Republished on `affinidi-crypto` 0.2.
 - Legacy `bbs_2023` encoding deprecated in favor of `bbs_2023_transform`.
 
-### `affinidi-crypto` — JOSE centralisation + DIDComm rewire
+### `affinidi-crypto` — JOSE centralization + DIDComm rewire
 
 The #327 5-part PR series: an additive `affinidi_crypto::jose` module exposing JOSE primitives + a trait seam (PR 5b), JOSE key agreement + ECDH derivation (PR 5c), didcomm rewired onto `affinidi-crypto::jose` with the bespoke crypto deleted (PR 5d). Ships with an ADR + KAT harness (PR 5a).
 
@@ -313,7 +379,7 @@ Minimal in-workspace `did:web` resolver replacing the upstream `did-web` crate; 
 
 ### mediator 0.15.2 — 2026-05-07
 
-- Foolproof `api_prefix` normalisation
+- Foolproof `api_prefix` normalization
 
 ### mediator 0.15.1 + test-mediator 0.2.2 — 2026-05-05
 

@@ -1,14 +1,14 @@
 ---
 title: "Data Rooms"
 type: concept
-tags: [rooms, data-rooms, mls, shared-memory, agents, dtg-credentials, vac, portability, host-neutral, browser]
-date-updated: 2026-10-07
-sources: [verifiable-trust-infrastructure, dtg-credentials, dtg-credential-spec, vta-browser-plugin]
+tags: [rooms, data-rooms, mls, shared-memory, agents, dtg-credentials, vac, portability, host-neutral, browser, conversations, chat, fig]
+date-updated: 2026-11-28
+sources: [verifiable-trust-infrastructure, dtg-credentials, dtg-credential-spec, vta-browser-plugin, openvtc, keyring-bifold, keyring-wallet]
 ---
 
 # Data Rooms
 
-A **data room** is a shared, credential-governed, end-to-end-encryptable space — a set of records readable and writable by exactly the parties the *room itself* admits. It is the first construct in the ecosystem that is neither a person nor a community: a room has its own DID, issues its own [[dtg-credentials-overview|DTG credentials]], and can move from one host to another without a single credential being reissued. Rooms landed in the [[verifiable-trust-infrastructure|VTI]] between 2026-09-03 and 2026-09-17, were the headline of the `Eucalyptus` release candidate, and shipped in the `VTI-Eucalyptus` release of 2026-10-07 ([[coordinated-releases]]).
+A **data room** is a shared, credential-governed, end-to-end-encryptable space — a set of records readable and writable by exactly the parties the *room itself* admits. It is the first construct in the ecosystem that is neither a person nor a community: a room has its own DID, issues its own [[dtg-credentials-overview|DTG credentials]], and can move from one host to another without a single credential being reissued. Rooms landed in the [[verifiable-trust-infrastructure|VTI]] between 2026-09-03 and 2026-09-17, were the headline of the `Eucalyptus` release candidate, and shipped in the `VTI-Eucalyptus` release of 2026-10-07 ([[coordinated-releases]]). In `VTI-Fig` (2026-11-27) they became something people talk in: a room can now be a **conversation**, with messages, replies, files, names and live updates, in the browser, the desktop client and on the phone.
 
 ## Why rooms exist
 
@@ -37,3 +37,31 @@ The second motivation is the one that shaped the architecture: **the host must n
 Crates: `vti-rooms` (storage, wire types, authorization — depends only on `vti-common`), `vti-rooms-dtg` (the DTG chain verifier, kept separate so a host can reuse storage without a credential library), `room-host` (binary), `vti-rooms-wasm` (npm-bound, unpublished). The design went through three revisions and two security reviews before the first code merged on 2026-09-03 (#1237); by 2026-09-17 there had been roughly fifty PRs and vti-rooms was at 0.2.9. The `pnm rooms {create,list,get,put,curate,renew}` CLI is the member surface. Still open: the `private` tier's ZK profile, a pull-shaped join for members with no inbox, cryptographic deletion as a verb, and the remaining leg of the epoch chain into an agent's VTA. The crate READMEs say it plainly: *early; the API will change.*
 
 **As of Eucalyptus (2026-10-07).** Rooms were the one headline of the release candidate that then stood still while the rest of the stack moved: between 2026-09-18 and the tag, `vti-rooms` went from 0.2.22 to 0.11.0 and `vti-rooms-dtg` to 0.13.0, but the changelog entries are empty — these are version bumps carried by the workspace's dependency churn (DTG Credentials v1, data-integrity 0.8, trust-tasks-rs 0.22 → 0.27), not room features. The substantive changes are small and all on the host side: `room-host` acknowledges a frame it refuses rather than leaving the sender to time out (#1569), records duplicate executions (#1571), and warns on unknown configuration keys (#1678). The browser wallet's rooms console (`packages/core/src/rooms/`) was not touched in the window, and `private` rooms are still stored but refused pending the same-subject ZK profile. Everything above describes the shipped state.
+
+## As of Fig: rooms you can talk in
+
+Eucalyptus shipped rooms as a careful storage design that nobody yet used day to day. Over the Fig window (2026-10-07 → 2026-11-27) the work turned to the thing people most want from a shared space: talking in it. The record model did not change. A message is just a record of a particular *kind*, so everything above still holds: host neutrality, no roster, sealed tiers and portability. The `vti-rooms` crate went from 0.11.0 to 0.41.1, and a new `vti-rooms-host` crate (0.6.1) now holds the `rooms/*` handlers that both hosts share (#2731).
+
+**Records that make a conversation.**
+- *Files in open rooms*, with the library and a storage migration for moving a room's files to another backend (#2348, #2261, #2273).
+- *Record kinds, replies and image previews* (#2449, #2451). A record can be a `message`, a `reaction`, a note, and so on, and it carries `inReplyTo`, `writtenAt` and `editedAt`. On a sealed room these fields stay inside the encrypted body. Hosts record when each record was created and by whom, and on an open room they refuse anyone but the original author an edit of a message or reaction.
+- *Members' names* (#2457). A member writes their own display name as an ordinary `memberProfile` record, so no host, seal or credential has to change.
+- *Opening at the newest records and loading older ones by version* (#2668, #2727).
+
+**Live, without giving the host a feed.**
+- `rooms/watch` (#2457) arms a single *content-free* `rooms/changed` signal to an address the member names. It is sent after a randomized 2–6 second delay, so the host cannot time individual writes to readers.
+- A **live watch** for a conversation that is on screen (#2671) sends a signal at most once a second under a renewable lease. It only works where the room's owner has turned that randomized delay off (#2667, #2769), which is a privacy choice made per room.
+- The member's VTA can watch rooms on behalf of its clients (#2461).
+- A member's **read marker** is kept by their VTA rather than the host, so a phone and a laptop agree on what is unread (`rooms/keys/read-marker` 0.1, #2665).
+
+**Reads held to their purpose.** Since DTG Credentials gave an authority credential a statement of the purposes its holder may use what it obtains for, room hosts hold every read to the purposes its credential chain grants (VTI-ACL-110, #2545). The member's key holder does the same for every opening (#2541). Alongside this, a room credential must be signed by its issuer (#2158), a host refuses at once anything the room has withdrawn (`rooms/revocations/*`, #2173), and an owner can prune the epoch key chain for cryptographic deletion as far as hosts and members' key holders conform (#2260).
+
+**Community-owned rooms grew up.** A community can now archive, unarchive and remove a room it owns (#2380), bind rooms to its groups so members collect their renewals (#2227, #2234), and choose a room's signal delay when it creates the room (#2769).
+
+**The clients.**
+- **Member portal:** shows a room used for chat *as its conversation* (#2804, 2026-11-24).
+- **[[vta-browser-plugin|VTA Wallet]]:** gives the portal `rooms.conversation`, `rooms.putMessage`, `rooms.react` and `rooms.watch` (#451–#454). A member can let a portal send messages and reactions without asking each time while a room is open (#457).
+- **[[openvtc|OpenVTC]]:** shows a community's data rooms the same way the portal and `pnm` do, including archived and removed rooms and renewals (#499, #516).
+- **[[keyring-wallet|Keyring]]:** from 2026-10-26 ([[keyring-bifold]] #595 onward) the phone gained rooms through the member's agent. Rooms read as a conversation, newest first, with a composer, files up to 25 MB, and a room library. A message cache, on by default since mid-November, opens a room on its kept posts before the listing answers (#1130–#1147). Keyring's read markers use the VTA-held marker, so its devices agree on what is unread.
+
+Still open at Fig: `private` rooms are stored but refused until the DTG working group settles the same-subject zero-knowledge profile; witnessed anchoring is an explicit owner task, not yet automatic on renewal; and the crate READMEs still say *early; the API will change.* See also [[community-governance]] and [[verifiable-trust-community]].

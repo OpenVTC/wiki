@@ -2,8 +2,8 @@
 title: "DID Types in the DTG (retired)"
 type: concept
 tags: [did, taxonomy, identity, dtg, history]
-date-updated: 2026-10-07
-sources: [dtg-credential-spec, dtg-credentials, openvtc]
+date-updated: 2026-11-28
+sources: [dtg-credential-spec, dtg-credentials, openvtc, verifiable-trust-infrastructure]
 ---
 
 # DID Types in the DTG (retired)
@@ -52,5 +52,11 @@ The privacy design the old separation encoded survives intact, just stated diffe
 | `m/3'/1'/1'/N` | Relationship keys (one R-DID per relationship) | one `pairwise`-scope identifier per relationship (the default since Dogwood, openvtc #254/#255 on VTI #1061) |
 
 See [[bip32-key-derivation]]. The [[dtg-credentials]] crate dropped the retired names from its documentation in 0.7.0; 0.12.0 implements the declaration itself as `IssuerScope`, and since openvtc #397 the client declares `directed` for the persona DID and `pairwise` for a relationship DID on every credential it issues.
+
+## Not to be confused with: the VTI specification's DID classes
+
+A different, still-current classification has a similar shape. The VTI specification (`dtgwg-vti-spec`) sorts the identifiers a VTA manages into three **DID classes** (VTI-KEY-190–192): **relationship DIDs** (pairwise, per community), **persona DIDs** (a person's own identity) and **service DIDs** (the durable identity of a VTA, VTC or hosting service). These classes are not DTG credential vocabulary. They decide *which DID methods are allowed for which job*. Relationship and persona DIDs may use any method. Service DIDs are limited to methods every node must be able to resolve: `did:webvh` and `did:scid:vh:1`, and since November 2026 also `did:webs` (dtgwg-vti-spec #121, #123). A VTA, a VTC or a member can therefore be a did:webs, and a did:scid can stand in for a did:webvh without naming a host. See [[decentralized-identifiers]] for those two methods.
+
+The scope declaration is unaffected. A did:webs or did:scid identifier still declares `pairwise`, `directed` or `public` like any other ([[correlation-scope]]), and the method says nothing about the scope.
 
 See also: [[correlation-scope]], [[decentralized-identifiers]], [[decentralized-trust-graph]], [[bip32-key-derivation]]

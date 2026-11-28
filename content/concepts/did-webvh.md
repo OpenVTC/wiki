@@ -1,9 +1,9 @@
 ---
 title: "did:webvh — Web DIDs with Verifiable History"
 type: concept
-tags: [did, did-webvh, identity, dif]
-date-updated: 2026-10-07
-sources: [didwebvh-rs, affinidi-webvh-service, openvtc, dtg-credential-spec]
+tags: [did, did-webvh, did-scid, identity, dif, fig]
+date-updated: 2026-11-28
+sources: [didwebvh-rs, affinidi-webvh-service, openvtc, dtg-credential-spec, affinidi-tdk, vti-didcomm-js]
 ---
 
 # did:webvh — Web DIDs with Verifiable History
@@ -42,7 +42,7 @@ Every did:webvh includes a SCID — a hash derived from the initial DID document
 did:webvh:QmSCIDhash:example.com:path
 ```
 
-The SCID also generates a `did:scid:vh` alias that's completely domain-independent.
+The SCID also generates a `did:scid:vh` alias that's completely domain-independent. Since October 2026 that alias is a working identity in its own right, not just a label (see *As of Fig* below).
 
 ### Pre-rotation
 
@@ -82,5 +82,13 @@ Working Draft 02 of the [[dtg-credential-spec|DTG Core Credentials spec]] switch
 - [[affinidi-webvh-service]] — the production service infrastructure for hosting and resolving did:webvh identifiers at scale
 
 **As of Eucalyptus (2026-10-07).** The library itself was quiet: [[didwebvh-rs]] **0.8.0** (#55, 2026-10-01) moves to `affinidi-data-integrity` 0.8 and `affinidi-bbs` 0.4 with no behavior change, and the public-hosts-only `HostPolicy` default dates from 0.7.0 (2026-09-11), not this release. The changes that matter to a did:webvh holder landed around it. A **deactivated** did:webvh no longer resolves (TDK resolver #907; VTI #1881), and the [[affinidi-webvh-service|did-hosting-service]] refuses a deactivated signer as final (#252) — a retired identifier can no longer sign anything that verifies. The hosting service moved its control plane, edge and witness to Trust Tasks only and removed its REST management surfaces (#218–#238), requires a proof bound to the sender on every task (#213), and gained passkey enrollment and step-up as Trust Tasks (#236, #243, #250) — the same "signed, proof-bound, governed" shape the rest of the release took. On the VTA side, `versionTime` log updates are serialized so two concurrent updates cannot race the log (VTI #1599), webvh keys rotate in place (#1734), and `webvh/dids/create/1.1` reports `serverless` for a DID hosted without a service (#1886).
+
+**As of Fig (2026-11-27).** did:webvh remains the stack's default method, but two neighbors grew up around it:
+
+- **The SCID stands on its own.** A `did:scid:vh:1:<SCID>` is the same log under an identifier that names no host; `?src=` only says where to fetch it. [[didwebvh-rs]] 0.8.1 (#56) converts in both directions and can express a did:webvh document *as the did:scid's own document*, so the resolved DID is the document's `id`. The TDK resolver resolves a did:scid under its bare DID through the sources it remembers. It keeps a **version floor** that survives restarts, so a host cannot serve an older log or a fork of the one already verified (TDK #965, #966, #981). A did:scid can also send DIDComm as itself. VTAs, VTCs, the trust registry, the mediator and did-hosting all accept did:scid parties, so a durable identity can be portable from birth. The DTG spec's *DID Method Considerations* had pointed at this when it noted that "methods like `did:scid` avoid the choice" of setting `portable` at inception.
+- **History as of a time.** [[vti-didcomm-js]] 0.14.0 resolves a did:webvh *as of* a past `versionTime`. That is the question a verifier needs to ask of an old credential: which key was authoritative when this was signed.
+- **did:webs alongside.** For identities that want KERI's key event log underneath instead of a JSONL history, did:webs became something the stack can create, host and act as (see [[decentralized-identifiers]]). did:webvh is unchanged by it.
+
+The library itself was quiet again, with 0.8.2 and 0.8.3 dependency-only releases. The hosting service moved to release branches and lockstep versions (0.12.0 at Fig).
 
 See also: [[decentralized-identifiers]], [[didwebvh-rs]], [[affinidi-webvh-service]]

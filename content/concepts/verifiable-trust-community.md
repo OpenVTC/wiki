@@ -1,9 +1,9 @@
 ---
 title: "Verifiable Trust Communities (VTCs)"
 type: concept
-tags: [vtc, community, trust, membership, administration, roles, two-person-rule, eucalyptus]
-date-updated: 2026-10-07
-sources: [verifiable-trust-infrastructure, openvtc, dtg-credential-spec, verifiable-git-infrastructure]
+tags: [vtc, community, trust, membership, administration, roles, two-person-rule, directory, badges, governance, eucalyptus, fig]
+date-updated: 2026-11-28
+sources: [verifiable-trust-infrastructure, openvtc, dtg-credential-spec, verifiable-git-infrastructure, keyring-bifold, vta-browser-plugin]
 ---
 
 # Verifiable Trust Communities (VTCs)
@@ -65,6 +65,33 @@ The `VTI-Eucalyptus` release (2026-10-07) rebuilt how a community is *run*, on o
 
 The console's **Access control**, **Roles** and **Actions** pages, `cnm actions list` and `cnm acl …`, and the [[vta-browser-plugin|browser wallet]]'s per-community step-up approver (#291, #293) are the surfaces; the design notes are `vtc-admin-roles.md`, `vtc-action-list.md` and `vtc-approver-step-up.md`. Not yet built: an approvals rule list keyed on Trust Task URI (the rules are fixed in code), a join review with more than one decider, and mobile approvers.
 
+## As of Fig: A Community Its Members Live In
+
+Eucalyptus made a community hard to take over. `VTI-Fig` (2026-11-27) makes it a place members actually use. Members can find one another, recognize contributions, decide things together and talk. All of it follows the same rule as administration: every act is a signed Trust Task, and the community keeps as little about its members as each feature allows.
+
+### Member Badges and the Directory
+
+**The member directory** (VTI #2189, 2026-10-18; `vtc/directory/*`, VTI-DIR-*) is how members find, recognize and reach one another. Responsibility for it is split three ways:
+
+- **Administrators** own the *field schema*: what a card can hold, and the widest audience each field may ever reach.
+- **Each member** owns *their card*: its values, who sees each one, and how findable they are.
+- **Each viewer** owns their own *stars, petnames, personal lists and private notes* about other members. These live in the viewer's own [[verifiable-trust-agent|VTA]], never at the community (VTI-DIR-001). The member portal reads them from the wallet (#2245, #2246), so the community never learns whom a member has starred.
+
+Before anyone applies, they are told what the directory would disclose about them and to whom. The VTC *generates* that disclosure statement from what it actually runs, so nobody writes it and it cannot describe a different directory from the one in operation. It travels in join manifest 0.4 along with a digest the applicant can keep (#2198). Some fields can be **filled from a credential**: a member presents a credential and the community keeps only the claims (#2205). Viewers can also *verify a field with a credential* from the portal (#2266). Members can add pictures and publish a signed external card beyond the community (#2199).
+
+**Member badges** (VTI #2477, 2026-11-06; the `vtc/badges/*` 0.1 family of 24 Trust Tasks, #2473; VTI-BDG-001 – 095) are the community's recognition layer. A badge is a picture with a name that a member earns, holds and shows on their directory card: hosting a workshop, a year in the community, attending an event, being thanked by another member. The VTI documentation is emphatic that **badges carry no authority**: no authorization decision ever reads one. There are two kinds:
+
+- A **community badge** is backed by a **badge group** with its own DID. The badge's owners are the group's managers, and the group signs each holder's badge as an **Open Badges 3.0** credential the member keeps in their wallet. Badges can be given on request, by an owner's offer, or *automatically* by a rule. Alongside the usual verified facts, a rule can count the member's accepted kudos, ideas selected on a [[community-governance|board]], and election tickets taken, though never whether a ballot was cast.
+- A **kudos badge** is a lighter thank-you any member can give another, with rate limits and a minimum tenure.
+
+**An award is an offer until it is accepted.** Nothing is issued or shown until the recipient says yes, and declining records nothing. Events get **claim codes**, so attendees can collect a badge themselves (#2494). A badge picture is built from a color and an icon in the console or the portal (#2497, #2511). A holder can **show a badge outside the community**, through a public Open Badges *Achievement* document and a baked picture that anyone can verify (#2482, #2484, #2489). Badge groups are **published to the community's [[trust-registries|trust registry]]** as issuers the community recognizes, so an outside verifier can check that a badge really comes from it (#2491). Badges are off until an administrator turns them on. [[keyring-wallet|Keyring]] shows a community's badges and each member's badge wall on the phone ([[keyring-bifold]] #1096, #1102), and `vtc-mcp` adds a badges guide and a `badge_create` tool for administrators who work through an AI assistant (#2496).
+
+### Deciding Together, Talking, and Joining Networks
+
+- **Boards and elections.** Members propose ideas on boards, and each accepted idea becomes an election run with blind tickets and a separate ballot box, so the community never sees a ballot. See [[community-governance]].
+- **Rooms as conversations.** [[data-rooms|Data rooms]] gained files, replies, members' names and live updates, and the member portal shows a chat room as a conversation (#2804).
+- **Networks of communities.** A community can preview and join a [[verifiable-trust-network|Verifiable Trust Network]] from its console (#2458, #2464), becoming a member of a larger, nestable federation with its own directory and broadcast. Elections and notices can then be put to the members of a member party (VTI-VOT-015).
+
 ## Trust Policies
 
 Communities can define their own policies for evaluating trust. For example:
@@ -75,4 +102,4 @@ Communities can define their own policies for evaluating trust. For example:
 
 These policies are the community's own governance — the DTG provides the verifiable data, and the community decides how to interpret it.
 
-See also: [[verifiable-trust-network]], [[trust-registries]], [[decentralized-trust-graph]], [[membership-credential]], [[first-person-network]]
+See also: [[verifiable-trust-network]], [[community-governance]], [[data-rooms]], [[trust-registries]], [[decentralized-trust-graph]], [[membership-credential]], [[first-person-network]]
