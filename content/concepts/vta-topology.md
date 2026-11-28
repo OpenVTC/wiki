@@ -2,8 +2,8 @@
 title: "VTA Topology — personal, community, local, cloud"
 type: concept
 tags: [vta, dtg, topology, pnm, spec, architecture]
-date-updated: 2026-10-07
-sources: [dtg-credential-spec, verifiable-trust-infrastructure, vta-browser-plugin, vti-setup, vtafarm, vtafarm-api, vtafarm-k8s, keyring-wallet]
+date-updated: 2026-11-28
+sources: [dtg-credential-spec, verifiable-trust-infrastructure, vta-browser-plugin, vti-setup, vtafarm, vtafarm-api, vtafarm-k8s, keyring-wallet, vtn-service]
 ---
 
 # VTA Topology — personal, community, local, cloud
@@ -46,6 +46,7 @@ A **Verifiable Trust Service Provider (VTSP)** provisions local VTAs, hosts clou
 | Local personal VTA / PNM | the `pnm` CLI (also shipped as a keyring-free `pnm-server` build for headless hosts); the Authenticator + PNM mobile apps on `vta-mobile-core` (e.g. the iOS `vta-mobile-agent`); the [[vta-browser-plugin\|VTA Wallet browser plugin]] (`@openvtc/pnm-core`) — which since September 2026 also carries a management console, so one surface is both a PNM and an operator console; and, from outside the OpenVTC org, the [[keyring-wallet\|Keyring phone wallet]] (Harvard Berkman Klein Center), which links to one or several cloud VTAs over Trust Tasks and is the first PNM on which a person can be vetted into a community, or vet someone, from a phone |
 | Personal Network Vault | the VTA's credential vault (`vta-vault`) and key store (`vta-keys`), presented through the PNM surfaces |
 | Community VTA / CNM | `vtc-service` + the `cnm` CLI (the *Community Network Manager*: authentication, keys, access control, vetter grants and the PGP web-of-trust bootstrap, since Eucalyptus with role-based administration where consequential actions wait for a second approver) and the embedded admin console; [[openvtc]] acts as the member-side client, and since Eucalyptus the Keyring phone can too |
+| Network VTA / NNM | `vtn-service` + the `nnm` CLI (the *Network Network Manager*, new at Fig): a [[verifiable-trust-network|Verifiable Trust Network]] holds its identity and keys in its own VTA, and its operator signs every `vtn/*` Trust Task with an admin key from `nnm` — completing the trio of person (`pnm`), community (`cnm`) and network (`nnm`); see [[vtn-service]] |
 | A node that is neither a person nor a community | a **[[data-rooms\|data room]]** — its own DID, its own credentials, hosted by `vtc-service` or the standalone `room-host` (which can itself be enrolled with and governed by a VTA, like a mediator or DID host) |
 | VTSP | the project's own hosted stack (VTA Farm, mediator, DID hosting) — and, by design, any operator who stands up [[vti-setup]]'s explore stream or builds their own Farm from [[vtafarm-k8s]] |
 | VTA network endpoint | the `#tsp` / `#didcomm` / `#rest` services in the DID document (capability discovery is DID-document-driven; TSP preferred) |

@@ -1,9 +1,9 @@
 ---
 title: "Decentralized Identifiers (DIDs)"
 type: concept
-tags: [did, identity, w3c, standards]
-date-updated: 2026-10-07
-sources: [verifiable-trust-infrastructure, openvtc, didwebvh-rs, affinidi-tdk, affinidi-webvh-service, dtg-credential-spec]
+tags: [did, identity, w3c, standards, did-webs, did-scid, keri, fig]
+date-updated: 2026-11-28
+sources: [verifiable-trust-infrastructure, verifiable-trust-agent, openvtc, didwebvh-rs, affinidi-tdk, affinidi-webvh-service, dtg-credential-spec, vti-didcomm-js]
 ---
 
 # Decentralized Identifiers (DIDs)
@@ -36,6 +36,23 @@ A "DID method" defines how a particular type of DID is created, resolved, and up
 - **Key rotation** — you can update your keys while proving continuity of identity
 - **Pre-rotation** — you can commit to your next key before you need it, preventing key compromise from hijacking your identity
 - **Witness proofs** — third parties can attest to the integrity of your DID history
+
+### did:scid (Portable from birth) — *a full identity since October 2026*
+
+A `did:scid:vh:1` is a did:webvh's self-certifying identifier on its own, without the host in the name. It uses the same verifiable log, but `?src=` is only a hint about where to fetch it, so the identifier never has to change when the log moves. Until October 2026 it was an alias. In the Fig cycle it became an identity the whole stack can hold: the TDK resolves it under its bare DID and keeps a version floor so a host cannot roll it back (TDK #965, #966, #981). It speaks DIDComm as itself, in Rust and in the browser ([[vti-didcomm-js]] 0.13). The VTA, VTC, trust registry, mediator and did-hosting all accept did:scid parties, and [[openvtc]] can create **did:scid personas** (openvtc #503). [[didwebvh-rs]] 0.8.1 does the conversion each way. It is the answer to the DTG spec's warning that a did:webvh is relocatable only if `portable` was set in its first entry.
+
+### did:webs (KERI underneath) — *alpha, November 2026*
+
+`did:webs` publishes a DID document on the web like did:web, but its keys come from a **KERI key event log** (`keri.cesr`). KERI (Key Event Receipt Infrastructure) is a protocol in which an identifier is derived from its first key commitment, and every later rotation is a signed event that must follow the previously committed next keys. A did:webs resolver replays that log, so the keys in the document are only as trustworthy as a verifiable chain of rotations, wherever the document happens to be hosted. That gives it what did:webvh offers (history, pre-rotation, portability) from a different lineage, the one behind vLEI and ACDC credentials in organizational identity.
+
+The TDK had *verified* did:webs since August 2026. In the Fig cycle (2026-11-08 → 11-17) the stack learned to *create, host and act as* one, in this order:
+
+1. **Libraries.** Affinidi's KERI implementation (`affinidi-keri-rs`, 0.4 → 0.8.1, its first coordinated tag) moved to **KERI v2** by default, checked against the Python reference keripy. On top of it, `affinidi-did-webs` reached 0.14, with recovery and a proposed **key role designation** extension that says which key does which job (see [[affinidi-tdk]]).
+2. **Hosting.** [[affinidi-webvh-service|did-hosting-service]] lets a did:webs **register itself**, authenticated by its own log (#411, #430).
+3. **The VTA and the VTC.** A [[verifiable-trust-agent|VTA]] can create did:webs personas and integrations, and can itself be a key-role did:webs from first boot, rotating its role keys from its log (VTI #2563, #2679, #2685, #2696). A VTC can take a did:webs as its DID (#2698), and a member can rotate onto one (#2517).
+4. **Other clients.** The browser resolves and encrypts to did:webs parties (vti-didcomm-js 0.15). The Dart TSP SDK resolves did:webs VIDs with full KEL verification.
+
+VTI's design note `did-webs-keri-v2.md` takes a position on each open KERI v1/v2 question in the did:webs specification. VTI creates only v2 identifiers and reads v1 and mixed streams. The note labels the integration **alpha**: a did:webs created now may have to be created again as the specifications settle, so it should not anchor a trust relationship that must outlive that. The VTI specification's **DID classes** (VTI-KEY-190–192) now admit did:webs for all three classes: relationship, persona and *service* DIDs, the durable identity of a VTA, VTC or host service. This follows dtgwg-vti-spec #121 and #123.
 
 ### did:key (Simple)
 
@@ -72,7 +89,7 @@ When an application encounters a DID, it needs to resolve it — look up the DID
 
 ### Other methods the resolver understands
 
-Beyond the three methods above, the TDK resolves `did:web`, `did:jwk`, `did:scid` (`vh:1`, and since August 2026 `ke:1`) and — new in the Dogwood cycle — **`did:webs`**, whose key state is verified through a KERI event log and whose designated aliases surface as `alsoKnownAs`. `did:ethr` and `did:pkh` were re-implemented in-tree (off by default) so that no third-party `ssi-*` crate is compiled anywhere; `did:cheqd` still parses but is no longer resolved.
+Beyond the methods above, the TDK resolves `did:web`, `did:jwk` and `did:scid:ke:1` (August 2026). `did:ethr` and `did:pkh` were re-implemented in-tree (off by default) so that no third-party `ssi-*` crate is compiled anywhere, and `did:cheqd` still parses but is no longer resolved. In the November 2026 hardening sweep every web method was made to check that its decoded domain is a host and each path label a single segment (TDK #1093, #1094). Deactivated did:webs and did:scid:ke identifiers resolve without keys (#1096, #1097).
 
 ### Resolution is public-hosts-only by default (September 2026)
 
@@ -91,4 +108,4 @@ In the OpenVTC ecosystem, all keys derive from a single BIP-39 mnemonic seed via
 - **Relationship keys** — unique keys for each relationship you establish
 - **Application keys** — for specific services and integrations
 
-See also: [[correlation-scope]], [[did-types]], [[did-webvh]], [[verifiable-trust-agent]], [[bip32-key-derivation]]
+See also: [[correlation-scope]], [[did-types]], [[did-webvh]], [[trust-spanning-protocol]], [[verifiable-trust-agent]], [[bip32-key-derivation]]

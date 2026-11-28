@@ -1,13 +1,15 @@
 ---
 title: "Statement Credential (VSC)"
 type: concept
-tags: [credentials, dtg, statement, predicate, registry, spec]
-date-updated: 2026-10-07
-sources: [dtg-credential-spec, dtg-credentials, verifiable-trust-infrastructure, openvtc, keyring-wallet]
+tags: [credentials, dtg, statement, predicate, registry, spec, vtn, fig]
+date-updated: 2026-11-28
+sources: [dtg-credential-spec, dtg-credentials, verifiable-trust-infrastructure, openvtc, keyring-wallet, verifiable-trust-network]
 ---
 
 # Statement Credential (VSC)
 
+> **Status at Fig (2026-11-27): unchanged in shape. Working Draft 0.7.0 (2026-11-24) adds context versions, salting and two registry predicates for networks (below).** The rest of this note describes Eucalyptus.
+>
 > **Status as of Eucalyptus (2026-10-07): in the spec and in every implementation.** The VSC landed on the [[dtg-credential-spec|spec]]'s `main` on 2026-09-15 and is part of the current **DTG Credentials Core Specification, Working Draft 0.6.0** (milestone tags `v0.4.0` 2026-09-15 and `v0.5.0` 2026-09-22; `main` reached 0.6.0 on 2026-09-28 and is not yet tagged — there is no `WD03` tag, although the spec's contributor notes call the draft that removed the old type strings "WD03"). It is implemented in [[dtg-credentials]] 0.12.0 (2026-09-30), in the [[verifiable-trust-infrastructure|VTI]] community service (#1859, 2026-09-30) and in [[openvtc|OpenVTC]] (#397, 2026-10-01), all shipped in the coordinated `VTI-Eucalyptus` release; the Berkman Klein [[keyring-wallet|Keyring]] phone wallet has a merged migration plan. The September 2026 wiki read this page as "where the spec is going"; it is now where implementations are.
 
 The Verifiable Statement Credential is one W3C type carrying **a signed statement by one DTG node about another**: a subject, a predicate from a governed vocabulary, and an object. "I inspected this party's passport", "this party attended this event", "I witnessed this party issue this credential", "I endorse this party's skill" — each is a statement a verifier reads and either believes or does not. Rather than mint a type per predicate, the spec defines one type and lets a **predicate profile** fix each predicate's constraints.
@@ -20,9 +22,10 @@ So the WD02 `EndorsementCredential` and `WitnessCredential` subtypes became the 
 
 A statement is **evidence**. Governance turns evidence into establishment: a VTC may weigh an observation statement when admitting a member, an `isHuman` statement when deciding whether a membership is a [[personhood-credential|PHC]], a role statement when deciding to issue a VAC. The statement never establishes the membership, personhood or authority itself.
 
-## Shape (WD 0.6.0)
+## Shape (WD 0.6.0, with 0.7.0 changes)
 
-- `@context` — `https://www.w3.org/ns/credentials/v2` first, `https://registry.trustoverip.org/dtg/context/v1` second, compared byte-exact
+- `@context` — `https://www.w3.org/ns/credentials/v2` first, then a DTG context version the spec admits, compared byte-exact: `v1`, `v2` (needed only by a VAC stating purposes, so a VSC stays on `v1`), and, once the registry publishes it, `v3`. From that point every credential lists `v3` or later
+- `salt` — REQUIRED under `v3` and absent under `v1`/`v2` (0.7.0, #87): 32 fresh random bytes, so a digest *of this statement* cannot be reversed by guessing its content. A salt does **not** blind the statement's own `predicate`, which is drawn from a small vocabulary and stays enumerable, and a profile defining a digest of its own SHOULD reference a salted object or say why enumeration does not matter. Unpublished at Fig, so not on the wire
 - `type` includes `StatementCredential` and no other concrete subtype; the predicate, not the type array, identifies the profile
 - `issuer` — the party making the statement; `issuerScope` — REQUIRED, the issuer's declared [[correlation-scope]]; a profile MAY set a minimum and a verifier MUST NOT accept a narrower declaration
 - `taskContext` — OPTIONAL unless the profile requires it, and then **`taskDigestMultibase` is REQUIRED with it** ([[trust-task-context-binding]])
@@ -60,11 +63,13 @@ The profiles live in the **DTG VSC Predicate Registry** (`trustoverip/dtgwg-vsc-
 
 `vetted/1` admits two issuers: an eligible member vetter, whose statement counts toward admission, and the community itself, recording its own identity check under its own DID. The spec carries the identity-vetting profile as a long **worked example** (#50, aligned with the registry's `vetted/1` in #70) because it exercises every member a profile must state and shows why a use case gets its own predicate rather than a payload smuggled into `endorses`: a vetting statement records a *procedure* — who checked, by what method, against which document classes, on what date — and "the vetter endorses the applicant" is not what the vetter did. Its `object.value` carries `community`, `method`, `documentClasses`, `claimsVerified`, `livenessConfirmed`, a salted `identityCommitment` (so several vetters' statements can be shown to concern one claimed identity without the community learning it), `cardDigestMultibase`, `declaredRelationship` and an optional `attestationTextDigest`; a pass establishes that the named member states it carried out the described check in the cited exchange, and not that the identity is true, that the vetter was eligible, that the check was competent, or that anyone was admitted. See [[peer-identity-vetting]].
 
+**Two predicates for networks (Working Draft 0.7.0, #83).** A [[verifiable-trust-network|VTN]] may put a community or another network in its published set without that party's agreement. The spec's informative note *a listing is not a grant* says such a listing is a statement about the listed party and not an offer of membership, so it is a VSC under **`https://registry.trustoverip.org/dtg/vsc/lists/1`**, not an unacknowledged VMC grant. A listing establishes no membership by itself, which only a completed VMC pair does, and the listed party may reject it with a **`repudiates/1`** statement naming the listing's digest. Both are registry entries the spec cites but does not define, like `vetted/1` and `presented/1`. The registry now holds six predicates (`endorses`, `witnessed`, `vetted`, `presented`, `lists`, `repudiates`). The `vti-vtn` crate and the new VTN service, both new at `VTI-Fig`, use the pair to list, and to let a party repudiate a listing.
+
 ## Community predicates
 
 A VTC or VTN defines its own predicate by publishing, under a namespace it controls, the nine things a profile must state — IRI and labeled meaning; evidence vs assertion of status; permitted object kinds; subject–object relationships; extra members; whether `taskContext` (and so `taskDigestMultibase`) is required; minimum issuer scope; who may issue; what a pass establishes and does not. A verifier not configured for that namespace rejects the credential however good its signature — the intended behavior, since which vocabularies count is decided by the governance a verifier relies on, not by an issuer. Admission to the registry is a convenience, not a gate: a community can issue under its own IRI, and verifiers can accept it, without ever seeking admission; the registry curates a shared default set once a predicate is in use by more than one community.
 
-## In implementations (Eucalyptus)
+## In implementations (Eucalyptus; Fig additions at the end)
 
 **[[dtg-credentials]] 0.12.0** (2026-09-30, "conform to the v1 context") is a wire break with no upgrade ordering: every credential 0.11 emitted is refused, and the spec makes pre-Implementers-Draft credentials non-conformant, so deployments re-issue. It adds `DTGCredentialType::Statement`, `StatementObject { Id | DigestMultibase | Value }` (exactly one, else refused), `check_predicate_iri` (absolute, NFC, byte-compared; `dtg:witnessed` as a CURIE is `InvalidPredicate`), constants `ENDORSES_V1`, `WITNESSED_V1`, `VETTED_V1`, `PRESENTED_V1` with `PredicateProfile::core` holding each one's object kinds, `taskContext` requirement and minimum scope, and constructors `new_vsc`, `new_endorses_vsc`, `new_witnessed_vsc`, `new_vetted_vsc`, `new_presented_vsc` — the witnessed and presented ones take the referenced credential in wire form and read the subject from it, so the subject–object rule holds by construction. `PredicateAcceptList` fails closed, built `from_iris` or `from_registry_json` over the registry's `accept-list.json` with the statuses a verifier admits; `accept(&vsc)` matches exactly, follows no equivalence, and applies the entry's constraints. `EndorsementCredential`, `WitnessCredential` and `RCardCredential` are gone and refused at parse. 0.13.0 (2026-10-01) is a dependency bump with no wire change.
 
@@ -74,4 +79,6 @@ A VTC or VTN defines its own predicate by publishing, under a namespace it contr
 
 **[[keyring-wallet|Keyring]]** gives the implementer's-eye view. Its `docs/plans/vsc-migration-plan.md` (merged 2026-09-18, read against WD 0.4.0) moves every witness credential the wallet issues, carries, verifies and displays from the WD02 type to `dtg:witnessed`, and makes three observations worth keeping: the *name* VWC is not deprecated, only the type string, so the ~2,200 occurrences of "VWC" across the codebase are not a migration surface (the wire shape lives in sixteen files); "is this a witness credential?" stops being a question about `type` and becomes one about `credentialSubject.predicate`; and, because Keyring signs with JSON-LD canonicalization, a VSC member with no JSON-LD term "does not exist in the signed graph" — so vocabulary terms must land before members do, guarded by CI. The plan was a proposal with no code at merge; by 2026-09-30 Keyring's vetting statement was being judged by the VTI 0.47 SDK as a `vetted/1` statement in its `card-verify` harness.
 
+
+**Fig.** The statement shape did not change between Eucalyptus and Fig. [[dtg-credentials]] 0.14–0.16 brought the context-`v2`/`v3` handling and a crate-wide security fix (a proof must be made by a key of the credential's issuer, #36), which matters for statements because a statement's issuer is part of what it says. The VTI's credential ingress admits `v2` credentials (#2801), and a community can declare `directed` on the `vetted/1` statements it issues as itself (`[credentials] issuer_scope`, #2802). [[openvtc|OpenVTC]]'s witnessing moved onto the member's VTA (#494) with the witness tasks at 0.2 (#496), so a `witnessed/1` statement is now verified and stored by the VTA rather than the desktop client.
 See also: [[endorsement-credential]], [[witness-credential]], [[credential-categories]], [[dtg-credentials-overview]], [[dtg-credential-spec]], [[trust-task-context-binding]], [[peer-identity-vetting]]

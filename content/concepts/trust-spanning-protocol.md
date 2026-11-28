@@ -1,18 +1,26 @@
 ---
 title: "Trust Spanning Protocol (TSP)"
 type: concept
-tags: [tsp, messaging, trust-over-ip, encryption, transport, relationships, post-quantum, conformance, eucalyptus]
-date-updated: 2026-10-07
-sources: [affinidi-tdk, verifiable-trust-infrastructure, verifiable-trust-agent, affinidi-webvh-service, openvtc, vta-browser-plugin, vti-didcomm-js, vti-setup, keyring-wallet]
+tags: [tsp, messaging, trust-over-ip, encryption, transport, relationships, post-quantum, conformance, eucalyptus, fig]
+date-updated: 2026-11-28
+sources: [affinidi-tdk, verifiable-trust-infrastructure, verifiable-trust-agent, affinidi-webvh-service, openvtc, vta-browser-plugin, vti-didcomm-js, vti-setup, keyring-wallet, keyring-bifold]
 ---
 
 # Trust Spanning Protocol (TSP)
 
-The Trust Spanning Protocol is the Trust Over IP Foundation's messaging protocol for parties identified by verifiable identifiers — in this ecosystem, [[decentralized-identifiers|DIDs]]. It is the **preferred transport** of the whole stack (the official order is TSP > [[didcomm|DIDComm]] > REST) and, since the `VTI-Eucalyptus` release of 2026-10-07 ([[coordinated-releases]]), the **default** one: a new VTA and a new mediator are built with TSP on, and every implementation in the ecosystem speaks **TSP specification Rev 3** — version marker `YTSP-AAC`, the merged specification at trustoverip/tswg-tsp-specification commit `f5b8668`.
+The Trust Spanning Protocol is the Trust Over IP Foundation's messaging protocol for parties identified by verifiable identifiers — in this ecosystem, [[decentralized-identifiers|DIDs]]. It is the **preferred transport** of the whole stack (the official order is TSP > [[didcomm|DIDComm]] > REST), and since the `VTI-Eucalyptus` release of 2026-10-07 ([[coordinated-releases]]) it is the **default** one: a new VTA and a new mediator are built with TSP on. Since 2026-10-22 the stack speaks **TSP 1.0**, the first *released* version of the specification (version marker `YTSP-BAA`, trustoverip/tswg-tsp-specification commit `ccda6b3`). The `VTI-Fig` release of 2026-11-27 is the first coordinated release in which all four of the ecosystem's TSP implementations, in **Rust, TypeScript, Go and Dart**, are on 1.0 and refuse the earlier drafts.
 
 The one-sentence pitch: TSP gives two DIDs an end-to-end authenticated, encrypted channel whose *intermediaries* — the mediators that relay it — can be kept from learning who is talking to whom, at a message size that grows additively per hop rather than multiplying the way nested DIDComm does. That routing privacy is why the ecosystem adopted it, and (as the September 2026 decision below records) why it is keeping it.
 
-## What Rev 3 Is
+## What TSP 1.0 Is
+
+TSP 1.0 is **Rev 3 with one rule tightened**, published when the specification's `rev3-work` branch was merged (PR #86, 2026-10-21). The rule concerns the sender field `VID_sndr` inside the ESSR confidential payload. It **must carry the sender's VID in every confidential payload**, where Rev 3 had let the HPKE-Base path write the NULL VID there. Everything else about the wire, described in the next section, is Rev 3's. Three consequences matter to a reader of this wiki:
+
+- **A message always says who sent it, inside the encryption.** A receiver refuses a confidential payload whose sender field is NULL. A *signed-only* payload may still carry NULL, and since `affinidi-tsp` 0.4.3 a receiver can refuse signed-only messages altogether (`ReceivePolicy::require_confidential()`).
+- **The version question is settled.** 1.0 is `YTSP-BAA`, read as MAJOR `B` (1) and MINOR `AA` (0). The ToIP reference `tsp_sdk` 0.16.0, the first reference release at 1.0, writes MINOR as the whole two-character count, so the Rev 3-era disagreement over reading `AAC` as MAJOR.MINOR or MAJOR.MINOR.PATCH no longer matters.
+- **MAJOR gates.** A 1.0 endpoint refuses Rev 3 (`0.2`) and Rev 2 (`0.1`) at the envelope, so this was a second flag day, a month after the first. A **mediator keeps routing** between endpoints on a revision it has moved past, because the outer envelope parser reads any MAJOR. A relay therefore does not strand peers that have not upgraded yet; only the two ends must agree.
+
+## What Rev 3 Changed (and 1.0 Kept)
 
 Rev 3 is not an increment on Rev 2; it is a different wire. The crypto mode, the version byte, the long count-code prefix, the ciphertext layout and every payload type code changed at once, so "there is no frame the two revisions can both classify". The ecosystem therefore cut over as a **flag day with no Rev 2 compatibility on the Rust side** — a Rev 2 frame arriving at a Rev 3 peer is reported as `TspError::RevisionMismatch` rather than misread. The pieces that matter to a reader of this wiki:
 
@@ -22,9 +30,23 @@ Rev 3 is not an increment on Rev 2; it is a different wire. The crypto mode, the
 - **Direct, Routed and Nested modes** survive, with `MAX_HOPS` raised from 16 to 64 and §5.3.3's rule that an intermediary must never persist the endpoint-to-endpoint VIDs of a nested message.
 - **Post-quantum** is now in the specification (§8): a hybrid `MLKEM768-X25519` KEM and ML-DSA-65 signatures, with a published test vector. See [[post-quantum-cryptography]] for what is wired and what is not.
 
-The version field is worth a footnote because it is a live interop question: the merged spec reads the three characters after `YTSP-` as MAJOR (one character) . MINOR (two), so Rev 3 is `AAC` where Rev 2 was `AAB`; pre-merge drafts printed `ABA` under a MAJOR.MINOR.PATCH reading. Only MAJOR gates processing in every implementation, so the disagreement (raised upstream on spec PR #63) does not affect whether messages open.
+*(Under Rev 3 the version field was a live interop question: the spec read `AAC` as MAJOR.MINOR, while pre-merge drafts printed `ABA` under a MAJOR.MINOR.PATCH reading. TSP 1.0 settled it; see above.)*
 
-## The Flag Day Across the Stack — September 2026
+## The 1.0 Move in Four Languages — October–November 2026
+
+The Rev 3 move had to happen everywhere at once, because the wire changed completely. The 1.0 move was smaller, a single rule plus a new version byte, but MAJOR gating made it just as all-or-nothing between endpoints:
+
+- **Rust, 2026-10-22.** `affinidi-tsp` 0.3.0 follows the released specification and `tsp_sdk` 0.16.0, with the eleven Appendix A vectors replaced by 1.0's, including a new referral control vector ([[affinidi-tdk]] #967). The same day, the messaging SDK and didcomm-service took it with no source change, the mediator moved (affinidi-messaging-mediator #30), and so did the **Trust Tasks TSP binding** (dtgwg-trust-tasks-tf #881). VTI followed on 10-24 with mediator 0.45 and trust-tasks 0.34 (VTI #2282). By `VTI-Fig` the crate is 0.5.0. Its 0.4 line moved relationship-control handling into one shared module, so the agent and the SDK no longer each keep a copy: referrals are verified and not applied, and a re-sent accept is idempotent.
+- **TypeScript, 2026-10-22.** `@openvtc/vti-tsp-js` 0.4.0 in the [[vta-browser-plugin|browser wallet]] refuses the Rev 2 and Rev 3 drafts and requires the sender VID (#374). This also **retired the Rev 2 decode-only codec** that Eucalyptus had kept for stragglers.
+- **Phone.** [[keyring-bifold|Keyring]] read and packed TSP 1.0 beside Rev 3 from 10-22 (#492), choosing 1.0 or DIDComm per upstream peer with a background probe (#502). Its DIDComm v2 fallback for upstream services covered the gap until the peer side moved (#487).
+- **Go and Dart, 2026-11-23.** `affinidi-tsp-go` v0.2.0 and `affinidi_tsp` (Dart) 0.2.x moved to 1.0, also refusing the drafts and requiring the sender VID. The Dart package then gained VID resolution for `did:scid:vh:1` (through its verified did:webvh log) and `did:webs` (with full KEL verification, on a pure-Dart BLAKE3), on 11-24.
+
+Around the move, the TSP surfaces themselves tightened:
+- **A signed login.** A mediator's `/tsp/authenticate` now verifies a signed statement naming that mediator, the session and an expiry of at most five minutes (mediator #244), instead of a bare challenge. The old form needs an explicit, dated operator override.
+- **One socket for many identities.** Mediator **DID multiplexing** has a `tsp-mux` subprotocol for raw-TSP sockets (mediator #80), so one connection can carry many VIDs under signed grants. A VTA that answers for a person's many pairwise relationship DIDs can do so without a socket per DID.
+- **A truthful receive path.** In the messaging SDK (TDK #1149, #1167, #1172), bounded writes, a bounded inbox with deduplication, and dead-lettering of poison frames mean a TSP frame is neither lost nor redelivered forever.
+
+## The Rev 3 Flag Day Across the Stack — September 2026
 
 Because nothing a Rev 2 peer packs can be unpacked by a Rev 3 one, every repo had to move in the same window:
 
@@ -44,7 +66,9 @@ The decision, recorded as **decided**: multi-hop TSP — Trust Tasks routed wher
 
 ## Cross-Implementation Conformance
 
-TSP now has five implementations in this ecosystem's orbit, and a new repository — **github.com/OpenVTC/tsp-conformance** (created 2026-09-16) — runs them against each other: one runner, a driver per implementation, and CI. The implementations are `affinidi-tsp` 0.2.0 (Rust), the ToIP reference `tsp_sdk` 0.11.0, `@openvtc/vti-tsp-js` 0.3.0, and two new ports, **`affinidi-tsp-go` 0.1.0** and **`affinidi-tsp-dart` 0.1.0**. The suite asks three questions — do the specification's Appendix A vectors open (and re-pack byte for byte where the vector publishes its ephemeral material), do all pairs interoperate across roughly 35 message shapes, and do they refuse what they should and run the relationship protocol correctly. The 2026-09-16 run:
+**Status at Fig.** The suite was retargeted to TSP 1.0 on 2026-10-22 (tsp-conformance #5). Its published report is the run of that day, when the Rust, TypeScript and reference implementations were already on 1.0 and Go and Dart were still on Rev 3, so most of its failures are 1.0 refusing Rev 3 on MAJOR, as designed. The Go and Dart drivers moved to 1.0 on 11-23 and the old Rev 3 findings were dropped (#7). **A fresh all-1.0 report has not yet been published**, and the TDK's `docs/tsp/interop.md` still says to re-run it. The history below is the Rev 3 baseline.
+
+TSP had five implementations in this ecosystem's orbit, and a new repository — **github.com/OpenVTC/tsp-conformance** (created 2026-09-16) — runs them against each other: one runner, a driver per implementation, and CI. The implementations are `affinidi-tsp` 0.2.0 (Rust), the ToIP reference `tsp_sdk` 0.11.0, `@openvtc/vti-tsp-js` 0.3.0, and two new ports, **`affinidi-tsp-go` 0.1.0** and **`affinidi-tsp-dart` 0.1.0**. The suite asks three questions — do the specification's Appendix A vectors open (and re-pack byte for byte where the vector publishes its ephemeral material), do all pairs interoperate across roughly 35 message shapes, and do they refuse what they should and run the relationship protocol correctly. The 2026-09-16 run, against Rev 3:
 
 | Suite | Pass | Fail |
 |---|---|---|
@@ -87,6 +111,11 @@ The three weeks between the release candidate and the `VTI-Eucalyptus` tag (2026
 
 ## Open Items
 
-The VID model does not carry post-quantum keys, so nothing above `affinidi-tsp` can use the `pq` path yet; D7/D9 relationship hardening; the browser wallet's Rev 2 decode-only codec awaits deletion; `vti-tsp-js` lacks the sealed box and PQ (its README states nothing either way on signed-only messages); the version-field reading is raised upstream; and the multi-hop nested path is exercised on cross-mediator sends but not yet driven from DID-document route discovery.
+- **The VID model does not carry post-quantum keys**, so nothing above `affinidi-tsp` can use the `pq` path yet. The post-quantum CESR code point is still provisional.
+- **The conformance suite has not published a run with all five implementations on 1.0.** The 10-22 report predates the Go and Dart moves.
+- **Gaps in `vti-tsp-js`.** It still lacks the sealed box, signed-only messages and the PQ path; the Go and Dart ports have all three.
+- **Relationship hardening.** D7 and D9 remain.
+- **Routing.** The multi-hop nested path is exercised on cross-mediator sends but not yet driven from DID-document route discovery.
+- **Closed this cycle.** The Rev 2 decode-only codec in the browser wallet is gone (tsp-js #374), and the version-field reading is settled by 1.0.
 
-See also: [[didcomm]], [[post-quantum-cryptography]], [[affinidi-tdk]], [[verifiable-trust-infrastructure]], [[verifiable-trust-agent]], [[coordinated-releases]]
+See also: [[didcomm]], [[post-quantum-cryptography]], [[affinidi-tdk]], [[keyring-bifold]], [[verifiable-trust-infrastructure]], [[verifiable-trust-agent]], [[coordinated-releases]]

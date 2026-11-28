@@ -1,8 +1,8 @@
 ---
 title: "BIP-32 Key Derivation"
 type: concept
-tags: [cryptography, keys, bip32, bip39, post-quantum]
-date-updated: 2026-10-07
+tags: [cryptography, keys, bip32, bip39, post-quantum, did-webs, keri]
+date-updated: 2026-11-28
 sources: [verifiable-trust-infrastructure, verifiable-trust-agent, openvtc]
 ---
 
@@ -82,5 +82,13 @@ Derivation from one seed is the rule, but the [[verifiable-trust-agent|VTA]] now
 A third note cuts the other way: "recoverable from the mnemonic" is not the same as "exportable". Since September 2026 any key can be marked **`exportable: false`** so it can only ever be *used* through the signing oracle, never read out (#1401, #1407), and the misnamed, unspecced, global-admin-gated `seeds/export-mnemonic` was retired in favor of **`keys/export-secret`**, which exports one named key and respects that flag (#1404). The seed still backs everything up; an operator simply no longer has a blanket way to pull key material out of a running VTA.
 
 As of the `VTI-Eucalyptus` release (2026-10-07) that rule has a worked example and a sharper edge. `key-export` is its own capability on an agent's ACL entry rather than a side effect of admin (VTI #1619, #1715; the [[vta-browser-plugin|browser wallet]] grants it per holder, #282–#285), and the first consumer that used to *need* it no longer does: `did-git-sign` had exported the Ed25519 seed on every commit, and now asks the VTA to sign the commit's digest in place through `keys/sign-sshsig/0.1` (#1957), with a credential narrowed to exactly that — see [[community-git-namespaces]]. The mnemonic layer itself moved to `bip39` 3.0 (#1826) with no change to derivation.
+
+## Pre-rotated and role keys (Fig, November 2026)
+
+The Fig release (2026-11-27) gave the derivation tree a new kind of tenant. A **did:webs** identifier is backed by a KERI key event log, and KERI's defining move is *pre-rotation*: each event commits to the digest of the **next** key before that key is ever used, so a thief who takes today's key still cannot rotate the identifier away from its owner. In the [[verifiable-trust-agent|VTA]] both the current signing key and its pre-rotated successor are **derived from the seed under the context's base path**, like every other key (VTI #2561–#2564, `docs/02-vta/did-webs.md`). Derivation and pre-rotation fit each other well: the successor already exists, deterministically, without being stored anywhere it could leak, and a VTA restored from its mnemonic can still produce the key its log has committed to.
+
+A VTA's *own* identity can now be a **key-role** did:webs (VTI #2679), and there the tree is used to keep jobs apart: an attestation key and an operational key, each **on its own path** and each designated for its role, plus an **independently derived X25519 messaging key** — never the X25519 key converted from the signing key, so a compromise of one does not hand over the other. The key event log's own key sits in no verification relationship at all. This is the per-role separation the key-roles design (`docs/05-design-notes/key-roles.md`) argues for: for each role it asks what a stolen copy would let an attacker do, for how long and how the damage is undone, and concludes that keys which fail, rotate and are custodied differently should not be one key. The design's levels 2 and 3, with a recovery key held outside the VTA, were still at the planning stage at the tag.
+
+Two Fig changes are about keys the tree should **not** hold. A TEE VTA's first-boot claim used to mint the claimant's admin key inside the enclave and seal it back; it now enrolls the DID the claimant brought, because a client generates its own key and its private key never leaves it (VTI #1987, #2182). And **external-account secrets** — credentials for cloud and third-party accounts the VTA acts for — are not derived at all: they are wrapped and kept in a keyspace excluded from backup, so a portable, password-protected backup is never a way to take one (VTI #2016). Members may now hold P-256 and secp256k1 keys of their own (VTI #2021); those are the member's keys, not branches of the community's tree.
 
 See also: [[verifiable-trust-agent]], [[decentralized-identifiers]], [[post-quantum-cryptography]]

@@ -1,8 +1,8 @@
 ---
 title: "vtafarm-k8s — VTA Farm cluster (OpenTofu on Hetzner)"
 type: entity
-tags: [vta-farm, hosting, kubernetes, vault, opentofu, hetzner, infrastructure, secondary, deployment]
-date-updated: 2026-10-07
+tags: [vta-farm, observability, prometheus, loki, hosting, kubernetes, vault, opentofu, hetzner, infrastructure, secondary, deployment]
+date-updated: 2026-11-28
 repo: https://github.com/ic3software/vtafarm-k8s
 ---
 
@@ -20,7 +20,7 @@ A Vault cannot unseal itself after a restart, and a farm whose pods block on a h
 
 ## What It Does
 
-Five stacks, applied in order; each waits on the one before:
+Six stacks, applied in order; each waits on the one before (the sixth, observability, is opt-in since November and a no-op when monitoring is off):
 
 | Stack | Builds | Once per |
 |-------|--------|----------|
@@ -28,11 +28,12 @@ Five stacks, applied in order; each waits on the one before:
 | `02-rancher` | **Rancher** on that cluster, with cert-manager and Let's Encrypt | organization |
 | `03-rke2-clusters/<name>` | an **RKE2** cluster Rancher creates for a farm (`cx33` servers, canal CNI, Traefik ingress, hcloud CCM/CSI) — or a single-node **dev** cluster (#21) | farm |
 | `04-vtafarm-platform/<name>` | **cert-manager**, **Longhorn** storage (one replica per volume, daily S3 backups) and the **two Vaults** | farm |
-| `05-vtafarm-app/<name>` | the **vtafarm** and **vtafarm-api** Helm charts from GHCR, the wildcard TLS chart, generated JWT and DB secrets, and since September the API's SIOPv2 login settings (#24) and `MOBILE_CONNECTION_SIGNING_KEY` (#26) | farm |
+| `05-vtafarm-app/<name>` | the **vtafarm** and **vtafarm-api** Helm charts from GHCR, the wildcard TLS chart, generated JWT and DB secrets, and since 10-13 the **Farm signing key** (`farm_signing_key`, an Ed25519 seed) behind the API's public DID and Trust Task endpoint, which replaced September's SIOPv2 login settings (#24) and `MOBILE_CONNECTION_SIGNING_KEY` (#26) when the Farm moved to VTA claim trigger links (#29) | farm |
+| `06-vtafarm-observability/<name>` | **kube-prometheus-stack** (Prometheus, Alertmanager, Grafana), **Thanos** for long-term metrics in Object Storage, **Loki** and **Alloy** for logs (#40, #47, #48), kubelet node-resource scraping (#42), tenant metrics opt-in (#41, #45), Alertmanager replicas and the tenant-alert webhook into the API (#52–#54) | farm |
 
 All state lives in a locked S3 backend on Hetzner Object Storage (#15), one state file per cluster directory; `terraform.tfvars` files are synced through the same bucket rather than committed. The Makefile fronts everything (`make new-rke2-cluster CLUSTER=…`, `make apply-vtafarm-platform …`, `make vault-bootstrap … TARGET=farm|transit`, `make kubeconfig-merge-rke2 …`, and since #27 `make apply-rke2 CLUSTER=…`, which is the only supported way to *shrink* a farm cluster). The whole management layer costs about **€38/month**; a farm cluster adds its own nodes.
 
-The thirteen runbooks are the sysop's manual the wiki was waiting for: `vault.md` (init, unseal, the isolation model, day-2), `backup-restore.md` (four failure scenarios and a drill, #19), `cluster-migration.md` (moving a live farm — database, Vault and tenants — to a new cluster, #18), upgrades for every layer, `operations.md` (now including kubeconfig renewal and **node retirement**), testing (the HA failover test), troubleshooting, teardown, cost, remote state, an OpenTofu primer, and `design-decisions.md`, which explains every pin.
+The runbooks (fourteen since `rke2-node-pools.md`, #49) are the sysop's manual the wiki was waiting for: `vault.md` (init, unseal, the isolation model, day-2), `backup-restore.md` (four failure scenarios and a drill, #19), `cluster-migration.md` (moving a live farm — database, Vault and tenants — to a new cluster, #18), upgrades for every layer, `operations.md` (now including kubeconfig renewal and **node retirement**), testing (the HA failover test), troubleshooting, teardown, cost, remote state, an OpenTofu primer, and `design-decisions.md`, which explains every pin.
 
 ## Components
 
@@ -40,21 +41,27 @@ The thirteen runbooks are the sysop's manual the wiki was waiting for: `vault.md
 |------|------|
 | `stacks/01-infra`, `02-rancher` | management layer, built once |
 | `stacks/03…05/_template` | per-cluster scaffolds instantiated by `scripts/new-*.sh` |
-| `modules/rke2-custom-cluster` | Rancher-managed RKE2 on Hetzner, rolling upgrades with concurrency 1, drain config (#20), stable machine plans (#23), `retired-nodes.tf` post-apply reconciliation (#27) |
+| `modules/rke2-custom-cluster` | Rancher-managed RKE2 on Hetzner, rolling upgrades with concurrency 1, drain config (#20), stable machine plans (#23), `retired-nodes.tf` post-apply reconciliation (#27), kubelet/system **node reservations** (#31) and, since #49, **named node pools** so different server shapes coexist in one cluster |
 | `modules/vtafarm-platform` | cert-manager, Longhorn + backup chart, farm Vault and transit Vault (with an in-cluster PKI chart) |
-| `modules/vtafarm-app` | the two application Helm releases, the TLS chart, the SIOP and mobile-signing secrets |
+| `modules/vtafarm-app` | the two application Helm releases, the TLS chart, the Farm signing-key secret (SIOP and mobile-signing secrets removed in #29) |
+| `modules/vtafarm-observability` | Prometheus/Thanos/Grafana, Loki/Alloy and Alertmanager, with chart pins (Thanos 0.49.0, Loki 21.4.0, Alloy 1.16.0) and a test suite |
 | `scripts/` | `vault-bootstrap.sh` (took over the API's bootstrap), `rke2-apply.sh` (retire-then-apply), `rke2-kubeconfig.sh` (renew without clobbering valid credentials), etcd snapshot/restore, OS and package upgrades, cluster migration, kubeconfig helpers, with bash test suites under `scripts/tests/` |
 
-**Pinned versions** (`design-decisions.md` explains each; unchanged this cycle): k3s **v1.35.7** and Rancher **2.14.3** (the newest k3s Rancher's chart accepts); RKE2 **v1.35.7+rke2r1**; cert-manager **v1.21.1**; Longhorn **1.12.1**; Vault Helm chart **0.33.0**; hcloud CCM 1.34.0 / CSI 2.22.1; OpenTofu ≥ 1.12; Ubuntu 24.04. Application versions are the two chart versions in stack 05's tfvars (`vtafarm_version`, `vtafarm_api_version`), each chart's `appVersion` being its image tag — the template example still reads `0.1.0` for both while the current charts are 0.12.2 / 0.12.1.
+**Pinned versions** (`design-decisions.md` explains each): k3s **v1.35.7** and Rancher **2.14.3** (the newest k3s Rancher's chart accepts); RKE2 **v1.35.7+rke2r1** as the module default, with the downstream-cluster template pinned to **v1.35.9+rke2r1** since #32; cert-manager **v1.21.1**; Longhorn **1.12.1**; Vault Helm chart **0.33.0**; hcloud CCM 1.34.0 / CSI 2.22.1; OpenTofu ≥ 1.12; Ubuntu 24.04. Application versions are the two chart versions in stack 05's tfvars (`vtafarm_version`, `vtafarm_api_version`), each chart's `appVersion` being its image tag — the template example still reads `0.1.0` for both while the current charts are 0.12.2 / 0.12.1.
 
 ## Dependencies & relationships
 
-Produces the cluster, Vault and `vtafarm-api-vault` Secret that [[vtafarm-api]] requires before it will start, and installs [[vtafarm]] beside it. The VTA, mediator, DID-hosting and VTC images those provision come from GHCR and are chosen per session, not here — this repo pins no VTI component version and is not in the `VTI-Eucalyptus` tag set ([[coordinated-releases]]). Hetzner Cloud and Cloudflare are hard dependencies today. Nothing in this repo is specific to the project's own `firstperson.dev` farm; the domain and credentials are inputs.
+Produces the cluster, Vault and `vtafarm-api-vault` Secret that [[vtafarm-api]] requires before it will start, and installs [[vtafarm]] beside it. The VTA, mediator, DID-hosting and VTC images those provision come from GHCR and are chosen per session, not here — this repo pins no VTI component version and is not in the `VTI-Eucalyptus` or `VTI-Fig` tag sets ([[coordinated-releases]]). Hetzner Cloud and Cloudflare are hard dependencies today. Nothing in this repo is specific to the project's own `firstperson.dev` farm; the domain and credentials are inputs.
 
 ## Recent Development
 
-No tagged releases — it is infrastructure, applied from `main`. 36 commits since 2026-08-10.
+No tagged releases — it is infrastructure, applied from `main`. 63 commits since 2026-08-10, 27 of them between Eucalyptus and Fig.
 
+- **Fig window (2026-10-08 → 11-25; #28–#54, all but one by vthwang).** The cluster's share of every Farm feature, then an observability layer.
+  - *Farm features.* Recursive Vault secret deletion (#28); the **VTA claim deployment** (#29, 10-13) swapping the SIOP and mobile-callback secrets for the Farm signing key; Trust Registry secrets allowed in the Farm Vault policy (#30, with API 0.15.0); the placement worker's deployment and memory (#35, #36, with API 0.19.0).
+  - *Running it.* RKE2 node reservations (#31) and a pinned downstream version (#32); a Traefik host-port rollout deadlock prevented (#33); Vault pods given priority classes (#34); private kubelet addresses preferred (#37); Rancher-extension kubeconfig tokens (#38); only changed tfvars synced (#39); the **Vault CA** key rotation pinned and its trust bundle distributed, so mediators can verify Vault instead of skipping TLS (#43, #44); **named node pools** with a runbook for moving three `cx33` servers to `cx43` (#49).
+  - *Observability (11-14 → 11-25).* Prometheus (#40), tenant metrics (#41, then opt-in #45), kubelet scraping (#42), Thanos store gateway on Longhorn (#46), **Loki + Alloy** (#47) and the Loki query endpoint the API reads retained logs from (#48), smaller default Prometheus storage (#51), Alertmanager replicas (#52) and **tenant resource alerts** with their webhook traffic allowed (#53, #54).
+  - *Cost.* `cost.md` now prices farm clusters as well as the management layer (#50): a `cx33` farm of six machines hosts about 175 VTAs for €73.73/month (€0.42 per VTA), and a `cx43` farm of four about 350 for €88.15 (€0.25), because fixed overhead stops dominating on larger nodes.
 - **Eucalyptus window (2026-09-18 → 10-02; #24–#27, all vthwang).** Two of the four commits are the cluster's share of Farm features: stack 05 gained the API's **SIOPv2 wallet-login** variables (#24, 09-18, the day the API shipped 0.5.0) and the per-environment **mobile connection signing key** the Automatic Mobile Connection needs (#26, 09-30, with API 0.11.0). The other two are day-two operations earned the hard way: **kubeconfig renewal that never overwrites valid credentials** (#25, 09-30 — `rke2-kubeconfig.sh` plus a test suite, after the old write script could clobber a working context), and **automated safe node retirement** (#27, 10-02, +1,190 lines): reduce `server_count` or `worker_count`, run `make apply-rke2`, and `rke2-apply.sh` saves a plan, cordons every retiring node and disables its Longhorn scheduling, then per node requests Longhorn eviction (up to 30 min), drains respecting PodDisruptionBudgets, waits for volumes and CSI attachments to detach, deletes the Rancher Machine and confirms the Node, its etcd membership and etcd health are gone within five minutes — only then executing the saved plan. Mixed growth and shrinkage, reductions below three servers and unrelated infrastructure changes are rejected; a direct `tofu apply` bypasses it and the runbook says not to.
 - **09-11** avoid RKE2 machine-plan churn (#23). **09-04** Apache-2.0 + DCO (#22). **08-30** single-node RKE2 **dev mode** (#21); drain configured (#20).
 - **08-22 → 08-27** locked S3 state backend (#15); helm provider 3.x (#16); Longhorn S3 backups (#17); **live-farm migration** (#18); backup/restore drills (#19).
@@ -63,6 +70,6 @@ No tagged releases — it is infrastructure, applied from `main`. 36 commits sin
 
 ### Maturity and known gaps
 
-Young but already exercised by migrations, drills and now a scripted shrink. Single region, Hetzner-only, Cloudflare-only DNS; Longhorn at one replica trades durability for cost (S3 backups are the safety net); the transit-Vault seal is explicitly interim pending a cloud KMS; and the Farm is not a TEE — for hardware-isolated keys the VTA's Nitro mode remains a separate, self-hosted path.
+Young but already exercised by migrations, drills, a scripted shrink and, this cycle, a documented server-shape migration through node pools. Single region, Hetzner-only, Cloudflare-only DNS; Longhorn at one replica trades durability for cost (S3 backups are the safety net); the transit-Vault seal is explicitly interim pending a cloud KMS; and the Farm is not a TEE — for hardware-isolated keys the VTA's Nitro mode remains a separate, self-hosted path.
 
 See also: [[vtafarm]], [[vtafarm-api]], [[vti-setup]], [[vta-topology]], [[verifiable-trust-agent]], [[verifiable-trust-infrastructure]], [[coordinated-releases]]

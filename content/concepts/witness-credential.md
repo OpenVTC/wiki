@@ -1,8 +1,8 @@
 ---
 title: "Witness Credential (VWC) — the witnessed/1 statement"
 type: concept
-tags: [credentials, dtg, witness, attestation, statement, predicate]
-date-updated: 2026-10-07
+tags: [credentials, dtg, witness, attestation, statement, predicate, fig]
+date-updated: 2026-11-28
 sources: [dtg-credential-spec, dtg-credentials, verifiable-trust-infrastructure, openvtc, keyring-wallet]
 ---
 
@@ -39,11 +39,13 @@ The profile's normative definition is its entry in the DTG VSC Predicate Registr
 
 **What a pass establishes, and does not.** That the witness observed the subject issue those claims in that exchange. Not that the credential is current, that its claims are true, that the exchange completed (that needs the Trust Task's outcome evidence), that the witness is a member, or that anything is authorized. A witness statement is *evidence*, weighed by the community whose witnessing policy it was issued under — and, like every VSC, it is accepted only by a verifier configured for its predicate.
 
-## Implementation Status (Eucalyptus)
+## Implementation Status (Eucalyptus and Fig)
 
 [[dtg-credentials]] went through the change in three releases. 0.11.0 (2026-09-22) added `taskDigestMultibase` and `new_vwc_for_session`, which reads both `taskContext` and the task digest from the `witness/session` document so the pair cannot disagree, and finally made the edge digest REQUIRED (closing a gap recorded here since 0.2.0). **0.12.0** (2026-09-30) removed `WitnessCredential` outright — `CredentialSubjectWitness`, `new_vwc`, `new_vwc_for_session` are gone and the type is refused at parse — and replaced it with `new_witnessed_vsc(issuer, scope, &edge_credential_json, &session, from, until, witness_context)`, which reads the subject *and* the digest from the edge credential so the profile's subject–object rule holds by construction; `witnesses_issuance_of(&credential)` is the verifier-side check, `witnesses_presentation_of` its `presented/1` counterpart, and a `PredicateAcceptList` decides whether a verifier accepts the predicate at all. `WitnessContext` stays as the `witnessed/1` subject member.
 
 The [[verifiable-trust-infrastructure|VTI]] community service (#1859) reads witness evidence in its personhood policy as a `StatementCredential` under `witnessed/1` with the digest at `object.digestMultibase`, and refuses to *issue* `witnessed/1` itself (`predicateNotIssuable`) — a witness statement is made by the party that ran the exchange, never by the community. [[openvtc|OpenVTC]] (#397) accepts it through the same fail-closed core list. The Berkman Klein [[keyring-wallet|Keyring]] wallet, whose witness server was the ecosystem's main VWC issuer and whose implementation feedback shaped the WD01 digest rules, has a merged plan (`docs/plans/vsc-migration-plan.md`, 2026-09-18) to move its witness credential to `dtg:witnessed`; its findings — the name survives, the type string goes; detection becomes a predicate question; JSON-LD terms must exist before members are signed — are summarized on [[statement-credential]].
+
+**Fig.** Keyring **shipped the migration**. Release 242 (first in build 251, mid-October) carries `@bifold/dtg-vocab`, the VSC JSON-LD terms, verification-first handling and the issuance cutover behind a `WITNESS_CREDENTIAL_SHAPE` switch (keyring-bifold #403, keyring-wallet #470). The shipped witness defaults to the `witnessed/1` shape, a decision recorded on 2026-10-27, and an unverified witness credential earns no badge on the contact screens (#406). Its witness server answers a TSP request in the version it came in (#495). [[openvtc|OpenVTC]] moved witnessing onto the member's VTA (#494, 2026-10-16). The VTA is the witnessed party over `vta/witness/{open,present,accept}`, verifying and storing the VWC, and the records sync across devices through the VTA's app state (#495). The VTI then served the witness tasks **only at 0.2**, with `memberPresentation` and the personhood assertion's `outcomeEvidence` as spec members rather than `ext` carriage (VTI #2147, openvtc #496), and retired `witness/session/0.1` and `witness/session/submit/0.1` altogether (#2334, 2026-10-30). Under Working Draft 0.7.0's salting (#87), the edge credential a VWC's `object.digestMultibase` names will carry a salt once context `v3` is published, so a VWC shown without its referenced credential no longer lets an observer guess which edge it concerns.
 
 ## Role in Trust Assessment
 

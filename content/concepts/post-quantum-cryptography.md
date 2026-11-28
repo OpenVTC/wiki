@@ -2,7 +2,7 @@
 title: "Post-Quantum Cryptography in the Stack"
 type: concept
 tags: [cryptography, post-quantum, ml-dsa, ml-kem, keys, data-integrity, tsp, security]
-date-updated: 2026-10-07
+date-updated: 2026-11-28
 sources: [affinidi-tdk, verifiable-trust-infrastructure, verifiable-trust-agent, didwebvh-rs, openvtc, keyring-wallet]
 ---
 
@@ -38,6 +38,18 @@ The most instructive September finding was not cryptographic. Three times, PQ co
 
 Nothing cryptographic changed between the release candidate and the `VTI-Eucalyptus` tag (2026-10-07); what changed is that hybrid credentials became something a person can *see* and a second client can *read*. [[openvtc|OpenVTC]] #433 (2026-10-05) draws a **PQC-SIGNED** badge on every credential signed with a post-quantum key as well as a classical one — read per credential from its proof set, per community from the credentials it issued, or before joining from the `assertionMethod` keys in the community's DID document — and the join page's new "How it protects you" block says the absence in words ("classical-only signing"), next to the same treatment for [[peer-identity-vetting|hidden vetting]]. On the reading side, VTI #1868 fixed the findings the [[keyring-wallet|Keyring]] team filed against proof sets and #1889 made a DTG credential parse with a proof set in `dtg-credentials` 0.13; Keyring's own `documentProof` verifier walks a proof set, verifies `eddsa-jcs-2022` and skips `mldsa44-jcs-2024`, which it does not implement — exactly the behavior the hybrid design wants from a classical-only verifier. `affinidi-data-integrity` was re-released as 0.8.0 (TDK #916) and [[didwebvh-rs]] 0.8.0 moved onto it with no behavior change. No new PQ code landed in the TDK in this window; the TSP `pq` path is unchanged and the VID model still does not carry PQ keys. An `MLKEM768-X25519` package for the Dart TSP port was mentioned in the release summary but is not present in any clone this wiki tracks, so it is not described here.
 
+## As of Fig
+
+Fig (2026-11-27) again added no post-quantum code to the Rust side, but two things moved around it.
+
+**TSP 1.0, with the post-quantum profile carried over.** The TDK replaced the TSP Rev 3 draft with **TSP 1.0** on 2026-10-22 (affinidi-tdk-rs #967), and every implementation in the stack — Rust, JavaScript, Go and Dart — now refuses the earlier drafts ([[trust-spanning-protocol]]). In Rust the `pq` feature of `affinidi-tsp` (0.5 at Fig) still implements hybrid `MLKEM768-X25519` HPKE and ML-DSA-65 signatures against the specification's vectors, with `1AAQ` still provisional pending CESR registration — and the Rust VID model still cannot carry the keys, so nothing above the crate uses them.
+
+**The Dart port can use them.** Last cycle this page could not confirm the Dart package the Eucalyptus release summary mentioned. It exists: `affinidi_tsp_pq`, in the `affinidi-tsp-dart` repository alongside `affinidi_tsp` (0.2.3 on main at the time of writing). It provides the `MLKEM768-X25519` hybrid KEM and ML-DSA-65 keys in pure Dart (on `pqcrypto`, checked against the NIST FIPS 203/204 test corpora), recognizes the provisional multicodecs the ToIP reference writes into `did:peer:4` documents, and — the part Rust lacks — puts those keys straight into the Dart SDK's `PrivateVid`/`PublicVid`, so TSP 1.0's ordinary pack and open work with them: the receiver's key type selects the KEM and the sender's selects the signature. It is verified against the `draft-ietf-hpke-pq` vector and TSP's own `direct-hpke-base-pq` vector, and it is a separate package only because it needs Dart 3.10. So far the Dart port is the only TSP implementation in the stack whose VIDs can carry post-quantum keys; nothing this wiki tracks uses it yet.
+
+**Recovery custody, designed for a quantum adversary.** The VTI's key-roles design (`docs/05-design-notes/key-roles.md`, revised 10-30 and 10-31; implementation resumed 11-09 but still at step 0 of 15 at the tag) is the first VTI design note to carry a second, quantum-capable threat model next to the classical one, and it finds that the two models disagree in exactly one place: **who can recover a node's identity** after its keys are lost. FROST threshold signing (RFC 9591), the obvious tool, cannot carry a post-quantum key, and no post-quantum threshold signature is standardized. The note therefore recommends as a baseline a *policy* threshold of whole FIPS-approved keys — which is post-quantum once those keys are ML-DSA — with FROST as an option in the classical model, and a migration path from FROST to a hybrid custodian with a policy-enforced ML-DSA threshold to a true post-quantum threshold scheme later, each step a witnessed entry on the same DID. This is design, not code.
+
+**What grew instead was the classical surface.** Fig added P-256 and secp256k1 members, ES256/ES256K SD-JWT VCs and a swiyu-shaped P-256 verifier identity (VTI #2010, #2021, #2036) for interoperability with existing wallets, and did:webs identities on KERI v2 with Ed25519 keys. The new `vta-signing` core covers Ed25519 and P-256. None of these has a post-quantum counterpart yet, so the share of the stack that a quantum adversary could forge grew in Fig even though nothing regressed.
+
 ## Status: On by Default, or Behind a Flag
 
 | Layer | Status |
@@ -46,9 +58,11 @@ Nothing cryptographic changed between the release candidate and the `VTI-Eucalyp
 | did-templates 3.0, per-slot algorithms, third slot | **On** |
 | VTC hybrid multi-proof issuance and verification | **On**; hybrid output only once a second key is held |
 | TDK Data Integrity ML-DSA-44 suites | Behind `ml-dsa` in the TDK; **on** in VTI's pin |
-| TSP Rev 3 `MLKEM768-X25519` + ML-DSA-65 | Behind `pq`; VID model not PQ-aware, so unused above the crate |
+| TSP 1.0 `MLKEM768-X25519` + ML-DSA-65, Rust (`affinidi-tsp`) | Behind `pq`; VID model not PQ-aware, so unused above the crate |
+| TSP 1.0 `MLKEM768-X25519` + ML-DSA-65, Dart (`affinidi_tsp_pq`) | Separate package; keys usable as VIDs, so PQ TSP works end to end |
 | didwebvh-rs PQ suites | Behind `experimental-pqc`, off-spec |
-| DIDComm, mdoc/COSE, JWT, TEE attestation | Classical only |
+| DIDComm, mdoc/COSE, JWT, SD-JWT VC, TEE attestation, did:webs / KERI | Classical only |
+| Key-roles recovery custody for a quantum adversary | Design only (policy threshold of ML-DSA keys recommended; FROST is not PQ) |
 | Internal (non-derived) PQ keys | Refused pending a decision on holding an unrecoverable PQ key |
 
 See also: [[trust-spanning-protocol]], [[bip32-key-derivation]], [[verifiable-credentials]], [[verifiable-trust-agent]], [[affinidi-tdk]]

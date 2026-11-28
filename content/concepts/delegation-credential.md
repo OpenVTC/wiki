@@ -1,8 +1,8 @@
 ---
 title: "Delegation Credential (VDC)"
 type: concept
-tags: [credentials, dtg, delegation, agents, edge, spec]
-date-updated: 2026-10-07
+tags: [credentials, dtg, delegation, agents, edge, spec, fig]
+date-updated: 2026-11-28
 sources: [dtg-credential-spec, dtg-credentials]
 ---
 
@@ -57,6 +57,6 @@ A [[personhood-credential|PHC]] says its holder is one real person. Because a de
 
 ## Implementation status
 
-[[dtg-credentials]] 0.6.0 shipped `new_vdc` as little more than a type string. 0.7.0 (WD02) made it real: `DelegationGrant`, the acceptance constructor, `accepts()`, opt-in `redelegate`, and `delegation::verify_chain`, which returns the principal and appointed acts — deliberately not whether the act is permitted. 0.9.1 added Invocation Binding (the leaf must appoint the *presenter*); 0.10.0 replaced `new_delegate_vdc` with `new_delegate_vdc_for`, which refuses a grant that does not name the party answering it; **0.12.0** (2026-09-30) removed the deprecated constructor, moved the VDC to the v1 context and added `issuer_scope` to `new_vdc`, `new_delegate_vdc_for` and `redelegate`. `credentialStatus` is settable but never resolved. No VTI or OpenVTC flow issues VDCs yet; the [[data-rooms|data-room]] design has a member appoint a service by VDC alongside an agent equipped by attenuated VAC — "the same member, two credentials, and a verifier that can always tell which it was shown."
+[[dtg-credentials]] 0.6.0 shipped `new_vdc` as little more than a type string. 0.7.0 (WD02) made it real: `DelegationGrant`, the acceptance constructor, `accepts()`, opt-in `redelegate`, and `delegation::verify_chain`, which returns the principal and appointed acts — deliberately not whether the act is permitted. 0.9.1 added Invocation Binding (the leaf must appoint the *presenter*); 0.10.0 replaced `new_delegate_vdc` with `new_delegate_vdc_for`, which refuses a grant that does not name the party answering it; **0.12.0** (2026-09-30) removed the deprecated constructor, moved the VDC to the v1 context and added `issuer_scope` to `new_vdc`, `new_delegate_vdc_for` and `redelegate`. Between Eucalyptus and Fig the VDC itself did not change. **0.14.0** (2026-11-10) compares did:scid parties along a delegation chain, and in the acceptance pairing, by DID, ignoring a `?src=` locator (VTI-KEY-160). Working Draft 0.7.0's salting (#87) will cover `delegation.parent` and `delegation.accepts` once context `v3` is published, because both are digests of credentials whose content is often guessable. Spec #94 recomputed the acceptance example's `accepts`, which had been the digest of the empty string. `credentialStatus` is settable but never resolved. At `VTI-Fig` still no VTI, OpenVTC or VTN flow issues VDCs; the [[data-rooms|data-room]] design has a member appoint a service by VDC alongside an agent equipped by attenuated VAC — "the same member, two credentials, and a verifier that can always tell which it was shown."
 
 See also: [[authority-credential]], [[credential-categories]], [[dtg-credentials-overview]], [[personhood-credential]], [[trust-task-context-binding]]

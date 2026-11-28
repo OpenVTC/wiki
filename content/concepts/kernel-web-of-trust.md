@@ -1,8 +1,8 @@
 ---
 title: "The Kernel Web of Trust — Linux ID, Prague, and the Maintainer Pilot"
 type: concept
-tags: [linux-kernel, web-of-trust, pgp, know-your-developer, vetting, personhood, linux-id, plumbers]
-date-updated: 2026-10-07
+tags: [linux-kernel, web-of-trust, pgp, know-your-developer, vetting, personhood, linux-id, plumbers, fig]
+date-updated: 2026-11-28
 sources: [openvtc, verifiable-trust-infrastructure, verifiable-git-infrastructure, keyring-wallet]
 ---
 
@@ -52,8 +52,18 @@ What was on the table by then, as shipping software rather than slides:
 - **Signed commits with the key in the agent.** `did-git-sign` now has the VTA sign commits so the key never leaves it, a project's CI checks every commit against the community's trust registry, and a community can govern the GitHub or Forgejo namespace itself — PR-open gates, required approvals, separation of duties, break-glass ([[community-git-namespaces]]). The kernel's `MAINTAINERS`-plus-signed-tags practice has a direct counterpart.
 - **One shape for every identity check.** Since DTG Credentials v1 the community's *own* identity check is also a `vetted/1` statement, issued under the community's DID; OpenVTC keeps it and can offer it to other communities as [[personhood-credential|personhood]] evidence. Recognition of another community's *vetting* proper — so that a developer vetted by kernel maintainers need not be re-vetted elsewhere — remains a V2 item.
 
+## Since Prague: What Fig Changed for the Pilot
+
+The seven weeks to the **Fig** release (2026-11-27, [[coordinated-releases]]) brought no kernel-specific work in the repositories — the vetting design document changed only to follow refactoring — but several changes bear directly on what the maintainers were shown:
+
+- **Hidden vetting no longer lives on the laptop.** At Prague the hidden-vetting keys were held by the OpenVTC client. Since Fig the member's own [[verifiable-trust-agent|VTA]] holds them and builds every enrollment, attestation and proof, so the phone wallet could take part: [[keyring-wallet|Keyring]] now runs *private* vetting on both seats. The trade-off is written down rather than hidden — vetter anonymity holds against the community, other members and applicants but not against the vetter's own VTA, so a vetter's VTA must not be run by the community's operator. A vetter who loses their key can recover it through the VTA or have an administrator reset the binding, which matters for a population of maintainers expected to last years ([[peer-identity-vetting]]).
+- **Changing the bar takes two people.** Changing the join criteria — including switching hidden vetting on or off — now parks for the other vetting administrators' consent before it takes effect, the same two-person rule the community already applied to removing administrators.
+- **The keys developers already sign with.** `verify-trust` accepts P-256 and **FIDO security-key** SSH signatures alongside Ed25519, where it had rejected exactly the hardware-protected signers as malformed (VGI #177), and the signer and the community may be self-certifying `did:scid` identifiers rather than only web-hosted did:webvh ([[verifiable-git-infrastructure]]).
+- **Beyond GitHub and Forgejo, partly.** The rights model and OpenVTC now understand repositories in nested GitLab groups; there is still no GitLab bridge adapter, so a GitLab namespace can be governed only in manual mode ([[community-git-namespaces]]).
+- **Scriptable onboarding.** `openvtc setup --vta-did`, `community join` and `repo clone|sign` take a developer from nothing to signed commits without the TUI — the shape a project's onboarding documentation can copy ([[openvtc]]).
+
 ## What Is Not Done
 
-The vetting design is explicit about its phases, and Prague marks V0, not the end. **V1 — "operable at kernel scale"** — adds the vetter directory and events, VTA-side tickets and push notifications, lineage and cascade review when a vetter is removed, concern reports, moderator notifications, vetter velocity caps and per-DID rate limits, and the PGP bridge for developers who keep signing with PGP. **V2** holds the assurance and privacy items: identity-document credentials as a statement substitute, zero-knowledge predicate claims in production, uniqueness pseudonyms ("one human, one membership"), affiliation attestations, and cross-community recognition of vetting. Several of these are in motion, none is closed. And the kernel's own decision — whether and how to adopt any of this — belongs to its maintainers; the ecosystem's job through October was to give them something real to review.
+The vetting design is explicit about its phases, and Prague marks V0, not the end. **V1 — "operable at kernel scale"** — adds the vetter directory and events, VTA-side tickets and push notifications, lineage and cascade review when a vetter is removed, concern reports, moderator notifications, vetter velocity caps and per-DID rate limits, and the PGP bridge for developers who keep signing with PGP. **V2** holds the assurance and privacy items: identity-document credentials as a statement substitute, zero-knowledge predicate claims in production, uniqueness pseudonyms ("one human, one membership"), affiliation attestations, and cross-community recognition of vetting. Several of these are in motion, none is closed. As of Fig, by the repositories' own status lists, tickets are still client-local, cascade review and concern reports are unbuilt, and the PGP *bridge* remains a design item. And the kernel's own decision — whether and how to adopt any of this — belongs to its maintainers; the ecosystem's job through October was to give them something real to review.
 
 See also: [[peer-identity-vetting]], [[first-person-network]], [[verifiable-trust-community]], [[verifiable-git-infrastructure]], [[community-git-namespaces]], [[openvtc]], [[keyring-wallet]], [[coordinated-releases]]

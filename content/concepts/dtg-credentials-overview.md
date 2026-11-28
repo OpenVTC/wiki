@@ -1,14 +1,14 @@
 ---
 title: "DTG Credential Types"
 type: concept
-tags: [credentials, dtg, trust-graph, trust-over-ip]
-date-updated: 2026-10-07
+tags: [credentials, dtg, trust-graph, trust-over-ip, fig]
+date-updated: 2026-11-28
 sources: [dtg-credential-spec, dtg-credentials, openvtc, verifiable-trust-infrastructure]
 ---
 
 # DTG Credential Types
 
-The Decentralized Trust Graph (DTG) is populated by a family of [[verifiable-credentials|Verifiable Credential]] types, each representing a different kind of trust relationship, statement or permission. They are defined by the Trust Over IP Foundation's DTG Working Group in the **DTG Credentials Core Specification** — the title since 2026-09-24 (#61/#62); earlier wiki pages call it "DTG Core Credentials" — and implemented in the [[dtg-credentials|dtg-credentials]] library. The [[dtg-credential-spec|spec]] is at **Version 1.0, Document Status Working Draft 0.6.0** (`main`, 2026-09-28; tagged milestones `v0.4.0` 2026-09-15 and `v0.5.0` 2026-09-22; the informal `WD01`/`WD02` ordinals preceded semantic versioning). Companion repos: the **DTG VSC Predicate Registry** (`dtgwg-vsc-registry`, served at `https://registry.trustoverip.org/dtg/`), the **[[trust-tasks|Trust Tasks]]** spec, and the VTI system spec.
+The Decentralized Trust Graph (DTG) is populated by a family of [[verifiable-credentials|Verifiable Credential]] types, each representing a different kind of trust relationship, statement or permission. They are defined by the Trust Over IP Foundation's DTG Working Group in the **DTG Credentials Core Specification** — the title since 2026-09-24 (#61/#62); earlier wiki pages call it "DTG Core Credentials" — and implemented in the [[dtg-credentials|dtg-credentials]] library. The [[dtg-credential-spec|spec]] is at **Version 1.0, Document Status Working Draft 0.7.0** (`main`, 2026-11-24; 0.6.0 of 2026-09-28 was never tagged either; tagged milestones `v0.4.0` 2026-09-15 and `v0.5.0` 2026-09-22; the informal `WD01`/`WD02` ordinals preceded semantic versioning). Companion repos: the **DTG VSC Predicate Registry** (`dtgwg-vsc-registry`, served at `https://registry.trustoverip.org/dtg/`), the **[[trust-tasks|Trust Tasks]]** spec (`dtgwg-trust-tasks-spec`), and the VTI system spec (`dtgwg-vti-spec`), which since 0.7.0 also supplies the purpose registry a VAC draws on and the normative requirements of the [[verifiable-trust-network|VTN]].
 
 ## "DTG Credentials v1" — what it means on the wire
 
@@ -21,7 +21,14 @@ As of the `VTI-Eucalyptus` release every implementation in the ecosystem — [[d
 - `proof` is a W3C Data Integrity proof (`DataIntegrityProof`; `eddsa-jcs-2022` RECOMMENDED because JCS needs no context resolution and is the canonicalization digests already use).
 - community roles are **VACs**, and endorsements, witnessing and vetting are **VSCs** under registry predicates — `endorses/1`, `witnessed/1`, `vetted/1`, `presented/1` — accepted fail-closed.
 
-The spec declares credentials issued before its Implementers Draft non-conformant, so there was no staged migration: issuers and verifiers moved together and re-issued what they held. Every digest changed with the shape, so acknowledgements, acceptances and attenuations were re-derived too — which is what OpenVTC's "set aside on load" and membership renewal exist for.
+**What Working Draft 0.7.0 (Fig) changes, without breaking v1.** Fig (`VTI-Fig`, 2026-11-27; [[dtg-credentials]] 0.16.0) keeps the v1 wire shape and adds to it. None of these changes requires re-issuing what is already held:
+
+- a **second context version, `v2`**, adds the VAC's `purposes` member, and a credential that does not use it MAY keep listing `v1`. A **`v3`** that adds a REQUIRED **`salt`** to every credential is specified but **unpublished**, so no implementation emits it yet (the crate's `context-v3` feature is off by default)
+- a community's own identifier is **`directed` at minimum**, no longer always `public`
+- a VTC is **bound by the disclosure practice** it publishes, and SHOULD publish which VRC subjects it admits
+- a VTN's members may be **VTCs or VTNs**, with membership evaluated per hop
+
+The spec declares credentials issued before its Implementers Draft non-conformant, so there was no staged migration at Eucalyptus: issuers and verifiers moved together and re-issued what they held. Every digest changed with the shape, so acknowledgements, acceptances and attenuations were re-derived too — which is what OpenVTC's "set aside on load" and membership renewal exist for.
 
 Identifiers are no longer typed (no C/M/R/P-DID). Where one credential references another — the VMC acknowledgement, a VSC's object, VDC and VAC chains — it does so by **`digestMultibase`**: SHA-256 over the JCS form excluding `proof`, as a base58btc multihash. W3C VC v2.0 is primary, v1.1 legacy. DTG credentials MAY be presented as ordinary VCs but SHOULD be presented as [[zero-knowledge-proofs|zero-knowledge proofs]] whenever privacy matters, by default.
 
@@ -32,12 +39,12 @@ The only grouping the spec makes ([[credential-categories]]): each is one half o
 ### Membership Credential (VMC)
 **"This entity is a member of community X" — and "I agree that I am."**
 
-A [[membership-credential|Membership Credential]] attests to membership in a [[verifiable-trust-community|VTC]] or [[verifiable-trust-network|VTN]]. The community-issued **grant** (always `issuerScope: public`) and the member-issued **acknowledgement** (carrying `digestMultibase` of the grant and the member's own scope) together form the edge; the acknowledgement is the member's consent artifact without which a community cannot prove anyone's membership. When the community's governance enforces personhood and one-membership-per-person, the grant is a [[personhood-credential|PHC]] — a matter for [[trust-registries|trust registries]], not schema. A [[data-rooms|data room]] uses the same pair.
+A [[membership-credential|Membership Credential]] attests to membership in a [[verifiable-trust-community|VTC]] or [[verifiable-trust-network|VTN]], whose own members may since 0.7.0 be VTCs or VTNs. The community-issued **grant** (`issuerScope` `directed` or `public` since 0.7.0; always `public` before) and the member-issued **acknowledgement** (carrying `digestMultibase` of the grant and the member's own scope) together form the edge; the acknowledgement is the member's consent artifact without which a community cannot prove anyone's membership. When the community's governance enforces personhood and one-membership-per-person, the grant is a [[personhood-credential|PHC]] — a matter for [[trust-registries|trust registries]], not schema. A [[data-rooms|data room]] uses the same pair.
 
 ### Relationship Credential (VRC)
 **"I have a genuine trust relationship with this person."**
 
-A [[relationship-credential|Relationship Credential]] attests to a peer-to-peer relationship; two VRCs (one each direction) form a complete edge. A `pairwise` identifier per relationship is RECOMMENDED and is what OpenVTC issues by default. *Edge Verifiability* defines when a VRC counts as an edge *to a given verifier* — against the VTCs that verifier accepts as anchors, by disclosure or by community-anchored ZKP. See also the [[witnessed-vrc-exchange|Witnessed VRC Exchange Protocol]].
+A [[relationship-credential|Relationship Credential]] attests to a peer-to-peer relationship; two VRCs (one each direction) form a complete edge. A `pairwise` identifier per relationship is RECOMMENDED and is what OpenVTC issues by default. *Edge Verifiability* defines when a VRC counts as an edge *to a given verifier* — against the VTCs that verifier accepts as anchors, by disclosure or by community-anchored ZKP. *Relationship Admissibility* (0.7.0) asks each community to publish which VRC subjects it will accept, so a cross-community edge is not refused after one half is issued. See also the [[witnessed-vrc-exchange|Witnessed VRC Exchange Protocol]].
 
 ### Delegation Credential (VDC)
 **"I appoint this party to act in my name, for these acts, until then."**
@@ -69,7 +76,7 @@ An [[invitation-credential|Invitation Credential]] authorizes onboarding into a 
 ### Authority Credential (VAC)
 **"You may do these actions at this scope, as yourself."**
 
-An [[authority-credential|Authority Credential]] confers permission within a governed `scope` as an explicit `actions` list, and can be **attenuated** by its holder — an agent gets four hours of read-only, not its principal's standing authority — with the verifier walking the whole holder-presented chain (digest `parent`, depth ≤ 8, `maxAttenuation` as the governing party's policy limit). `validUntil` required; not a bearer credential; revocation cascades. It is the permission model of [[data-rooms]] (`read`/`write`/`curate`/`admin`) and, since #1859, of **community roles**: the VTC issues a member a **role VAC** — `scope` the community DID, `actions: ["role:<role>"]`, `maxAttenuation: 0` — alongside the VMC, and names vetters with `role:vetter`.
+An [[authority-credential|Authority Credential]] confers permission within a governed `scope` as an explicit `actions` list, and can be **attenuated** by its holder — an agent gets four hours of read-only, not its principal's standing authority — with the verifier walking the whole holder-presented chain (digest `parent`, depth ≤ 8, `maxAttenuation` as the governing party's policy limit). `validUntil` required; not a bearer credential; revocation cascades. Since 0.7.0 a VAC may also state **purposes of use** (what the content obtained may be used for, never `modelTraining` by default), narrowing along a chain like `actions` (context `v2`). It is the permission model of [[data-rooms]] (`read`/`write`/`curate`/`admin`) and, since #1859, of **community roles**: the VTC issues a member a **role VAC** — `scope` the community DID, `actions: ["role:<role>"]`, `maxAttenuation: 0` — alongside the VMC, and names vetters with `role:vetter`.
 
 ### Relationship card (r-card) — a companion Verifiable Data Structure, not a credential
 **"Here is my contact information."**

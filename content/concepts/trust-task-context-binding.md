@@ -2,7 +2,7 @@
 title: "Trust Task Context Binding (taskContext and taskDigestMultibase)"
 type: concept
 tags: [credentials, dtg, trust-tasks, spec, witness, vetting]
-date-updated: 2026-10-07
+date-updated: 2026-11-28
 sources: [dtg-credential-spec, dtg-credentials, verifiable-trust-infrastructure, openvtc]
 ---
 
@@ -42,5 +42,13 @@ The same PR fixed how a DTG credential is signed: `proof` MUST be a W3C Data Int
 [[dtg-credentials]] 0.11.0 (2026-09-22) added `DTGCommon::task_digest_multibase`, `task_digest_multibase_json(document)` (deliberately distinct from Trust Tasks' *step digest*, which includes the `proof`), `with_task_citation(&document)` to set both members from one document on any credential type, and `cites_task(&document)`, which checks the `id` and recomputes the digest — a credential with no `taskDigestMultibase` is `Ok(false)`, never an `id`-only match. Its test vector is not the crate's own: it reproduces the `taskDigestMultibase` printed in the `vetting/session/0.1` specification and verifies the Vetting Statement printed there. 0.12.0 made the digest REQUIRED wherever a core profile requires `taskContext` (`MissingTaskDigest`), and `new_witnessed_vsc` / `new_vetted_vsc` read both members from the session document so they cannot disagree.
 
 In the [[verifiable-trust-infrastructure|VTI]] and [[openvtc|OpenVTC]] the citation is now everywhere a statement is made inside an exchange: the vetter's `vetted/1` statement cites the `vetting/session` document (the OpenVTC desk keeps the signed session and cannot attest a session without it; the applicant refuses a statement that does not cite the session it received); the community's own `vetted/1` identity check cites the `vtc/endorsements/issue` request that produced it; and the VTC enforces the binding on ingest rather than merely carrying the fields (since VTI #1178). The Keyring wallet's conformance inventory flagged, as of September, that its vetting statement carried no `taskDigestMultibase` and that the upstream verifier did not yet check it — the gap the 0.11/0.12 releases closed on the Rust side.
+
+## In the implementation (Fig)
+
+Fig (2026-11-27) gave the citation its first *issuer* that is neither a person's client nor a community: the **witness host** (`vti-witness`, VTI #2105, #2111), a service with up to ten witness identities. When a witnessed session completes, the host issues one `witnessed/1` statement built with `new_witnessed_vsc` and the task citation of the **session document it stored as received** — so `taskContext` and `taskDigestMultibase` point at exactly the document both parties saw — and a session can mint only one such statement, because it is taken atomically.
+
+The outcome-inference rule also became concrete in the wire format. Since witness 0.2 (VTI #2147, trust-tasks-tf #799) the evidence that a witnessed exchange *succeeded* travels as its own member, `outcomeEvidence`, on `vtc/members/personhood/assert/0.2` — one to sixteen whole documents, each paired with the session version that declares it — rather than in an extension field, and the VTC no longer pairs outcome evidence from a 0.1 session with a 0.2 response (VTI #2334). A community deciding personhood reads the outcome from that evidence, not from the fact that a statement cites a session.
+
+**Salting leaves this citation as it was.** Working Draft 0.7.0 of the [[dtg-credential-spec|spec]] salts every DTG credential so that a digest *referencing* one cannot be reversed by trying plausible contents (trustoverip/dtgwg-cred-spec#87; [[dtg-credentials]] 0.16 implements it behind an off-by-default `context-v3` feature, since the v3 context is not yet published). The spec states that this **does not protect `taskDigestMultibase`**: that member references a Trust Task document, not a DTG credential, and the document carries no DTG salt. The privacy note above therefore stands unchanged — the two members still link every presentation of the credential that carries them, and the committed form of the citation is still only under consideration. Separately, dtg-credentials 0.13 → 0.16 now requires a credential's proof to be made by a key of its issuer (#36), which closes the gap between "secured with Data Integrity" and "secured by the party it names".
 
 See also: [[witness-credential]], [[statement-credential]], [[witnessed-vrc-exchange]], [[peer-identity-vetting]], [[dtg-credentials-overview]], [[verifiable-credentials]], [[trust-tasks]]
